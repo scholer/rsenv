@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##    Copyright 2011 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
 ## 
@@ -21,7 +22,25 @@ Created on Mon Apr  4 12:00:06 2011
 
 Imports my favorite modules that makes it possible for me to work efficiently
 with a python command prompt.
+
+See also:
+ - https://docs.google.com/document/d/10bSiPwq4DrLGoB8zaCJBG3nrtK5-nC21Yhx-cCEyCO4/edit
+ - Dropbox/Dev/Projects/OligoManager2/oligomanager
+ - Dropbox/Dev/Projects/OligoManager2/oligomanager/tools
+ - Dropbox/Dev/Projects/OligoManager2/python_scripts  (obsolete)
+ - Dropbox/NATlab shared/DesignBlueprints/caDNAno/A-few-hints-for-using-python.txt
+ - Dropbox/Dev/Python/Python-copy-paste-examples.txt
+
+Other tips for a better interpreter:
+ - See env/__init__.py
+ - http://rc98.net/pystartup
+
+Also consider:
+ - Using the ipython interpreter as your default interactive interpreter.
 """
+
+
+
 
 
 import psycopg2
@@ -34,7 +53,8 @@ import env # in this way, I can call with env.<something>.
 import pygtk # 
 #pygtk.require('2.0')
 import gtk
-clipboard = gtk.clipboard_get()
+# clipboard = gtk.clipboard_get()
+# text = clipboard.wait_for_text()
 
 class RsHelper(object):
     def __init__(self):

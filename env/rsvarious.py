@@ -24,8 +24,27 @@ Includes various general-purpose python code
 """
 
 
+import gtk
+
+def clipboard():
+    print "Clipboard content: gtk.clipboard_get().wait_for_text()"
+    print " - Also: wait_for_image(), etc. Set with set_text(...)"
+    ret = gtk.clipboard_get().wait_for_text()
+    print ret
+    return ret
 
 
+def wikipagenamefromurl(source=None):
+    if source is None:
+        source = gtk.clipboard_get().wait_for_text()
+    print "wikipagenamefromurl(): source is : '" + source + "'"
+    print 'source.strip().rsplit("/",1)[1].replace("+"," ")'
+    try:
+        ret = source.strip().rsplit("/",1)[1].replace("+"," ")
+        print ret
+        return ret
+    except IndexError:
+        print "IndexError: " + str(source.strip().split("/"))
 
 """
 -------------
@@ -52,12 +71,14 @@ def dectohex(num):
 def rgbconv(color):
   if isinstance(color, tuple):
     # Certainly a RGB colorÉ
+    print "hel"
+    
 
 
 """ Convert a *decimal* color tuple to hex-based color string"""
 def rgbdectohex(color):
   # color as tuple
-  return ''.join(str(hex(color[0]), str(hex(color[1]), str(hex(color[2])) 
+  return "#"+''.join([str(hex(color[0])), str(hex(color[1])), str(hex(color[2]))])
 
 """ Convert a hex-based color string to decimal color tuple """
 def rgbhextodec(color):
@@ -84,7 +105,7 @@ Steffen Sparvath <steffensparvath@gmail.com>,
 'steffensparvath@gmail.com, deonyz@hotmail.com, scholer@inano.au.dk, andersokholm@me.com, hchoeiberg@gmail.com, Mvinther@gmail.com'
 """
 def getEmailAddFromString(a, returntype="string"):
-    if returntype = "string":
+    if returntype == "string":
         return ", ".join([b.split("<")[1][0:-1] for b in a.split(",")])
 
 
