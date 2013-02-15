@@ -24,7 +24,7 @@ Includes various general-purpose python code
 """
 
 
-import gtk
+import gtk # Used to access clipboard
 
 def clipboard():
     print "Clipboard content: gtk.clipboard_get().wait_for_text()"

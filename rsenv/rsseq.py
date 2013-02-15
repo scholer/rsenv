@@ -24,7 +24,7 @@ Includes various python code that I use frequently for manipulating DNA sequence
 """
 
 
-def DNAstrip(a):
+def dnastrip(a):
     """ Easy stripping of all characters except ATGC. """
     print "return ''.join([x for x in a.upper() if x in 'ATGC'])"
     return ''.join([x for x in a.upper() if x in 'ATGC'])
@@ -37,16 +37,9 @@ Albeit anonymous, references to lambdas can be assigned like such: l = lambda x:
 
 
 """ Add space for every 8th base:"""
-def DNAformat(a):
+def dnaformat(a):
     b = DNAstrip(a)
     return ''.join([(letter+' ' if i % 8 == 7 else letter) for i,letter in enumerate(b)]).strip()
-
-
-""" Complementary sequence """
-def DNAcomplement(a):
-    return ''.join([{"t":"a","a":"t","c":"g","g":"c"}[x] for x in a.lower()])[::-1]   #([start:end:slice])
-    # Alternatively, brug af map function i stedet for for loop)
-    b = "".join(map(lambda x: {"t":"a","a":"t","c":"g","g":"c"}[x], a.lower())[::-1])
 
 """ Reverse sequence """
 def reverse(a):
@@ -54,6 +47,19 @@ def reverse(a):
     return a[::-1]   #([start:end:slice])
     # Alternatively, brug af map function i stedet for for loop)
     b = "".join(map(lambda x: {"t":"a","a":"t","c":"g","g":"c"}[x], a.lower())[::-1])
+
+
+""" Complementary sequence (reading 3to5 prime; useful for underlaying sequences) """
+def dnacomplement_3to5p(a):
+    return ''.join([{"t":"a","a":"t","c":"g","g":"c"}[x] for x in a.lower()])   #([start:end:slice])
+
+
+""" Reverse complementary sequence """
+def dnacomplement(a):
+    return ''.join([{"t":"a","a":"t","c":"g","g":"c"}[x] for x in a.lower()])[::-1]   #([start:end:slice])
+    # Alternatively, brug af map function i stedet for for loop)
+    b = "".join(map(lambda x: {"t":"a","a":"t","c":"g","g":"c"}[x], a.lower())[::-1])
+
 
 
 """ 
@@ -78,7 +84,7 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, fivepr
     Dropbox/Dev/Projects/OligoManager2/oligomanager/tools/file_transformation/sequencemapper.py
     but more simple """
     if isComplement:
-        appendSeq = DNAcomplement(appendSeq).upper()
+        appendSeq = dnacomplement(appendSeq).upper()
         print "Appending seq: " + appendSeq
     if writeToFile:
         if appendToFile: fileflags = 'a'
@@ -107,6 +113,8 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, fivepr
     newfile.close()
 
 
+
+""" Testing """
 
 if __name__ == "__main__":
 

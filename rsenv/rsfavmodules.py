@@ -20,45 +20,68 @@ Created on Mon Apr  4 12:00:06 2011
 
 @author: scholer
 
-Imports my favorite modules that makes it possible for me to work efficiently
-with a python command prompt.
+Imports my favorite modules that makes it possible for me to work efficiently 
+with a python command prompt. It should never be loaded automatically, as loading 
+takes quite some time.
 
-This should be imported as:
-from rsfavmods import *
-Alternatively, if you do not want to import large modules 
-such as os, sys, psycopg2, datetime, pygtk, etc
-but only need your own stuff,
-then you can just go ahead and import rsenv/__init__.py (import the dir).
+Load this module with: from rsfavmods import *
 
-See also:
- - https://docs.google.com/document/d/10bSiPwq4DrLGoB8zaCJBG3nrtK5-nC21Yhx-cCEyCO4/edit
- - Dropbox/Dev/Projects/OligoManager2/oligomanager
- - Dropbox/Dev/Projects/OligoManager2/oligomanager/tools
- - Dropbox/Dev/Projects/OligoManager2/python_scripts  (obsolete)
- - Dropbox/NATlab shared/DesignBlueprints/caDNAno/A-few-hints-for-using-python.txt
- - Dropbox/Dev/Python/Python-copy-paste-examples.txt
-
-Other tips for a better interpreter:
- - See env/__init__.py
- - http://rc98.net/pystartup
-
-Also consider:
- - Using the ipython interpreter as your default interactive interpreter.
 """
 
 
+""" ---------------------------------
+--- Modules from standard library ---
+-------------------------------------
+"""
+# http://docs.python.org/2/library/
 
-
-
-import psycopg2
-import os, sys
-# import blast, ?
-
+import os
+import sys # has sys.argv, etc.
+import math
+import re
+import string
+import datetime
+import random
+import glob # glob.glob(path_pattern) returns list of files matching a certain glob pattern.
+import pickle
+import json
+# import email, xmlrpclib, 
+# import tkinter, IDLE, curses, 
 ## Clipboard in GTK:
-import pygtk # 
-#pygtk.require('2.0')
-import gtk
+import pygtk 
+pygtk.require('2.0')
+import gtk # gtk provides clipboard access:
 # clipboard = gtk.clipboard_get()
 # text = clipboard.wait_for_text()
+
+""" ----------------------------------------
+--- Modules outside the standard library ---
+--------------------------------------------
+"""
+
+try:
+    import yaml
+except ImportError:
+    print "YAML module not available."
+
+try:
+    import psycopg2
+except ImportError:
+    print "psycopg2 module not available"
+
+try:
+    import numpy
+    try:
+        import scipy
+    except ImportError:
+        print "scipy module not available."
+    try:
+        import Bio as biopython #http://biopython.org/DIST/docs/tutorial/Tutorial.html
+    except ImportError:
+        print "biopython ('Bio') module not available."
+except ImportError:
+    print "numpy module not available."
+    print " - this also means no biopython, scipy, etc."
+
 
 

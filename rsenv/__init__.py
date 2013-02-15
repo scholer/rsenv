@@ -1,8 +1,30 @@
+"""
+See also:
+ - https://docs.google.com/document/d/10bSiPwq4DrLGoB8zaCJBG3nrtK5-nC21Yhx-cCEyCO4/edit
+ - Dropbox/Dev/Projects/OligoManager2/oligomanager
+ - Dropbox/Dev/Projects/OligoManager2/oligomanager/tools
+ - Dropbox/Dev/Projects/OligoManager2/python_scripts  (obsolete)
+ - Dropbox/NATlab shared/DesignBlueprints/caDNAno/A-few-hints-for-using-python.txt
+ - Dropbox/Dev/Python/Python-copy-paste-examples.txt
+
+Other tips for a better interpreter:
+ - See env/__init__.py
+ - http://rc98.net/pystartup
+
+Also consider:
+ - Using the ipython interpreter as your default interactive interpreter.
+"""
+
+
+
 import rsconfluence
-#import * from RsSeqManip
 from rsseq import *
-#import RsSeqManip as seq
+import rsprotein 
 from rsvarious import *
+#from rshelp import *'
+import rshelp
+# Not importing rsfavmodules. Import manually if needed using
+# from rsfavmodules import *
 
 
 """ from http://conjurecode.com/enable-auto-complete-in-python-interpreter/

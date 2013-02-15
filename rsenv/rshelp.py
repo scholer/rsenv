@@ -52,13 +52,13 @@ class RsHelper(object):
     def addhelp(self, txt):
         self.helpItems[self.helpTopic].append(txt)
 
-h = RsHelper()
+rshelper = RsHelper()
 def addhelp(txt):
-    h.addhelp(txt)
+    rshelper.addhelp(txt)
 def settopic(txt):
-    h.settopic(txt)
+    rshelper.settopic(txt)
 def printHelp():
-    h.printHelp()
+    rshelper.printHelp()
 
 settopic("Using this py-glet:")
 addhelp("""In this module I keep all the python stuff I use regularly. This includes
