@@ -1,8 +1,8 @@
-import RsConfluence
+import rsconfluence
 #import * from RsSeqManip
-from RsSeqManip import *
+from rsseq import *
 #import RsSeqManip as seq
-from RsGeneralPurpose import *
+from rsvarious import *
 
 
 """ from http://conjurecode.com/enable-auto-complete-in-python-interpreter/
