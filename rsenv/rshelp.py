@@ -14,47 +14,15 @@
 ##
 ##    You should have received a copy of the GNU General Public License
 ##    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 """
-Created on Mon Apr  4 12:00:06 2011
+Created on 2013/02/15
 
-@author: scholer
+@author: Rasmus Scholer Sorensen (scholer)
 
-Imports my favorite modules that makes it possible for me to work efficiently
-with a python command prompt.
 
-See also:
- - https://docs.google.com/document/d/10bSiPwq4DrLGoB8zaCJBG3nrtK5-nC21Yhx-cCEyCO4/edit
- - Dropbox/Dev/Projects/OligoManager2/oligomanager
- - Dropbox/Dev/Projects/OligoManager2/oligomanager/tools
- - Dropbox/Dev/Projects/OligoManager2/python_scripts  (obsolete)
- - Dropbox/NATlab shared/DesignBlueprints/caDNAno/A-few-hints-for-using-python.txt
- - Dropbox/Dev/Python/Python-copy-paste-examples.txt
-
-Other tips for a better interpreter:
- - See env/__init__.py
- - http://rc98.net/pystartup
-
-Also consider:
- - Using the ipython interpreter as your default interactive interpreter.
 """
 
 
-
-
-
-import psycopg2
-import os, sys
-import env # in this way, I can call with env.<something>.
-#from env import * # My own custom modules, e.g. RsConfluence, RsSeqManip
-# import blast, ?
-
-## Clipboard in GTK:
-import pygtk # 
-#pygtk.require('2.0')
-import gtk
-# clipboard = gtk.clipboard_get()
-# text = clipboard.wait_for_text()
 
 class RsHelper(object):
     def __init__(self):
