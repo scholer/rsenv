@@ -17,7 +17,9 @@ Also consider:
 
 
 
-import rsconfluence
+import rsplot
+from rsconfluence import *
+#import rsconfluence
 from rsseq import *
 import rsprotein 
 from rsvarious import *

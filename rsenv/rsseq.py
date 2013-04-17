@@ -55,10 +55,19 @@ def dnacomplement_3to5p(a):
 
 
 """ Reverse complementary sequence """
-def dnacomplement(a):
-    return ''.join([{"t":"a","a":"t","c":"g","g":"c"}[x] for x in a.lower()])[::-1]   #([start:end:slice])
+def dnacomplement(a, reverse=True):
+    print "dnacomplement; does ''.join([wcmap[x] for x in a.lower()])[::-1]"
+    wcmap = {"t":"a","a":"t","T":"A","A":"T",
+             "c":"g","g":"c","C":"G","G":"C",
+             " ":" "}
+    complement = ''.join([wcmap[x] for x in a.lower()])
+    if reverse:
+        return complement[::-1]   #([start:end:slice])
+    else:
+        return complement
+    
     # Alternatively, brug af map function i stedet for for loop)
-    b = "".join(map(lambda x: {"t":"a","a":"t","c":"g","g":"c"}[x], a.lower())[::-1])
+    b = "".join(map(lambda x: wcmap[x], a.lower())[::-1])
 
 
 
@@ -77,12 +86,27 @@ See also:
 
 """ Parsing, handling and manipulating set file information """
 
-def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, fiveprime=False,
+def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, appendToFivePrime=False,
     isComplement=False, desc="", verbose=0, outsep='\t', writeToFile=True, appendToFile=False):
-    """ Color will filter only staples with a particular color.
-    Similar to 
-    Dropbox/Dev/Projects/OligoManager2/oligomanager/tools/file_transformation/sequencemapper.py
-    but more simple """
+    """ A bit similar to /oligomanager/tools/file_transformation/sequencemapper.py
+    Function: Will read file given in staplesetfilepath, and to all sequences
+    given in filtercolor it will append sequence given by appendSeq.
+    Result is output to file (input filename with 'append' postfix), unless
+    writeToFile is False, in which case result is printed to a StringIO object
+    and returned.
+    Note: First line is considered to be a header line.
+    params:
+        filtercolor : Only consider lines where 'Color' field has this value. Default is None (consider all input fields)
+        appendToFile: Append to output file, rather than write a new file. Default is False.
+        isComplement: If true, will use the reverse complement of the given sequence. Default is False.
+        desc        : Description to add to all output sequences.
+        verbose     : Output all lines that are also printed to file.
+        outsep:       Force this as the field separator in output file. 
+                      Set to None to use same separator as input file. Default is '\t'.
+        writeToFile : If false, will write all lines to a StringIO object which is returned. Default is True.
+        appendToFivePrime: If true, append appendSeq to 5' end of input sequence. Default is False (appends to 3').
+        
+    """
     if isComplement:
         appendSeq = dnacomplement(appendSeq).upper()
         print "Appending seq: " + appendSeq
@@ -94,23 +118,28 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, fivepr
         import stringio.StringIO as StringIO
         newfile = StringIO()
     with open(staplesetfilepath,'rb') as fp:
+        # simple test for whether to use comma or tab as separator:
         testline = fp.readline().strip()
         sep = '\t' if (len(testline.split('\t')) > len(testline.split(','))) else ','
         if outsep is None: outsep = sep
         header = testline.split(sep)
+        # Header map: maps a header string to column index
         hm = dict([(v,i) for i,v in enumerate(header)])
         fp.seek(0)
         for line in fp:
             row = line.strip().split(sep)
-            if len(row)>1 and row[hm['Color']] == filtercolor or filtercolor == None:
+            if filtercolor is None or (len(row)>1 and (row[hm['Color']] == filtercolor or row[hm['Color']] in filtercolor)) :
                 seq = row[hm['Sequence']]
                 Start = row[hm['Start']]
-                if fiveprime:  seq = "".join([appendSeq, seq])
+                if appendToFivePrime:  seq = "".join([appendSeq, seq])
                 else:       seq = "".join([seq, appendSeq])
-                ln = "\t".join([desc+":"+Start, seq]) if desc else seq
+                ln = "{0}:{1}\t{2}\t{3}".format(desc,Start, seq, len(seq)) if desc else seq
                 if verbose: print ln
                 newfile.write(ln+"\n")
-    newfile.close()
+    if writeToFile:
+        newfile.close()
+    else:
+        return newfile
 
 
 
@@ -120,9 +149,10 @@ if __name__ == "__main__":
 
     thomasseq =   "ACATACAGCCTCGCATGAGCCC"
     rcomplement = "GGGCTCATGCGAGGCTGTATGT"
-    useseq =      "GGGCTCATGCGAGGCTGTATGTTT" # with a 2-T linker to minimize strain
-    appendSequenceToStaps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", fiveprime=True)
-    appendSequenceToStaps('TR.ZS.i-4T.set', useseq,   filtercolor="#1700de", desc="TR:col08-ss", 
-                            fiveprime=True, appendToFile=True, isComplement=False)
-
+    #useseq =      "GGGCTCATGCGAGGCTGTATGTTT" # with a 2-T linker to minimize strain
+    useseq = "GTG CAG ACA AC T".replace(' ','')
+    #appendSequenceToStaps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
+    #appendSequenceToStaps('TR.ZS.i-4T.set', useseq,   filtercolor="#1700de", desc="TR:col08-ss", 
+    #                        appendToFivePrime=True, appendToFile=True, isComplement=False)
+    appendSequenceToStaps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
 

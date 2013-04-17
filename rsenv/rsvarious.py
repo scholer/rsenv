@@ -40,18 +40,6 @@ def cbget():
 def cbset(txt):
     gtk.clipboard_get().set_text(txt)
 
-def wikipagenamefromurl(source=None):
-    if source is None:
-        source = gtk.clipboard_get().wait_for_text()
-    print "wikipagenamefromurl(): source is : '" + source + "'"
-    print 'source.strip().rsplit("/",1)[1].replace("+"," ")'
-    try:
-        ret = source.strip().rsplit("/",1)[1].replace("+"," ")
-        print ret
-        return ret
-    except IndexError:
-        print "IndexError: " + str(source.strip().split("/"))
-
 
 """
 -------------

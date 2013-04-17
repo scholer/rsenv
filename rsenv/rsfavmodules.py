@@ -26,6 +26,9 @@ takes quite some time.
 
 Load this module with: from rsfavmods import *
 
+Alternatively, just use this file as reference when you cannot remember what a particular
+module is named.
+
 """
 
 
@@ -35,18 +38,33 @@ Load this module with: from rsfavmods import *
 """
 # http://docs.python.org/2/library/
 
-import os
-import sys # has sys.argv, etc.
-import math
-import re
-import string
-import datetime
-import random
-import glob # glob.glob(path_pattern) returns list of files matching a certain glob pattern.
-import pickle
-import json
-# import email, xmlrpclib, 
-# import tkinter, IDLE, curses, 
+import os       # Has os.path, os.getcwd(), etc.
+import sys      # has sys.argv, etc.
+import math     # has math.pi and other mathematical constants and functions.
+import re       # Regular expressions
+import itertools # Fast iteration routines.
+import string   # String functions
+import datetime # datatime functions
+import random   # Making random numbers, etc.
+import glob     # glob.glob(path_pattern) returns list of files matching a certain glob pattern.
+import pickle   # For persisting of objects and other python data
+import json     # Persisting data in javascript object notation format
+# yaml         # Persisting in Yet Anoter Markup Language. Is imported via try-except statement.
+#import psycopg2# Connection to postgresql database. Is imported via try-except statement.
+# numpy         # Imported via try-except statement
+# scipy         # Imported via try-except statement
+
+
+
+
+# import email      # For sending emails via python. See also smtplib, poplib and imaplib
+# import xmlrpclib  # Remote procedure call library
+# import curses     # Primitive command-line semi-GUI. 
+# import tkinter    # Python interface to Tcl/tk primitive GUI (http://docs.python.org/2/library/tk.html)
+#                   #   used for e.g. the IDLE python code editor.
+# For other GUIs, see http://docs.python.org/2/library/othergui.html
+
+
 ## Clipboard in GTK:
 import pygtk 
 pygtk.require('2.0')
