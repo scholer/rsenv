@@ -1,0 +1,12 @@
+Parameters Help: |
+  Xdataline : Define the line in the NDJ file that includes the X-data (and other headers/fields).
+  PcDataLines/AnalyteDataLines : List of lines defining lines in the NDJ file with Principal Components / Analytes, respectively.
+  AnalysisRange, PlotRange (xmin, xmax): What range to use for PcAnalysis/plot. Use null (YAML for None) for no limit (full range)
+  NdjFile : NDJ file to use. NOT USED!! Program just uses the first *.ndj file it finds. (Make sure there is only one NDJ file present in directory.)
+
+Xdataline: 5
+PcDataLines: [10,19]
+AnalysisRange: [240, null]
+AnalyteDataLines: [16]
+PlotRange: [null, null]
+
