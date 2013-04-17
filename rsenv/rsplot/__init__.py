@@ -7,30 +7,16 @@ See also:
  - Dropbox/NATlab shared/DesignBlueprints/caDNAno/A-few-hints-for-using-python.txt
  - Dropbox/Dev/Python/Python-copy-paste-examples.txt
 
-Other tips for a better interpreter:
- - See env/__init__.py
- - http://rc98.net/pystartup
-
-Also consider:
- - Using the ipython interpreter as your default interactive interpreter.
 """
 
 
 
-from rsconfluence import *
-#import rsconfluence
-from rsseq import *
-import rsprotein 
-from rsvarious import *
-#from rshelp import *'
-import rshelp
-# Not importing rsfavmodules. Import manually if needed using
-# from rsfavmodules import *
+import rsnanodrop                   # This is fairly light-weight.
 
+# BEFORE I CAN INCLUDE THESE AUTOMATICALLY, THEY SHOULD BE RE-CODED SO THEY DO NOT LOAD 
+# A LOT OF HEAVY MODULE UPON INITIAL IMPORT, BUT ONLY WHEN THEY ARE ACTUALLY USED.
+# AS OF WRITING, THESE MODULES TAKE ABOUT 20 SECS TO IMPORT WHICH IS TOO MUCH.
 
-""" from http://conjurecode.com/enable-auto-complete-in-python-interpreter/
-If If the PYTHONSTARTUP variable is set to a readable file, then the contents of that file will be 
-run before anything else when the interactive interpreter is run."""
-import rlcompleter, readline
-readline.parse_and_bind('tab:complete')
-
+#import rscomponentanalyser          # Imports YAML, numpy, scipy, matplotlib, etc.
+#import rsfluoromaxdataplotter       # This also imports a lot of the same heavy modules.
+#import rsdataplotter1               # Also imports numpy, scipy, pyplot, etc.
