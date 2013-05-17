@@ -21,17 +21,27 @@ Created on Tue Mar  8 16:01:40 2011
 @author: scholer
 """
 
-import numpy, scipy
-#from pylab import plotfile, show, gca
-import pylab
-from matplotlib import pyplot, font_manager
-import csv
-import datetime
-import sys, os
+
+## MOST IMPORTS HAVE BEEN MOVED TO FUNCTIONS OR CLASS INIT METHODS 
+## to decrease the time it takes to load this module initially.
+
+import os
+import sys
+
+# Additional required modules: numpy, scipy, pylab, csv, datetime.
+
 
 class RsDataPlotter(object):
     
     def __init__(self, files=None, scheme=None, individualbatchexportmode=False):
+    
+        ## IMPORTS:
+        import numpy, scipy
+        #from pylab import plotfile, show, gca
+        import pylab
+        from matplotlib import pyplot, font_manager
+        import csv
+        import datetime
         self.Filelistfile = None
         self.Files = files
         #csv.register_dialect('fluoromax', delimiter='\t', quoting=csv.QUOTE_NONE)
@@ -105,9 +115,11 @@ class RsDataPlotter(object):
                        #)
 
 
-    ## NOTE THE CAPITAL "F" -- this method is largely deprechated!
+    ## NOTE THE CAPITAL "F" -- this method is a bit specialized. 
+    ## the other plotfiles method is a bit easier to read and more general-purpose 
+    ## (It will use this plotFiles if self.UsePlotfileFunction is set to True.)
     def plotFiles(self, filepaths, legend=None, export=False, exporttype='png', 
-                  exportBaseName="Plot_"+str(datetime.datetime.now().strftime("%Y%m%d-%H%M")),
+                  exportBaseName=None,
                   samePlot=False, delimiter='\t', showplot=False,
                   loc=0, fontsize='small', costumlines=None,
                   scheme='plotfile'
@@ -115,7 +127,8 @@ class RsDataPlotter(object):
         """ This method was originally developed for use in FluoromaxDataPlotter.py
             I decided to merge this with the 'pvc' plotter to get a multi-potent plotting script.
         """
-
+        if exportBaseName is None:
+            exportBaseName = "Plot_"+str(datetime.datetime.now().strftime("%Y%m%d-%H%M"))
         newfig = not samePlot
         colors = "bgrcmy"
         linestyles = ('-', '--', ':')
@@ -289,6 +302,7 @@ class RsDataReader(object):
         Note: In most circumstances, scheme will be enough to specify dialect, columns and headers.
         Standard dialects: 'excel', 'excel-tab'
         """
+        import csv
         self.UseHeaders = useHeaders
         self.Columns = columns
         self.Headers = headers
@@ -396,6 +410,11 @@ class RsDatasetObject(object):
         self.Headers = headers
         self.Data = data
         self.Title = title
+
+
+
+
+
 
 
 if __name__ == "__main__":

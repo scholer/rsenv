@@ -21,15 +21,27 @@ Created on Tue Mar  8 16:01:40 2011
 @author: scholer
 """
 
-import numpy, scipy
-from pylab import plotfile, show, gca
-from matplotlib import pyplot, font_manager
-import csv
-import datetime
+
+## MOST IMPORTS HAVE BEEN MOVED TO FUNCTIONS OR CLASS INIT METHODS 
+## to decrease the time it takes to load this module initially.
+
+#import csv
+#import datetime
+#import numpy, scipy
+#from pylab import plotfile, show, gca
+#from matplotlib import pyplot, font_manager
+
 
 class DataPlotter(object):
     
     def __init__(self, files=None):
+        # IMPORTS:
+        import csv
+        import datetime
+        import numpy, scipy
+        from pylab import plotfile, show, gca
+        from matplotlib import pyplot, font_manager
+
         self.files = files
         csv.register_dialect('fluoromax', delimiter='\t', quoting=csv.QUOTE_NONE)
 
@@ -74,10 +86,11 @@ class DataPlotter(object):
     
 
     def plotFiles(self, filepaths, legend=None, export=False, exporttype='png', 
-                  exportBaseName="Plot_"+str(datetime.datetime.now().strftime("%Y%m%d-%H%M")),
+                  exportBaseName=None,
                   samePlot=False, delimiter='\t', showplot=False,
                   loc=0, fontsize='small', costumlines=None):
-
+        if exportBaseName is None:
+            exportBaseName = "Plot_"+str(datetime.datetime.now().strftime("%Y%m%d-%H%M"))
         newfig = not samePlot
         colors = "bgrcmy"
         linestyles = ('-', '--', ':')

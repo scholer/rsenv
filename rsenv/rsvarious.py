@@ -62,18 +62,24 @@ Just for reference, this is what is should be: """
 def dectohex(num):
     return hex(num)
 
-""" Convert rgb tuple to color string """
+
 def rgbconv(color):
+  """ Convert rgb tuple to color string """
   if isinstance(color, tuple):
     # Certainly a RGB colorÉ
-    print "hel"
-    
+    return rgbdectohex(color)
+  if isinstance(color, basestring):
+    if color[0] == "#":
+      return rgbhextodec(color)
 
 
 """ Convert a *decimal* color tuple to hex-based color string"""
-def rgbdectohex(color):
-  # color as tuple
-  return "#"+''.join([str(hex(color[0])), str(hex(color[1])), str(hex(color[2]))])
+def rgbdectohex(*color):
+  # color inpus as single argument, as tuple
+  if len(color) == 1:
+    color=color[0]
+  return "#{0:02x}{1:02x}{2:02x}".format(*color)
+  #return "#"+''.join([str(hex(color[0])), str(hex(color[1])), str(hex(color[2]))]).replace("0x","")
 
 """ Convert a hex-based color string to decimal color tuple """
 def rgbhextodec(color):
@@ -141,4 +147,8 @@ def getEmailAddFromString(a, returntype="string"):
     if returntype == "string":
         return ", ".join([b.split("<")[1][0:-1] for b in a.split(",")])
 
-
+if __name__ == "__main__":
+  print "Input single tuple argument:"
+  rgbdectohex((0,0,127))
+  print "Input three individual arguments"
+  rgbdectohex(0,0,128)

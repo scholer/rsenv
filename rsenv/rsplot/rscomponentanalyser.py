@@ -20,13 +20,17 @@
 @author: scholer
 """
 
-import numpy as np, scipy as sp
-import matplotlib as mpl
-from matplotlib import pyplot as plt, font_manager # Easier shortcuts than mpl.pyplot
-import pylab # Pylab provides a matlab-like stateful model, e.g. "show", etc.
-# Optionally: #from pylab import plotfile, show, gca
-import csv, datetime, os
-import yaml
+## MOST IMPORTS HAVE BEEN MOVED TO FUNCTIONS OR CLASS INIT METHODS 
+## to decrease the time it takes to load this module initially.
+
+import os
+#import csv, datetime
+#import numpy as np, scipy as sp
+#import matplotlib as mpl
+#from matplotlib import pyplot as plt, font_manager # Easier shortcuts than mpl.pyplot
+#import pylab # Pylab provides a matlab-like stateful model, e.g. "show", etc.
+## Optionally: #from pylab import plotfile, show, gca
+#import yaml        # Is loaded in YamlLoader:__init__()
 
 
 def is_numeric(s):
@@ -51,6 +55,10 @@ AnalysisRange, PlotRange (xmin, xmax): What range to plot. Use None for no limit
 
 
 class YamlLoader:
+
+    def __init__(self):
+        import yaml
+
     def loadParams(self, filepath):
         # You should refer to the oligomanager/staplemixer ConfigGenerator.py script in Dropbox/Dev/Projects/OligoManager2/oligomanager/staplemixer
         # One thing I found was that JSON does have the oppertunity to print line breaks in strings when dumping.
@@ -72,6 +80,16 @@ class ComponentAnalyser:
     def __init__(self, debug=None, params=None, paramFile=None):
         """ paramFile will load first, then self.Parameters will be updated with params (dict).
         """
+        # IMPORTS:
+        import csv
+        import datetime
+        import numpy as np, scipy as sp
+        import matplotlib as mpl
+        from matplotlib import pyplot as plt, font_manager # Easier shortcuts than mpl.pyplot
+        import pylab # Pylab provides a matlab-like stateful model, e.g. "show", etc.
+        # Optionally: #from pylab import plotfile, show, gca
+
+
         if debug: self.Debug = debug
         else: self.Debug = 0
         # DebugSilentLevel is my own override switch. Set to 0 to let script behave silent except for errors.
