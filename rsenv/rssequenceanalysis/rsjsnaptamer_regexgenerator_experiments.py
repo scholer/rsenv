@@ -432,13 +432,114 @@ def parseseqfile(f):
 
 if __name__ == "__main__":
     """
-    Generator2 was found most efficient. Having 256 (alter|nations) and 256 for loops. Seems fair.
+To time execution within code:
+    1) profile.run("command") within in the code (will slow down execution, so use only for inspection)
+    2)  start_time = time.time()
+        main()
+        end_time = time.time()
+        print "Execution time: {0} s".format(end_time-start_time)
+    
+to time execution from outside (i.e. from the command line):
+    time python script.py
+    python -mtimeit script.py
+    
+    OBSERVATIONS:
+     - Using profile.run() increases runtime 10-30x (Probably cases like this with many for loops is not handled very well...?)
+     - Generator is 0.2s slower than for loop? (At least the generator i made...). 
+        ---> This is because I re-use a compiled regex prog instead of making them over and over. (changing that and they run exactly the same).
+     - But, that is still running through 4**8 = 65e3 loops in 10 secs. So, _my_ code is not adding
+       a lot of overhead. Thus, it is regex searching each and every line in the file that takes so long.
+     - This also meeans that the "optimizations" in the iterator are moot. Again, this shows that there is rarely benefit
+       of doing optimizations before you know they are really needed.
+     - Doing 4**8 = 65e3 is not much compared to the total number of sequences (660e3). Hence, not surprising that this part
+       is what takes the longest.
+       
+       Generator2 which compiles a regex with 4**4=256 (alter|nations) only takes 3.9 secs instead of 10 ! 
+       (on the 256 line .partial file, which had 5 dataset entries after filtering)
+       Increasing to 10000 lines (198 unique sequences after filter):
+       generator2: 4.09 sec
+       generator1: 17.3 sec
+       forLoop:    18.9 sec
+
+       Increasing to 100000 lines (2248 unique sequences after filter):
+       generator2:   4.5 sec
+       generator1: 102 sec
+       forLoop:     89 sec
+
+        However, simply increasing the regex expression much longer (i tried to extend the expression by *4 and got 16 secs instead of 4 secs.)
+       
+       Test, setting a "continue" in the for loop, thus not running any regex searches (but still doing regex prog compilation)
+       With 10000 lines (198 unique sequences after filter):
+       generator3: 16.3 sec
+       generator2:  4.01 sec
+       generator1: 10.8 sec
+       forLoop:    10.5 sec
+
+       Test, setting a "continue" BEFORE the for loop, thus not running any regex searches 
+       (still doing regex prog compilation, but this time not going over the data entries)
+       With 10000 lines (198 unique sequences after filter):
+       generator3: 16.4 sec
+       generator2:  3.95 sec
+       generator1:  9.85 sec
+       forLoop:     9.85 sec
+
+        If I try to change the regex with alternations from generator2, moving the constseq regions inside,
+        execution time goes from 4.0 to 7.2 secs without regex search (continue escape)
+        (and same with regex search, on 10000 lines file, 200 seqs after filter.)
+        For full file, this takes 9.4 secs for generator3 and 5.9 for generator2. So, about the same extra.
+        
+
+        If I continue this, as generator4, now moving the stem1 bases into the (alter|nation) part,
+        for first extra base (s1a4), execution time goes from 9 to 11.8 secs (with regex search, on full 600k lines file, 13000 seqs after filter.)
+        without search, time is:
+        gen4: 7.18
+        gen3: 7.02
+        gen2: 4.03
+        gen1: ---
+        another base, s1a3 moved in:
+        gen4: 28.0    (52.6 secs if I dont alleaviate by removing s1a3 from for loop)
+        gen3: 9.17
+        gen2: 6.22
+        another base, s1a2 moved in:
+        gen4: 195   
+        gen3:   9.2
+        gen2:   6.7
+        
+        The results clearly indicate that a long regex is preferred only up to a certain point,
+        at least when using (alter|nations). 
+        I was not able to produce a regex using conditional (?(if)then|else), 
+        with the if asserting an named earlier named match. 
+        See obsolete expressions at the end of this file for my attempts.
+       
     """
+    #profile.run("findPatternB_with_forLoops()")
+    #profile.run("findPatternB_with_generator()")
+    
+    start_time = time.time()
+    findPatternB_with_generator4()
+    end_time = time.time()
+    print("Execution time for generator4: {0} s".format(end_time-start_time))
+
+    start_time = time.time()
+    findPatternB_with_generator3()
+    end_time = time.time()
+    print("Execution time for generator3: {0} s".format(end_time-start_time))
+
     start_time = time.time()
     findPatternB_with_generator2()
     end_time = time.time()
     print("Execution time for generator2: {0} s".format(end_time-start_time))
 
+    start_time = time.time()
+    #findPatternB_with_generator()
+    end_time = time.time()
+    print("Execution time with generator1: {0} s".format(end_time-start_time))
+    
+    start_time = time.time()
+    #findPatternB_with_forLoops()
+    end_time = time.time()
+    print("Execution time with forLoop: {0} s".format(end_time-start_time))
+    # 
 
 
 
