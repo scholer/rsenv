@@ -26,6 +26,7 @@ Includes various python code that I use frequently for parsing nanodrop files (.
 
 """ Get data from nanodrop data file (.ndj) input as string or file-object.
     Data is returned as a list of lists, with stripped string elements.
+    Note: This is *not* directly related to the nanodrop plotting things.
     
     SEE ALSO:
      - ComponentAnalyser.py 

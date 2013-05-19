@@ -242,7 +242,7 @@ def checkCandidates(candidates, existingSet, permlen=5):
     Currently, two oligos are considered "similar" if they have a stretch of <permlen>
     that is identical between the two.
     Returns a tuple with (candidates, matchdata)
-    Using set logic, so order is not maintained.
+    This function uses set logic, so order is NOT maintained.
     """
     candidates += dnarcomp(candidates) # Need to do this before so we can reference them.
     candidates5mers = seqPermuts(candidates, permlen=permlen, includerevcompl=False, returnFlatList=False)
@@ -254,38 +254,23 @@ def checkCandidates(candidates, existingSet, permlen=5):
     candidates = set(candidates) - match5mer # set algorithmics. Just make sure both are sets.
     return candidates, matchdata
 
-    # Incomprehensible list comprehension:
-    # Essentially just expand to: (or contract by removing extra characters and move h to the beginning.
+    # Interpreting "incomprehensible list comprehensions":
+    # Essentially just expand to: 
 #    for candidate5mers in candidates5mers:
 #        for cand5mer in candidate5mers:
 #            for match in cand5mer:
 #                match[0]
-
+    # (or, if starting by the expanded for-loop construct, contract by removing 
+    # extra characters and move h to the beginning.)
 
 
 def testcheckCandidates():
     existingSet = """
-    ACATACAGCCTCGCATGAGCCC
-GGGCTCATGCGAGGCTGTATGT
-TTCCTCTACCACCTACATCAC
-GGTCGTGTTCGATCAGAGCGC
-gtgatgtaggtggtagaggaa
-gcgctctgatcgaacacgacc
-GTTGAGTCCTGTCAC
-GTTGCATCCTCCAAC
-GTGCAGACAAC
-CGGGAACCGCGTATCTTGCCA
-TGGCAAGATACGCGGTTCCCG
-CGGTTCATAACGGAACCGCCG
-CGGCGGTTCCGTTATGAACCG
-GATTCGGGAAGCAAACCCGCG
-CGCGGGTTTGCTTCCCGAATC
-CCAGTACGCGGCGTAGTACCC
-GGGTACTACGCCGCGTACTGG
-CGGAATACTTGAATCGGGTTC
-GAACCCGATTCAAGTATTCCG
-""".upper().split()
-
+    ACATACAGCCTCGCATGAGCCC GGGCTCATGCGAGGCTGTATGT TTCCTCTACCACCTACATCAC GGTCGTGTTCGATCAGAGCGC
+    gtgatgtaggtggtagaggaa gcgctctgatcgaacacgacc GTTGAGTCCTGTCAC GTTGCATCCTCCAAC GTGCAGACAAC
+    CGGGAACCGCGTATCTTGCCA TGGCAAGATACGCGGTTCCCG CGGTTCATAACGGAACCGCCG CGGCGGTTCCGTTATGAACCG
+    GATTCGGGAAGCAAACCCGCG CGCGGGTTTGCTTCCCGAATC CCAGTACGCGGCGTAGTACCC GGGTACTACGCCGCGTACTGG
+    CGGAATACTTGAATCGGGTTC GAACCCGATTCAAGTATTCCG""".upper().split()
     candidates = [
 "GCCAGCTCAGCC", # an actual candidate (rs6h at time of writing). However, shares GCTCA with #2, rs0a..
 #"AAAAAAAAAAAA", # test, no matches
@@ -295,7 +280,6 @@ GAACCCGATTCAAGTATTCCG
 "GACTCCGATACAAGTATTCCG", # third-last, with some alterations, should match.
 "GATCCGGATACAGGTCTTGCG" # third-last, with some alterations. Still matches other strands, though.
 ]
-
     cand, matchdata = checkCandidates(candidates, existingSet, permlen=5)
     print "Candidates (after filter):"
     print cand
@@ -347,8 +331,10 @@ def generateRandomSeqs(seqlength, desiredseqs, haltAfter=10000, verbose=False, p
             if GCcontent[0] < float(sum([N in "GC" for N in seq2]))/len(seq2) < GCcontent[1]:
                 #print nTries
                 permuts = seqPermuts(seq2, permlen=permlen, includerevcompl=True)
+                # saving all failed sequences may produce a large memory overhead:
                 if any([permut in usedpermuts for permut in permuts]):
-                    failedseqs.add(seq2)
+#                    #failedseqs.add(seq2)
+                    pass
                 elif any([avoidseq in seq2 for avoidseq in ["AAAA", "TTTT", "GGGG", "CCCC", "GCGCGC", "CGCGCG"]]):
                     failedseqs.add(seq2)
                 else:
@@ -373,6 +359,7 @@ def test_generateRandomSeqs():
 
     newseq_methods = ["semi-random", "random"]
     runs = 4
+    max_tries = 1e7 # I tested 
     results = dict([(newseq, 
                     [generateRandomSeqs(20, 100, 1e8, verbose=True, permlen=5, newseq=newseq) for i in range(runs)]) for newseq in newseq_methods])
     import json
