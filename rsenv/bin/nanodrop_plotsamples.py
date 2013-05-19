@@ -1,6 +1,16 @@
 #!/usr/bin/env python
 
-import rsenv
+
+
+
+
+"""
+This will plot a single set of nanodrop data from a single file.
+If the datafile is not given, None will the passed, which invokes 
+file selector and sample selector as needed.
+"""
+
+import rsenv.rsplot.nanodropplotter as ndplotter
 import sys
 
 datafile = sys.argv[1] if len(sys.argv) > 1 else None
@@ -12,4 +22,4 @@ else:
         selectedsamples = selectedsamples[0].split(',')
 
 
-rsenv.rsplot.rsnanodrop.plot_measurement(datafile, selectedsamples)
+ndplotter.plot_measurement(datafile, selectedsamples)

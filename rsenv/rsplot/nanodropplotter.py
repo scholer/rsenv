@@ -156,18 +156,18 @@ def plot_postprocessing(self, legend=None, title=None, export=False, showplot=Fa
 """ Testing """
 
 if __name__ == "__main__":
+    """
+    Note: To invoke this from command line, use the driver in rsenv/bin/nanodrop_plotsamples.py
+    """
     print "Starting test of module rsnanodrop.py ----"
-
+    
     start_dir = None
     test_dir = "/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/"
-
-
     if len(glob.glob("*.ndj")) < 1:
         # No nanodrop data in current folder; probably just testing.
         start_dir = os.getcwd()
         os.chdir(test_dir)
-
-    datafile="/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/today.ndj"
+#    datafile="/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/today.ndj"
 #    data = get_data(datafile)
 #    print get_metadata(data)
     #print get_measurements(data)

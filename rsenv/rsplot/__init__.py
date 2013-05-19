@@ -11,7 +11,7 @@ See also:
 
 
 
-import rsnanodrop                   # This is fairly light-weight.
+import nanodropplotter                   # This is fairly light-weight.
 
 # BEFORE I CAN INCLUDE THESE AUTOMATICALLY, THEY SHOULD BE RE-CODED SO THEY DO NOT LOAD 
 # A LOT OF HEAVY MODULE UPON INITIAL IMPORT, BUT ONLY WHEN THEY ARE ACTUALLY USED.
