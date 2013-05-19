@@ -23,84 +23,51 @@ Created on Fri Feb 8 2013
 Includes various python code that I use frequently for parsing nanodrop files (.ndj).
 """
 
+from rsenv.rsnanodrop_utils import *
+from rsenv.rsexceptions import *
+import rsenv.rsnanodrop_utils as nd_utils
+from rsenv.rsfs_util import *
+import os
+import glob
+# Other imports used in this file (will only be imported when functions are called to minimize
+# initiation time of this module:
+# import pylab
+# from matplotlib import pyplot, font_manager
 
-""" Get data from nanodrop data file (.ndj) input as string or file-object.
-    Data is returned as a list of lists, with stripped string elements.
-"""
-def get_data(datafile):
-    """
-    get_data() ACTION: data = [[elem.strip() for elem in line.split('\t')] for line in datafile]
-    Notice: The first five (5) lines in the ndj file is metadata..."""
-    if isinstance(datafile, basestring):
-        datafile = open(datafile)
-    data = [[elem.strip() for elem in line.split('\t')] for line in datafile]
-    return data
-
-def get_metadata(data):
-    #print 'meta["headers"] = data[4]'
-    #print 'meta["xdomain"] = headers[17:]'
-    headers = data[4]
-    xdomain=headers[17:]
-    lightpath = data[1][1]
-    #print "Lightpath: {0}".format(lightpath)
-    return dict( headers=headers,
-                 xdomain=xdomain, lightpath=lightpath)
-
-def get_measurements(data):
-    #print "measurements = data[5:]"
-    measurements = data[5:]
-    return measurements
-
-def get_samplelist(data):
-    measurements = data[5:]
-    sampleids = [m[0] for m in measurements]
-    return sampleids
-
-def get_sampleindex(sample, data):
-    try:
-        sample = int(sample)
-    except ValueError:
-        measurements = data[5:] # Do not include the first five lines.
-        sample = [m[0] for m in measurements].index(sample)
-    return sample
-
-def get_data_for_xvals(data, xvals=None, sample=0,doprint=False,returnTuple=False):
-    #print "One-liner: for i in range(250,270): "
-    #print "print str(i) + ': ' + [elem.strip() for elem in data_raw[6].split('\t')][ [elem.strip() for elem in headers.split('\t')].index('{:.1f}'.format(float(i))) ]"
-    measurements = data[5:]
-    headers = get_metadata(data)["headers"]
-    if xvals is None:
-        xvals = get_metadata(data)["xdomain"]
-    sample = get_sampleindex(sample, data)
-    measurement = measurements[sample]  # Basically just the line in the ndj file; offset by 5.
-    yvals = [float(measurement[headers.index('{:.1f}'.format(float(xval)))]) for xval in xvals]
-    if doprint:
-        for i,xval in enumerate(xvals):
-            print "{xval}: {yval}".format(xval=xval, yval=yvals[i])
-
-    if returnTuple:
-        return (yvals, xvals, sample)
-    else:
-        return yvals
 
 
 def plot_measurement(datafile=None, selection=None, interval=None, showplot=True):
-    import glob
     import pylab
     from matplotlib import pyplot, font_manager
 
     if datafile is None:
-        datafile = select_ndj_file()
+        try:
+            datafile = nd_utils.select_ndj_file()
+        except RsEmptyDirectoryError as e:
+            print "No nanodrop (*.ndj) files in directory {0}!".format(e.Directory)
+            return None
+        except KeyboardInterrupt:
+            print "KeyboardInterrupt; plotting cancelled completely.\n"
+            return
 #    print "Nanodrop files in directory: {0}  (using last one)".format(len(ndjfiles))
     print "Using nanodrop datafile: {0}".format(datafile)
     data = get_data(datafile)
     metadata = get_metadata(data)
     samplenames = get_samplelist(data)
-    if selection is None:
+    def select_ndj_samples(datafile, samplenames):
         print "=== SAMPLES in file '{}': ===".format(datafile)
         print "\n".join(["[{0}] : {1}".format(i, samplename) for i,samplename in enumerate(samplenames)])
-        selection = raw_input("Which sample do you want to plot?  ")
-    print "Selection is: {0}".format(selection)
+        return raw_input("Which sample(s) do you want to plot? (separate with comma; use ctrl+c to cancel.) ")
+    while selection is None or selection == '':
+        try:
+            selection = select_ndj_samples(datafile, samplenames)
+        except KeyboardInterrupt:
+            print "KeyboardInterrupt; Plotting of this file cancelled.\n"
+            plot_measurement()
+            return
+        print "Selection is: {0}".format(selection)
+        if selection == '':
+            "Nothing selected. Please try again."
     if isinstance(selection, basestring):
         selection = selection.split(',')
     xdata = [float(val) for val in metadata["xdomain"]]
@@ -144,7 +111,8 @@ def plot_measurement(datafile=None, selection=None, interval=None, showplot=True
     if len(plot_again)==0 or plot_again[0].lower() == 'y':
         plot_measurement(datafile)
     elif plot_again[0].lower() == 'f':
-        plot_measurement(select_ndj_file())
+        plot_measurement()
+        return
 
 
 
@@ -183,54 +151,21 @@ def plot_postprocessing(self, legend=None, title=None, export=False, showplot=Fa
         pylab.show()
 
 
-def select_ndj_file():
-    import glob
-    ndjfiles = sorted(glob.glob("*.ndj"))
-    print "Nanodrop files in directory:"
-    print "\n".join(["[{0}] : {1}".format(i, ndjfile) for i,ndjfile in enumerate(ndjfiles)])
-    fileindex = raw_input("Which file do you want to plot data from? (Hit enter to select the last file in list)  ")
-    if not fileindex:
-        return ndjfiles[-1]
-    try:
-        fileindex = int(fileindex)
-        try:
-            datafile = ndjfiles[fileindex]
-        except IndexError:
-            print "IndexError: Perhaps you entered a wrong number?"
-            datafile = select_ndj_file()
-    except ValueError:
-        # The user probably entered a filename...
-        if fileindex in ndjfiles:
-            pass
-        else:
-            print "Input not recognized..."
-            datafile = select_ndj_file()
-
-    print "Using nanodrop datafile: {0}".format(datafile)
-    return datafile
-
-
-def produce_samplelist_for_files(printformat=None, filelist=None):
-    """
-    This is intended to make it easy to grep for a certain sample in a directory.
-    Of course, I could also just use regular grep, but that also prints data and metadata for every measurement.
-    printformat may include {samplename}, {sampleindex} and {filename}
-    """
-    if filelist is None or len(filelist)<1:
-        import glob
-        filelist = sorted(glob.glob("*.ndj"))
-    if printformat is None:
-        printformat = "{filename}:{sampleindex} {samplename}"
-    for ndj in filelist:
-        data = get_data(ndj)
-        print "\n".join([printformat.format(samplename=name, sampleindex=index, filename=ndj) for index,name in enumerate(get_samplelist(data))])
-
 
 
 """ Testing """
 
 if __name__ == "__main__":
     print "Starting test of module rsnanodrop.py ----"
+
+    start_dir = None
+    test_dir = "/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/"
+
+
+    if len(glob.glob("*.ndj")) < 1:
+        # No nanodrop data in current folder; probably just testing.
+        start_dir = os.getcwd()
+        os.chdir(test_dir)
 
     datafile="/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/today.ndj"
 #    data = get_data(datafile)
@@ -240,5 +175,7 @@ if __name__ == "__main__":
 #    get_data_for_xvals(data,range(250,280),sample='RS126h1',doprint=True)
 
     plot_measurement()
+    if start_dir:
+        os.chdir(start_dir)
     print "Finished test of module rsnanodrop.py ^^^^ "
 

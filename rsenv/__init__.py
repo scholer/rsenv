@@ -20,11 +20,13 @@ Also consider:
 import rsplot
 from rsconfluence import *
 #import rsconfluence
-from rsseq import *
+import rsseq
 import rsprotein 
 from rsvarious import *
 #from rshelp import *'
 import rshelp
+import rsnanodrop_utils
+from rsexceptions import *
 # Not importing rsfavmodules. Import manually if needed using
 # from rsfavmodules import *
 
