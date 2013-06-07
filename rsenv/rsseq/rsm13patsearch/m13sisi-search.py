@@ -158,7 +158,7 @@ def findallwithpermuts(seqtofind, haystackstr, Noverhang, wobble=None):
         permutfmt = "."
     for i,nt in enumerate(seq):
         wobbleskip = 0 if wobble else 1 # If we use wobbling, then do not skip any bases...
-        permutfmt = nt # for testing
+        permutfmt = nt if wobble == 'match-exact' # for testing
         repat = re.compile(patfmt.format(first=seq[:i], wobble=permutfmt, second=seq[i+wobbleskip:], before=before, after=after ) )
         print "findallwithpermuts: sending pattern '{}' to refindallmatches()".format(repat.pattern)
         res += refindallmatches(repat, haystackstr)
@@ -299,7 +299,7 @@ def printmatchaligned(match, otherseq, Noverhang):
     return "\n".join([ #"{} vs {} (|{}) (^{}) (^|{})".format(match.groups(), otherseq, seq, dnacomp(otherseq), dnarcomp(otherseq)), 
                        #"i={},j={}, match.re.pattern={}".format(i,j, match.re.pattern),
                         template_line, handle_line])
-    
+
 
 
 #print "\n".join("{}".format(itm) for itm in res)
