@@ -22,8 +22,14 @@ Created on Fri Feb 8 2013
 
 Includes code for sequence generation (and checks related to sequence generation).
 
+This code is not really that good. 
+For production, consider using some of these other tools:
+ - dsg from the CANADA package, http://ls11-www.cs.uni-dortmund.de/molcomp/downloads/dsg.jsp
+ 
+
 """
 
+from rsseq_util import *
 
 
 def seqPermuts(seqs=None, permlen=5, copyToClipboard=False, includerevcompl=False, returnFlatList=True):
@@ -76,6 +82,12 @@ def testSeqPermuts():
     GTTGAGTCCTGTCAC
     GTTGCATCCTCCAAC
     GTGCAGACAAC
+    CGGGAACCGCGTATCTTGCCA
+    CGGTTCATAACGGAACCGCCG
+    GATTCGGGAAGCAAACCCGCG
+    CCAGTACGCGGCGTAGTACCC
+    CGGAATACTTGAATCGGGTTC
+    GCCAGCTCAGCC
     """
     #existingHandles=existingHandles.split()
 #    permuts = seqPermuts(existingHandles[0])
@@ -94,7 +106,7 @@ def checkMatch(needle, haystack):
     pass
 
 
-def checkCandidates(candidates, existingSet, permlen=5):
+def checkCandidates(candlist, existingSet, permlen=5):
     """
     Screen candidates against an existing set of oligos, 
     returning candidates that do not share similarity with oligos in the existing set.
@@ -103,9 +115,10 @@ def checkCandidates(candidates, existingSet, permlen=5):
     Returns a tuple with (candidates, matchdata)
     This function uses set logic, so order is NOT maintained.
     """
+    candidates = copy(candlist) # Otherwise, you might make alterations to the existing list !!
     candidates += dnarcomp(candidates) # Need to do this before so we can reference them.
     candidates5mers = seqPermuts(candidates, permlen=permlen, includerevcompl=False, returnFlatList=False)
-    print candidates5mers
+    #print candidates5mers
     matchdata = [[[(i, candidates[i], cand5mer, existing) for existing in existingSet if cand5mer in existing]
                                                 for cand5mer in cand5mers]
                                             for i,cand5mers in enumerate(candidates5mers)]
@@ -123,14 +136,16 @@ def checkCandidates(candidates, existingSet, permlen=5):
     # extra characters and move h to the beginning.)
 
 
-def testcheckCandidates():
+def testcheckCandidates(candidates=None):
+    # All handles down to rs4a.
     existingSet = """
     ACATACAGCCTCGCATGAGCCC GGGCTCATGCGAGGCTGTATGT TTCCTCTACCACCTACATCAC GGTCGTGTTCGATCAGAGCGC
     gtgatgtaggtggtagaggaa gcgctctgatcgaacacgacc GTTGAGTCCTGTCAC GTTGCATCCTCCAAC GTGCAGACAAC
     CGGGAACCGCGTATCTTGCCA TGGCAAGATACGCGGTTCCCG CGGTTCATAACGGAACCGCCG CGGCGGTTCCGTTATGAACCG
     GATTCGGGAAGCAAACCCGCG CGCGGGTTTGCTTCCCGAATC CCAGTACGCGGCGTAGTACCC GGGTACTACGCCGCGTACTGG
     CGGAATACTTGAATCGGGTTC GAACCCGATTCAAGTATTCCG""".upper().split()
-    candidates = [
+    if not candidates:
+        candidates = [
 "GCCAGCTCAGCC", # an actual candidate (rs6h at time of writing). However, shares GCTCA with #2, rs0a..
 #"AAAAAAAAAAAA", # test, no matches
 #"TTTTTTTTTTTT", # test, no matches
@@ -138,7 +153,7 @@ def testcheckCandidates():
 #"CTTACTTTCTCT", # From second-last (now erased). Notice that TACTT is shared also with the fourth last.
 "GACTCCGATACAAGTATTCCG", # third-last, with some alterations, should match.
 "GATCCGGATACAGGTCTTGCG" # third-last, with some alterations. Still matches other strands, though.
-]
+        ]
     cand, matchdata = checkCandidates(candidates, existingSet, permlen=5)
     print "Candidates (after filter):"
     print cand
@@ -222,6 +237,8 @@ def test_generateRandomSeqs():
     results = dict([(newseq, 
                     [generateRandomSeqs(20, 100, 1e8, verbose=True, permlen=5, newseq=newseq) for i in range(runs)]) for newseq in newseq_methods])
     import json
-    json.dump(results, open("test_generateRandomSeqs_results.json", "wb"))
-
+    json.dump(results, open("test_generateRandomSeqs_results2.json", "wb"))
+    # To parse and print, do:
+    # import json; res = json.load(open(...))
+    # all = "\n".join([seq for methodkey,methodres in res.items() for run in methodres for seq in run[0]]
 

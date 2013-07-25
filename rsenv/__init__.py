@@ -18,6 +18,7 @@ Also consider:
 
 
 import rsplot
+import rsqpcr
 from rsconfluence import *
 #import rsconfluence
 import rsseq

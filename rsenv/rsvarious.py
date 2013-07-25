@@ -24,21 +24,26 @@ Includes various general-purpose python code
 """
 
 
-import gtk # Used to access clipboard
-
-def clipboard():
-    print "Clipboard content: gtk.clipboard_get().wait_for_text()"
-    print " - Also: wait_for_image(), etc. Set with set_text(...)"
-    ret = gtk.clipboard_get().wait_for_text()
-    print ret
-    return ret
-
-def cbget():
-    print "Clipboard content: gtk.clipboard_get().wait_for_text()"
-    return gtk.clipboard_get().wait_for_text()
-
-def cbset(txt):
-    gtk.clipboard_get().set_text(txt)
+# Determining platform:
+# http://stackoverflow.com/questions/1854/python-what-os-am-i-running-on
+# http://stackoverflow.com/questions/110362/how-can-i-find-the-current-os-in-python
+import platform
+if platform.system() == "Windows":
+    #print "Windows; gtk clipboard not available."
+    pass
+else:
+    import gtk # Used to access clipboard    
+    def clipboard():
+        print "Clipboard content: gtk.clipboard_get().wait_for_text()"
+        print " - Also: wait_for_image(), etc. Set with set_text(...)"
+        ret = gtk.clipboard_get().wait_for_text()
+        print ret
+        return ret    
+    def cbget():
+        print "Clipboard content: gtk.clipboard_get().wait_for_text()"
+        return gtk.clipboard_get().wait_for_text()    
+    def cbset(txt):
+        gtk.clipboard_get().set_text(txt)
 
 
 """
