@@ -20,13 +20,16 @@ The samplelist files may be conveniently produced using the SampleNameManager cl
 
 import numpy as np # use as np.arange(...)
 from matplotlib import pyplot # use as pyplot.scatter(...)
+import matplotlib.lines
+import matplotlib.patches
+import matplotlib.text
+import matplotlib
 import operator
 from collections import OrderedDict
 import random
 
 from rsenv.rsqpcr.qpcr_datamanager import DataManager
-
-
+from rsenv.rsqpcr.rscolormanager import StyleManager
 
 
 class DataPlotter():
@@ -35,17 +38,25 @@ class DataPlotter():
         
         self.Prefs = dict()
         self.Datamanager = DataManager() 
-        
+        self.Pickerartistbroker = dict()
         # Default plotting format:
         self.Yrange = ymin, ymax = 0, 40
+        self.StyleManager = StyleManager()
+        self.Stdcurve_colors = self.StyleManager.Colors
         self.Plotsize = (12,7) #None # (width,height)
         # Larger figure sizes require larger fonts and wider lines.
         # Bitmap files will increase with size, while pdf and other vector formats are invariant to size.
         # Setting matplotlib.rcParams['figure.figsize'] = 5, 10 has been reported to be more portable.
         self.Figure_dpi = 300 # Doesn't seem to have any effect when saving as pdf or png, always 100 for png.
         self.Xticklabels = None
-        self.Usehatch = True
+        self.Usehatch = True and False
         self.Plots = list() # list of plots
+        # markers: '.' = dot, 'D' = diamond, ',' = pixel, '+', 'o', '*', 'x', 'h', '^'
+        # pixel does not seem affected by markersize.
+        # linestyles: '-'=solid, '--'=dashed, ':'=dotted, 'None'
+        # linestyle marker is overruled by the presence of a marker.
+        # color: rgbcmyk, or a valid html color name.
+        self.Pointprops = dict(color='black', marker='.', linestyle='None', markersize=3)
         # Default font seems to be VeraSans-Roman.
         self.Fontprops = dict(family='sans-serif', # can also be a font name.
                     )
@@ -60,21 +71,36 @@ class DataPlotter():
                     align='center', alpha=1, zorder=1, linewidth=1.5,
                     antialiased=True
         )
+        if matplotlib.__version__.split('.') < ['1','2','0']:
+            self.Legendprops = dict(size='small', weight='medium') # changed fontsize to size.
+        else:
+            self.Legendprops = dict(fontsize='small', weight='medium')
         # Make default hatch (also works as an example of use)
         # Hatch_prepend: Make sure to use this hatch pattern first:
-        self.Hatch_prepend = ['/','xxx','\\xx','\\x','-xx','\\\\','/\\x','//','//\\']        
+        self.Hatch_pat = None
+        self.Hatch_prepend = ['/','xxx','\\xx','\\x','-xx','\\\\','/\\x','//','//\\']
         # Produce a pseudo-random hatchpattern, prepended by 
         # example hatch_groupstructure = [5,4,2,7] (Repeat first hatch 5 times, second hatch four times, etc.)
         #self.Hatch_pat = self.makehatchpat(useextra=False,groups=None,prepend_pat=hatch_prepend)
     
     
-    def applyFigureFormats(self, **kwargs):
-        
-
+    def applyFigureFormats(self, axis=None, **kwargs):
+        """
+        http://matplotlib.org/api/axes_api.html vs http://matplotlib.org/api/pyplot_api.html
+        """
         xticklabels = kwargs.get('xticklabels', self.Xticklabels)
+        if axis is None:
+            axis = pyplot.gca()
+            # note: replacing 'axis' and 'pyplot' in code below:
+        pyplot.axes(axis) # make 'axis' the current axis.
         if xticklabels:
+            #print 'xticklabels:'
+            #print xticklabels
+            #print '--'
             pyplot.xticks(*zip(*enumerate(xticklabels)), **self.Xlabelprops)
-            pyplot.xlim(-1,len(xticklabels))            
+            pyplot.xlim(-1,len(xticklabels))
+            #axis.set_xticklabels(*zip(*enumerate(xticklabels)), **self.Xlabelprops) # set_xticks is only for numeric values (tick positions)
+            #axis.set_xlim(-1,len(xticklabels))            
         figure_dpi = kwargs.get('dpi', self.Figure_dpi)
         if 'dpi' in kwargs:
             pyplot.gcf().set_dpi(figure_dpi)  # Doesn't seem to have any effect when saving as pdf or png, always 100 for png.
@@ -83,16 +109,24 @@ class DataPlotter():
             pyplot.gcf().set_size_inches(plotsize, forward=True)
         yrange = kwargs.get('yrange', self.Yrange)
         if yrange:
-            pyplot.ylim(yrange)
+            #pyplot.ylim(yrange)
+            axis.set_ylim(yrange)
         
         pyplot.tight_layout()
-    
+
+
+    def getRecentPlot(self):
+        return pyplot.gcf()
+
+
+
     """ ------- Plotting replicate-processed data : -------- """
     
-    def plotbarsreplicateprocessedv3(self, data=None, barprops=None, hatch_pat=None):
+    def plotbarsreplicateprocessedv3(self, data=None, barprops=None, hatch_pat=None, axis=None):
         """
         RP = replicate processed, i.e. a mean has been calculated from the (biological) replicates.
         Note: Sample replicate vs (technical replicates = multiple measurements on the same sample)
+        axis: the pyplot axis to use for plotting. If None, call pyplot.gca().
         """
         if data is None:
             data = self.Datamanager.DataStruct
@@ -102,6 +136,8 @@ class DataPlotter():
             if self.Hatch_pat is None:
                 self.makehatchpat()
             hatch_pat = self.Hatch_pat
+        if axis is None:
+            axis = pyplot.gca()
         # This thows a warning because I try to take the average of an empty sequence
     #   cpmeans_techrep = OrderedDict([ (samplename, OrderedDict([ (replicateno, np.mean(replicate_cpvals)) for replicateno,replicate_cpvals in sampledata.items() ]) ) for samplename,sampledata in data.items() ])
         cpmeans_techrep = OrderedDict([ (samplename, [np.mean(replicate_cpvals) for replicate_cpvals in sampledata.values()] ) for samplename,sampledata in data.items() ])
@@ -117,7 +153,7 @@ class DataPlotter():
         ind = np.arange(len(cpmeans_replicate))
         #ind = [i-barwidth/2 for i in np.arange(len(samplenames))]
         barprops["yerr"] = cpstdev_replicate.values()
-        barplot = pyplot.bar(ind, cpmeans_replicate.values(), **barprops)
+        barplot = axis.bar(ind, cpmeans_replicate.values(), **barprops)
         # pyplot.bar() Return value is a list of matplotlib.patches.Rectangle instances.
         if hatch_pat:
             for bar,pat in zip(barplot, hatch_pat*5): 
@@ -125,6 +161,34 @@ class DataPlotter():
                 bar.set_hatch(pat) 
         self.Plots.append(barplot)
         return barplot
+
+
+    def plotpoints(self, data=None, plotprops=None, foreach='sample', replicateshift=0.05):
+        """
+        foreach: 'sample' or 'replicate'; 'sample' plots all measurements for each sample together.
+        replicateshift: how much to shift replicates for each sample.
+        """
+        if data is None:
+            data = self.Datamanager.DataStruct
+        if plotprops is None:
+            plotprops = self.Pointprops
+            print "Point plot props: {}".format(plotprops)
+        for sampleindex, (samplename, sampledata) in enumerate(data.items()):
+            print "{}, '{}' : {}".format(sampleindex, samplename, ", ".join(["{}".format(lst) for lst in sampledata.values()]) )
+        # sampledata is currently an OrderedDict, *not* just a list;
+        xyvals = [ (sampleindex+replicateshift*(replicateindex-0.5*len(sampledata)),   measurement) \
+            for sampleindex, (samplename, sampledata) in enumerate(data.items()) \
+                for replicateindex, replicatemeasurements in enumerate(sampledata.values()) \
+                    for measurement in replicatemeasurements ]
+#        print 'xyvals:'
+#        print xyvals
+#        print 'zipped:'
+#        print zip(*xyvals)
+        #yvals = 
+        #xvals = 
+        xvals, yvals = zip(*xyvals)
+        #plot = self.getRecentPlot()
+        pyplot.plot(xvals, yvals, **plotprops)
 
 
 
@@ -243,7 +307,227 @@ class DataPlotter():
             hatch_pat = hatch_pat_groups
         self.Hatch_pat = hatch_pat
         return hatch_pat
+
+
+    def plot_stdcurves_fromsamplename_regex(self, regexlist, curvenames):
+        curvedata = self.Datamanager.generateStdCurveFromRegexNamed(regexlist, curvenames, doprint=True)
+        for curvename,stdcurvedata in curvedata.items():
+            if len(stdcurvedata) < 1:
+                continue
+            print 'stdcurvedata 11:'
+            print stdcurvedata
+            x_repmeans = [ (entry[0], [np.mean(repdata) for repindex,repdata in entry[1].items()]) for entry in stdcurvedata]
+            print 'x_repmeans 22: '
+            print x_repmeans
+            data_processed = [ (entry[0], np.mean(entry[1]), np.std(entry[1]) ) for entry in x_repmeans]
+            print 'data_processed 33:'
+            print data_processed
+            #conc, ctmean, cterr = zip(*data_processed)
+            #print conc, ctmean, cterr
+            xvals, yvals = zip(*[ (entry[0], yval) for entry in x_repmeans for yval in entry[1]] )
+            print 'xvals:'
+            print xvals
+            print 'yvals:'
+            print yvals
+            pyplot.semilogx(xvals, yvals, hold=True, marker='*', label=curvename)
+            pyplot.legend() # make legend using existing lines...
+#            pyplot.plot(conc, ctmean) #, yerr=cterr)
+
+
+    def plotstdcurves(self, regexlist, curvenames, makelegend=True, stdcurveaxis=None, residualsplotaxis=None):
+        """
+        If stdcurveaxis is provided, the standard curves will be plotted on this axis.
+        Residuals are only plotted if residualsplotaxis is provided.
+        Convenience 'standard' is allowed.
+        """
+        colors = self.Stdcurve_colors
+        if 'standard' in (stdcurveaxis, residualsplotaxis):
+            # call signature is subplot2grid( (total_rows, total_cols), (row_index, col_inxex), rowspan=N, colspan=N)
+            # note that indices are 0-based.
+            stdcurveaxis = pyplot.subplot2grid( (1,2), (0,0) )
+            residualsplotaxis = pyplot.subplot2grid( (1,2), (0,1) )
+        elif stdcurveaxis is None:
+            stdcurveaxis = pyplot.gca()
+        stdcurves_info = self.Datamanager.stdcurveAutomator(regexlist, curvenames, VERBOSE=0)
+        curvecolors = dict( zip(stdcurves_info['qrmean_data'].keys(), colors*5) )
+        print 'curvecolors:\n'+'\n'.join(["{}: {}".format(name, color) for name, color in curvecolors.items() ])
+        # plot datapoints:
+        for stdcurvename, stdcurve_qrmean_data in stdcurves_info['qrmean_data'].items():
+            points = [ (datapoint[0], ct_qrmean_val) for datapoint in stdcurve_qrmean_data for ct_qrmean_val in datapoint[1] ]
+            if len(points) < 1:
+                continue
+            # points = list of (x,y) tuples
+            xvals,yvals = zip(*points)
+            #print "plotting with xvals: {}, yvals: {}, stdcurvename: {}".format(xvals, yvals, stdcurvename)
+            #stdcurveaxis.semilogx(xvals, yvals, '*', color=curvecolors[stdcurvename], label=stdcurvename) #marker='*', linestyle=None, 
+            #print "'{}' curve plotted.".format(stdcurvename)
+        # plot linear fit points:
+        print "\nPlotting linear fit points::"
+        for stdcurvename, fitpointsvals in stdcurves_info['linfitpoints'].items():
+            #points = [ (datapoint[0], ct_qrmean_val) for datapoint in stdcurve_qrmean_data for ct_qrmean_val in datapoint[1] ]
+            # points = list of (x,y) tuples
+            xvals,yvals,ymeans,yresiduals,yerr = zip(*fitpointsvals)
+            stdcurveaxis.semilogx(xvals, yvals, linestyle=':', color=curvecolors[stdcurvename], marker=None, label="linfit of {}".format(stdcurvename) )
+            stdcurveaxis.errorbar(xvals, ymeans, yerr=yerr, linestyle='None', color=curvecolors[stdcurvename], marker='*', label=stdcurvename) 
+            xlim = residualsplotaxis.get_xlim()
+            stdcurveaxis.set_xlim(xlim[0]*0.9, xlim[1]*1.1)
+            if residualsplotaxis:
+                print 'Plotting residuals for {} curve'.format(stdcurvename)
+                print 'yresiduals: {}'.format(yresiduals)
+                # uh... is yerr only available in barplots and errorplot?
+                # see http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.errorbar
+                # for log, search for 'scale' (linear or log) - you can use the set_xscale() method of an axis object :)
+#                residualsplotaxis.semilogx(xvals, yresiduals, ':*', yerr=yerr, color=curvecolors[stdcurvename], label="{} fit residuals".format(stdcurvename) )
+#                residualsplotaxis.set_xscale('log')
+                residualsplotaxis.errorbar(xvals, yresiduals, yerr=yerr, markersize=4, linestyle=':', color=curvecolors[stdcurvename], label="{} residuals".format(stdcurvename) )
+                residualsplotaxis.axhline(color='k')
+                xlim = residualsplotaxis.get_xlim()
+                residualsplotaxis.set_xlim(xlim[0]*0.9, xlim[1]*1.1)
+                
+        if makelegend:
+            stdcurveaxis.legend(prop=self.Legendprops)
+            if residualsplotaxis:
+                residualsplotaxis.legend(prop=self.Legendprops)
+                # Specifying fontsize seems to not be supported (at least in my matplotlib, which is only 1.1.1) 
+                #- although according to http://matplotlib.org/api/axes_api.html it should be!
+        print "\nStandard curve stats:"
+        for stdcurvename, fitdata in stdcurves_info['linfits'].items():
+            print "{name}: R2={r_squared:.3f}, Eff={eff:.3f}, Slope={slope:.2f}, Intercept={intercept:.1f}".format(
+                    name=stdcurvename, r_squared=fitdata[2]**2, slope=fitdata[0], intercept=fitdata[1],
+                    eff=stdcurves_info['pcr_efficiencies'][stdcurvename])
+#        self.plot_stdcurves_fromsamplename_regex(regexlist, curvenames)
+
+
+    def plotCycledata(self, cycledata=None, ax=None, picker=True, yscale=None, xscale=None):
+        """
+        Cycledata datastructure is:
+            datastruct[key samplename][key replicateno][key qpcr_pos][list index] = (cycle, fluorescenceval)
+        
+        """
+        if cycledata is None:
+            cycledata = self.DataManager.Rawcycledatastruct
+        if cycledata is None or len(cycledata) < 1:
+            print "No cycledata..."
+            return
+        if ax is None:
+            fig = pyplot.figure()
+            ax = pyplot.gca()
+        plts = list()
+        legend_plts = list()
+        legend_labels = list()
+        print "Input cycledata: {}".format(type(cycledata))
+        for samplename, samplereplicates in cycledata.items():
+            (switched, (color, linestyle, marker)) = self.StyleManager.switchStyle(new=samplename)
+            for replicateno, qpcr_replicates in samplereplicates.items():
+                for qpcr_pos, well_cycledata in qpcr_replicates.items():
+                    label = "{samplename},{replicateno} ({pos})".format(pos=qpcr_pos, samplename=samplename, replicateno=replicateno)
+                    #print "pos: {pos}, samplename: {samplename}, replicateno: {replicateno}".format(pos=qpcr_pos, samplename=samplename, replicateno=replicateno)
+                    # notice the (plt, ) unpacking; plot() returns a *list* of 'matplotlib.lines.Line2D' instances.
+                    plt, = pyplot.plot(*zip(*well_cycledata), picker=picker, marker=marker, color=color, ls=linestyle,
+                        label=label )
+                    plts.append(plt)
+            if switched:
+                print "Adding label: {}".format(label)
+                legend_plts.append(plt)
+                legend_labels.append(label)
+            else:
+                print "NOT adding label: {}".format(label)
+        if yscale:
+            ax.set_yscale(yscale)
+        if xscale:
+            ax.set_xscale(xscale)
+        if picker:
+            pyplot.gcf().canvas.mpl_connect('pick_event', self.onpick1)
+
+        return ax, plts, legend_plts, legend_labels
+
+
+    def onpick1(self, event):
+        """
+        from http://matplotlib.org/examples/event_handling/pick_event_demo.html
+        http://wiki.scipy.org/Cookbook/Matplotlib/Interactive_Plotting
+        http://matplotlib.org/users/recipes.html
+        """
+        broker = self.Pickerartistbroker.setdefault(type(event.artist), list())
+        try:
+            lastartist = broker.pop()
+        except IndexError:
+            lastartist = None
+        broker.append(event.artist)
+        if isinstance(event.artist, matplotlib.lines.Line2D):
+            thisline = event.artist
+            xdata = thisline.get_xdata()
+            ydata = thisline.get_ydata()
+            label = thisline.get_label()
+            thisline.set_lw(thisline.get_lw()+1)
+            if lastartist:
+                lastartist.set_lw(lastartist.get_lw()-1)
+            ind = event.ind
+            # np.take is basically just object-independent index-based addressing
+            # label is str instance.
+            print 'onpick1 line: {} at (x,y)=({}, {})'.format(label, np.take(xdata, ind), np.take(ydata, ind))
+        elif isinstance(event.artist, matplotlib.patches.Rectangle):
+            patch = event.artist
+            print('onpick1 patch:', patch.get_path())
+        elif isinstance(event.artist, matplotlib.text.Text):
+            text = event.artist
+            print('onpick1 text:', text.get_text())
+
+
+
+
+
+if __name__ == '__main__':
     
+    # set up:
+    #import os
+    import time
+    startclock = time.clock()
+    dp = DataPlotter()
+    def testStdcurvePlotting():
+        sampledatayaml = 'sampledata/RS157b_qPCR_datastruct.yml' ##os.path.curdir
+        dp.Datamanager.loadfromyaml(sampledatayaml)
+        xticklabels = dp.Datamanager.DataStruct.keys()
+        # (rows, cols)
+    #    ax1 = pyplot.subplot2grid( (2,3), (0,0), colspan=2, rowspan=2 )
+    #    ax2 = pyplot.subplot2grid( (2,3), (0,2) )
+    #    ax3 = pyplot.subplot2grid( (2,3), (1,2) )
+        ax1 = pyplot.subplot2grid( (2,2), (0,0), colspan=1, rowspan=2 )
+        ax2 = pyplot.subplot2grid( (2,2), (0,1) )
+        ax3 = pyplot.subplot2grid( (2,2), (1,1) )
+        # http://matplotlib.org/users/gridspec.html
+        # see also matplotlib.figure.Figure.add_subplot(...)
+        # http://matplotlib.org/api/figure_api.html
+        # http://matplotlib.org/api/pyplot_api.html
+        # http://matplotlib.org/api/axes_api.html
+        
+        # testing plots:
+        dp.plotbarsreplicateprocessedv3(axis=ax1)
+        dp.applyFigureFormats(axis=ax1, xticklabels=xticklabels)
+
+        dp.plotpoints()
+
+        # testing standard curve plots:
+        regexlist = ['(\d.*\d) vs Dzol 30 min', '(\d.*\d) active', '(\d.*\d) inactive', '^(\d.*\d)\W*$']
+        curvenames = ['Dzol 30 min', 'active', 'inactive', 'non-purified calibration']
+        dp.plotstdcurves(regexlist, curvenames, stdcurveaxis=ax2, residualsplotaxis=ax3)
+
+        pyplot.show()
+
+
+    def testCycledataPlotting():
+        cycledatafn = 'sampledata/20130904 wp test.txt'
+        sampleposmap = dp.Datamanager.SampleNameManager.makeEmptyFullPosMap(ncols=5, saveToSelf=False)
+        print "Empty sampleposmap generated... ({})".format(time.clock()-startclock)
+        data = dp.Datamanager.makeRawcycledatastructure(cycledatafn, sampleposmap)
+        print "Cycledata datastruct generated... ({})".format(time.clock()-startclock)
+        dp.plotCycledata(data)
+        "Dataplotter: cycledata plotted, showing plot figure ({})".format(time.clock()-startclock)
+        pyplot.show()
+
+    testCycledataPlotting()
+
+    print "Dataplotter: MAIN/TEST RUN FINISHED... ({})".format(time.clock()-startclock)
 
 
 #####################################################
@@ -255,6 +539,17 @@ class DataPlotter():
 # http://stackoverflow.com/questions/6352740/matplotlib-label-each-bin
 # http://stackoverflow.com/questions/10998621/rotate-axis-text-in-python-matplotlib - uses matplotlib.rc and rotation=45
 # http://stackoverflow.com/questions/6541123/improve-subplot-size-spacing-with-many-subplots-in-matplotlib
+
+
+
+# Regarding linear fits:
+# http://glowingpython.blogspot.it/2011/07/polynomial-curve-fitting.html
+# http://glowingpython.blogspot.dk/2012/03/linear-regression-with-numpy.html
+# http://sdtidbits.blogspot.dk/2009/03/curve-fitting-and-plotting-in-python.html
+# http://stackoverflow.com/questions/893657/how-do-i-calculate-r-squared-using-python-and-numpy
+# http://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.lstsq.html?highlight=residuals
+
+# http://glowingpython.blogspot.dk/2011/04/how-to-plot-function-using-matplotlib.html
 
 
 

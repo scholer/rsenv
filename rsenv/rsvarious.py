@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 ##    Copyright 2011 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
-## 
+##
 ##    This program is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation, either version 3 of the License, or
@@ -32,18 +32,34 @@ if platform.system() == "Windows":
     #print "Windows; gtk clipboard not available."
     pass
 else:
-    import gtk # Used to access clipboard    
-    def clipboard():
-        print "Clipboard content: gtk.clipboard_get().wait_for_text()"
-        print " - Also: wait_for_image(), etc. Set with set_text(...)"
-        ret = gtk.clipboard_get().wait_for_text()
-        print ret
-        return ret    
-    def cbget():
-        print "Clipboard content: gtk.clipboard_get().wait_for_text()"
-        return gtk.clipboard_get().wait_for_text()    
-    def cbset(txt):
-        gtk.clipboard_get().set_text(txt)
+    try:
+        import gtk # Used to access clipboard
+        gkt_available = True
+    except ImportError:
+        gtk_available = False
+
+
+def clipboard():
+    if not gkt_available:
+        print "GTK not available..."
+        return
+    print "Clipboard content: gtk.clipboard_get().wait_for_text()"
+    print " - Also: wait_for_image(), etc. Set with set_text(...)"
+    ret = gtk.clipboard_get().wait_for_text()
+    print ret
+    return ret
+
+def cbget():
+    if not gkt_available:
+        print "GTK not available..."
+        return
+    print "Clipboard content: gtk.clipboard_get().wait_for_text()"
+    return gtk.clipboard_get().wait_for_text()
+def cbset(txt):
+    if not gkt_available:
+        print "GTK not available..."
+        return
+    gtk.clipboard_get().set_text(txt)
 
 
 """
@@ -53,7 +69,7 @@ else:
 
 RGBconv
 
-Converting from hex to dec: int('number-as-string', <base>), e.g. int('33', 16) 
+Converting from hex to dec: int('number-as-string', <base>), e.g. int('33', 16)
 """
 def hextodec(num):
     return int(num, 16)
@@ -95,13 +111,13 @@ def rgbhextodec(color):
 
 
 def combinationsexclude(elems, r=2, excludepairs=set(), doprint=True, returnstr=False, rsdebug=True):
-    """ 
+    """
     Do combinatorics (default=binary) and filter the list to exclude certain pairs.
     E.g. you want to create all possible combinations of the numbers 1,2,3,4,5,6
     but you do not want to include combinations of: (1 and 2) or (3 and 5) or (4 and 6).
     I.e. you want: (1, 3), (1, 4), (1, 5), (1, 6), (2, 3), (2, 4), (2, 5), (2, 6), (3, 4), (3, 6), (4, 5), (5, 6)
     Use this method like: combinationsexclude(range(1,6), [(1,2),(3,5),(4,6)])
-    Edit: Can now be run with r > 2, e.g. 
+    Edit: Can now be run with r > 2, e.g.
         rsenv.bincombexclude(range(1,5),[(2,1,3)],r=3)
     returns [(1, 2, 4), (1, 3, 4), (2, 3, 4)]
     Can easily be run as a copy/paste friendly oneliner as seen. See refs to augment to your needs.
@@ -119,7 +135,7 @@ def combinationsexclude(elems, r=2, excludepairs=set(), doprint=True, returnstr=
     # This is only guaranteed to work if r <= 2.(It might work, not certain)
     #F = [tup for tup in itertools.combinations(elems,r) if not (tup in excludepairs or reversed(tup) in excludepairs)]
     # If r > 2, I have to check whether any permutation of the tuple is among the excluded pairs list:
-    H = [tup for tup in itertools.combinations(elems,r) if not set(itertools.permutations(tup)).intersection(excludepairs)] 
+    H = [tup for tup in itertools.combinations(elems,r) if not set(itertools.permutations(tup)).intersection(excludepairs)]
 #    set1.intersection(set2) shorthand: set1 & set2
     # filter-based alternative. I generally find the list-comprehension-with-condition easier to read.
     #G = filter(lambda tup: not (set(itertools.permutations(tup)).intersection(excludepairs)), itertools.combinations(elems,r))
