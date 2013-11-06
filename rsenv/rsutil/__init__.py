@@ -16,5 +16,9 @@
 ##    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from string_util import *
+
+# This module is imported from base using "from rsutil import *"
+# so all things should be availabel directly, e.g. like rsenv.string_util.text_to_table_string(...)
+__all__ = ['string_util']
+# alternative to manually writing import string_util, ...
 

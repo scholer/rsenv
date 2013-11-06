@@ -368,6 +368,12 @@ class DataPlotter():
             # points = list of (x,y) tuples
             xvals,yvals,ymeans,yresiduals,yerr = zip(*fitpointsvals)
             stdcurveaxis.semilogx(xvals, yvals, linestyle=':', color=curvecolors[stdcurvename], marker=None, label="linfit of {}".format(stdcurvename) )
+            print "xvals: {}".format(xvals)
+            print "yvals: {}".format(yvals)
+            print "ymeans: {}".format(ymeans)
+            print "yresiduals: {}".format(yresiduals)
+            print "yerr: {}".format(yerr)
+            
             stdcurveaxis.errorbar(xvals, ymeans, yerr=yerr, linestyle='None', color=curvecolors[stdcurvename], marker='*', label=stdcurvename) 
             xlim = residualsplotaxis.get_xlim()
             stdcurveaxis.set_xlim(xlim[0]*0.9, xlim[1]*1.1)

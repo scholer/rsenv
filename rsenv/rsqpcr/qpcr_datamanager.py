@@ -579,14 +579,27 @@ OrderedDict: str <curve name> : list <curve data>
         if logbase is set to None, then the input/output data will be semilog format.
         the stdcurve_qrmean_data is only used to generate data range and xvalues to calculate for.
         
-        Returns: (xval, yfit, ymean, residual, yerr),
+        input stdcurve_qrmean_data must be either a tuple specifying (xmin, xmax), or a 
+        stdcurve_qrmean_data datastruct where:
+            stdcurve_qrmean_data[curvename] = [ float conc, ct_vals ]
+            where ct_vals is list of sample replicate measurements at that concentration, like:
+                [ (sample replicate 1 ct vals), (sample replicate 2 ct vals) ]
+        
+        input linfitdata must be either :
+            dict-like,   linfitdata[curvename] = (SLOPE, INTERCEPT, ...)
+            tuple-like,  linfitdata = (SLOPE, INTERCEPT, ...)
+        
+        Returns: dict[<stdcurvename>] = list of (xval, yfit, ymean, residual, yerr) points.
         Where   xvals = concentration for a point on the standard curve,
                 yfit  = calculated ct value for the fitted standard curve
                 ymean = ct mean values of biological sample replicates at that concentration. 
                         (which are calculated from the mean of the measured ct values of each qpcr technical replicate)
                 residual = ymean-yfit
                 yerr  = standard deviation for biological sample replicates.
-                
+
+        Code changes: 
+            Changed from using a lot of zips of the data to just have a single for loop.
+            This is much more readable.
         """
         if logbase is None:
             transform = lambda x: x
@@ -595,41 +608,42 @@ OrderedDict: str <curve name> : list <curve data>
         else:
             transform = lambda x: math.log(x, logbase)#, x)
         # Trying to establish what range we should calculate curve points for:
+        linregpoints = OrderedDict()
+        def calc_yfit_tuple(a, b, xval, ymean, yerr):
+            print "calculating tuple for conc point: {}, {}, {}".format(xval, ymean, yerr)
+            yfit = a*transform(xval)+b
+            residual = ymean-yfit if ymean else None
+            return (xval, yfit, ymean, residual, yerr)
+        def calc_yfit_tuple_multi(a, b, xval, ymean, yerr):
+            print "calculating tuple for conc point: {}, {}, {}".format(xval, ymean, yerr)
+            yfit = a*transform(xval)+b
+            yerr = np.std(ymean)
+            ymean = np.mean(ymean)
+            residual = ymean-yfit
+            return (xval, yfit, ymean, residual, yerr)
         try:
             # Test if stdcurve_qrmean_data is simply a tuple with (xmin, xmax):
             xmin = stdcurve_qrmean_data[0]
             xmax = stdcurve_qrmean_data[1]
             xvals = [np.linspace(xmin, xmax, num=20) for fit in linfits]
+            try:
+                for curvename, linfitdata in linfits.items():
+                    a, b = linfitdata[0:2]
+                    linregpoints[curvename] = [calc_yfit_tuple(a,b, xval, None, None) for xval in xvals]
+            except Exception as e:
+                print "calcLinRegPoints() :: Exception, perhaps you've provided linfits without the outer dict[curvename]=fitdata structure?"
+                linregpoints = [calc_yfit_tuple(linfits[0], linfits[1], xval, None, None) for xval in xvals]
+            return linregpoints
         except Exception as e:
-            #print e
-            xvals = [zip(*curvedata)[0] for curvedata in stdcurve_qrmean_data.values() if len(curvedata)>0]
-            ymeans = [map(np.mean, zip(*curvedata)[1]) for curvedata in stdcurve_qrmean_data.values() if len(curvedata)>0]
-            yerrs = [map(np.std, zip(*curvedata)[1]) for curvedata in stdcurve_qrmean_data.values() if len(curvedata)>0]
-            #xvals,yvals = [zip(*curvedata) for curvedata in stdcurve_qrmean_data.values() if len(curvedata)>0]
-            #xyvals = [zip(*curvedata) for curvedata in stdcurve_qrmean_data.values() if len(curvedata)>0]
-            print "xvals: {}".format(xvals)
-            print "ymeans: {}".format(ymeans)
-            print "yerrs: {}".format(yerrs)
-        linregpoints = OrderedDict()
-#        for xvals, curvename, fitdata in zip(xvals, *zip(*linfits.items())):
-#            linregpoints[curvename] = [(xval, fitdata[0]*transform(xval)+fitdata[1]) for xval in xvals] 
-        def calc_yfit_tuple(a, b, xval, ymean, yerr):
-            print "point: {}, {}, {}".format(xval, ymean, yerr)
-            yfit = a*transform(xval)+b
-            residual = ymean-yfit
-            return (xval, yfit, ymean, residual, yerr)
-        print "zip(xvals, ymeans, yerrs)="
-        print zip(xvals, ymeans, yerrs) # yields (xvals, ymeans, yerrs) for each *curve*.
-        all_curves = zip(xvals, ymeans, yerrs)
-        curve1_points = all_curves[0]
-        print "zip(*curve1_points):"
-        print zip(*curve1_points)
-        for points, curvename, fitdata in zip(zip(xvals, ymeans, yerrs), *zip(*linfits.items())):
-            #print "curvename={}, fitdata={}, points={}".format(curvename, fitdata, points)
-            linregpoints[curvename] = [calc_yfit_tuple(fitdata[0], fitdata[1], *point) for point in zip(*points)] 
-
-        if VERBOSE > 3 or True:
-            print "\n".join([ "{}: {}".format(curvename, vals) for curvename, vals in linregpoints.items() ])
+            pass
+            # Assume stdcurve_qrmean_data is the main datastructure, and linregpoints structure on this input:
+        for curvename, curvedata in stdcurve_qrmean_data.items():
+            a, b = linfits[curvename][0:2]
+            linregpoints[curvename] = [calc_yfit_tuple_multi(a, b, concpointdata[0], concpointdata[1], None) for concpointdata in curvedata]
+            if VERBOSE > 3:
+                print "\ncalcLinRegPoints() :: Values for curve '{}':".format(curvename)
+                print "\n".join( ["{:03g} : {}, {}, {}, {}".format(*point) for point in linregpoints[curvename] ])
+                print "\n"
         return linregpoints
 
 

@@ -28,6 +28,7 @@ from rsvarious import *
 import rshelp
 import rsnanodrop_utils
 from rsexceptions import *
+from rsutil import *
 # Not importing rsfavmodules. Import manually if needed using
 # from rsfavmodules import *
 
