@@ -20,6 +20,8 @@ import operator
 from collections import OrderedDict
 import random
 import yaml
+import logging
+logger = logging.getLogger(__name__)
 
 from rsenv.rsqpcr.qpcr_samplemanager import SampleNameManager
 
@@ -117,14 +119,14 @@ class DataManager():
     ----  DATA STRUCTURES -------------------------------------------
     --------------------------------------------------------------"""
 
-    def makeRawcycledatastructure(self, cycledatafn=None, sampleposmap=None, cyclingprogno='2', 
+    def makeRawcycledatastructure(self, cycledatafn=None, sampleposmap=None, cyclingprogno='2',
                 usePosAsSampleName=False, VERBOSE=2):
         """
         Datastructure is:
             datastruct[key samplename][key replicateno][key qpcr_pos][list index] = (cycle, fluorescenceval)
         Generation is quite computational heavy, since it does not use the line order of the data.
         This means that things like replicateno, etc are computed for each entry, not just every block.
-        Edit, optimization: only change list and generate new samplename and replicateno if pos is different 
+        Edit, optimization: only change list and generate new samplename and replicateno if pos is different
         from last line. This reduced datastruct generation from 3.5 secs to 0.7 ! (of which 0.43 is used
         on reading the cycledatafile (generator).
         Edit, optimization: Added cyclingprogno option, only entries with this Prog# will be included.
@@ -148,7 +150,7 @@ class DataManager():
         if not (cycledatafn and sampleposmap):
             raise ValueError("Missing cpdata or sampleposmap.")
 
-        datastructurev3minimal = OrderedDict() 
+        datastructurev3minimal = OrderedDict()
         datastruct = datastructurev3minimal
         currentpos = 'None'
         for entry in self.readCycledatatxtfile(cycledatafn):
@@ -181,13 +183,13 @@ class DataManager():
 
 
     """ --- DATASTRUCTURE v3 minimal, ordereddict grouped by sample replicates --- """
-    
+
     def makeDatastructureV3minimal(self, cpdata=None, sampleposmap=None):
         """
 Used from: RS155
 Here I read the cpdata list of dicts and use the cpdata[i]["Pos"] via sampleposmap to group.
-Edit: this was supposed to be for datastructurev3, but I will give v3minimal a shot. 
-v3minimal uses an ordereddict, since I would otherwise need to search datastructurev3[i]["samplename"], 
+Edit: this was supposed to be for datastructurev3, but I will give v3minimal a shot.
+v3minimal uses an ordereddict, since I would otherwise need to search datastructurev3[i]["samplename"],
 to see if a samplename was already present in the datastructure, which got kind of akward...
 Using dicts make this much more elegant using the setdefault method.
 
@@ -225,7 +227,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
                 datastructurev3minimal.setdefault(samplename, OrderedDict()).setdefault(replicateno, list())
             else:
                 datastructurev3minimal.setdefault(samplename, OrderedDict()).setdefault(replicateno, list()).append(cpval)
-        
+
         self.StructureVersion = "V3minimal"
         self.DataStruct = datastructurev3minimal
         return datastructurev3minimal
@@ -240,7 +242,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
     # simple grouping, by samplename, in a dict {samplename:<samplelist>}
     # note: zip, izip and friends produces tuples; that might not be desired...
     #cpdatagen = (entry for entry in cpdata)
-    #tech_rep = 2 # technical replicates: (2 = duplicates, etc) 
+    #tech_rep = 2 # technical replicates: (2 = duplicates, etc)
     # not using itertools.izip_longest right now...
     #data_grouped_simple = dict(zip(samplenames, zip(*[(e for e in cpdata)]*tech_rep)))
     # longer, using for loops:
@@ -249,8 +251,6 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
     #    data_grouped_v2[samplename] = qpcrdata = list()
     #    for i in range(tech_rep):
     #        qpcrdata.append(cpdatagen.next())
-    
-
 
 
     """ --- Data structure as list: [{samplename:<name>,qpcrdata:[<qpcrdata>]}] --- """
@@ -268,7 +268,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
                 qpcrdata.append(cpdatasequence.next())
         if len(samplenames) != len(data):
             print "WARNING: len(samplenames) =! len(data)  -- ({} vs {})".format(len(samplenames),len(data))
-    
+
         """ --- Calculating mean and stdev --- """
         print "Mean, STD - Samplename"
         for sample in data:
@@ -290,12 +290,6 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
 
 
 
-
-
-
-
-
-
     """--------------------------------------------------------------
        ----------- DATA SORTING AND FILTERING -----------------------
        --------------------------------------------------------------"""
@@ -305,15 +299,15 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
 
     def filterDataV3(self, data):
         return data
-    
+
     def sortDataV3(self, data):
         return data
-    
+
     def dataByList(self, sampleorder, data=None, persist=True):
         """ Sometimes it is just easier to list them in the order you want,
             rather than rely on some particular ordering mechanism.
             # dataByList also changes the format slightly, using an ordered dict for both
-            # data[samplename] and data[samplename][replicateno]. 
+            # data[samplename] and data[samplename][replicateno].
             sampleorder: list or filename string.
         """
         if data is None:
@@ -330,11 +324,144 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         return databylist
 
 
+    ########################################
+    ### Filtering of outlier data points ###
+    ########################################
+
+    def discartOutliersByStdev(self, datastruct=None, stdevlimit=1.5, cpdiffconst=1, mindatapoints=3):
+        """
+        Runs through all samples and removes outlier data points.
+        A point is evaluated by:
+        - Calculating the mean and stdev for all the other points (i.e. without the point in question)
+        - If the point lies more than stdev*stdevlimit from the mean, then the point is discarted.
+        datastructurev3minimal: Ordered dict, with:
+          [<samplename>] -> dict of replicates, keyed by replicateno. # originally intended as a list, but index-testing got akward.
+            [<replicateno>] -> list of qpcr measurements:
+              [<qpcr_tech_rep>] -> <cp value>
+        i.e.:
+        datastruct[<key_samplename>][key_replicateno][]
+        """
+        print_header = "Discarting outliers by standard deviation"
+        print "#"*(6+len(print_header))+"\n{}\n".format(print_header)+"#"*(6+len(print_header))
+        if datastruct is None:
+            datastruct = self.DataStruct
+
+        samplepoint_discarted_flag = True
+        while samplepoint_discarted_flag:
+            deletepoints = list()
+            #datastruct2 = OrderedDict()
+            # consider: while samplepoint_discarted_flag wrapper
+            samplepoint_discarted_flag = False
+            for samplename, sampledata in datastruct.items():
+                    #datastruct2[samplename] = OrderedDict()
+                    logger.debug("Checking samplename: %s", samplename)
+                    for ri, repdata in sampledata.items():
+                        #datastruct2[samplename][ri] = list()
+                        for qi, cpvalue in enumerate(repdata):
+                            all_other_points = [cp_other for ri_other, repdata_other in sampledata.items()
+                                                            for qi_other, cp_other in enumerate(repdata_other)
+                                                            if not (ri_other == ri and qi_other == qi) ]
+                            if len(all_other_points) < mindatapoints:
+                                logger.info("Samplename, ri = %s, %s -- Number of remaining data points (%s) is less than mindatapoints (%s), cancelling.",
+                                            samplename, ri, all_other_points, mindatapoints)
+                                break
+                            std_other = np.std(all_other_points)
+                            mean_other = np.mean(all_other_points)
+                            diff = np.abs(mean_other-cpvalue)
+                            limit = std_other*stdevlimit+cpdiffconst
+                            if diff > limit:
+                                logger.info("- Marking samplepoint %s: %s,%s for removal (mean_other=%s, difference=%s, std_other=%s, limit=%s)",
+                                            samplename, ri, qi, mean_other, diff, std_other, limit)
+                                logger.debug("ri, repdata: %s, %s", ri, repdata) # repdata is dict
+                                logger.debug("Samplepoints excluding point {},{}={}: {}".format(ri, qi, cpvalue, all_other_points) )
+                                #logger.debug("- mean_other={}, difference={}, std_other={}, limit={}".format(mean_other, diff, std_other, limit) )
+                                # Note: you should never modify a list in place while iterating over it!
+                                # You can, if iterating reversedly, but probably better to delete afterwards.
+                                #del sampledata[ri][qi]
+                                deletepoints.append( (samplename, ri,qi) )
+                                samplepoint_discarted_flag = True
+                            #else:
+                                #datastruct2[samplename][ri].append(cpvalue)
+            # Remove sample points:
+            print "Deletepoints: {}".format(deletepoints)
+            # I need to make sure I delete in reverse, otherwise, if I delete index 0 in list [40, 35, 40]
+            # and I then try to delete index 2 (the other "40" value), then the list will now be [35, 40],
+            # and deleting index 2 is now wrong.
+            for samplename, ri,qi in reversed(deletepoints):
+                logger.debug( "-- deleting point {}:{},{}".format(samplename, ri,qi) )
+                del datastruct[samplename][ri][qi]
+
+        logger.debug("Datastruct, after deleting entries: %s", datastruct)
+        self.removeEmptyRepEntries()
+        return datastruct #, datastruct2
+
+
+    def discartOutliersByNameAndValue(self, datastruct=None, discartNames=None, discartValue=40):
+        """
+        Manual method to remove outliers that are not easily removed by evaluating the stdev.
+        Outliers are removed if:
+        - The sample name is in the discartNames list, and
+        - The cp value equals discartValue.
+        datastructurev3minimal: Ordered dict, with:
+          [<samplename>]: dict # originally intended as a list, but index-testing got akward.
+            [<replicateno>]: list
+              [<qpcr_tech_rep>]: <cp value>
+        """
+        print_header = "Discarting outliers by name and value:"
+        logger.info("#"*(6+len(print_header))+"\n   {}   \n".format(print_header)+"#"*(6+len(print_header)) )
+        logger.info("discartValue=%s, discartNames=%s", discartValue, discartNames)
+        if datastruct is None:
+            datastruct = self.DataStruct
+        deletepoints = list()
+        for samplename, sampledata in datastruct.items():
+            if samplename not in discartNames:
+                continue
+            #print "\nFor samplename: {}".format(samplename)
+            logger.debug("samplename %s is in discartNames, checking to see if any replicates are empty...", samplename)
+            for ri, repdata in sampledata.items():
+                for qi, cpvalue in enumerate(repdata):
+                    if cpvalue >= discartValue:
+                        logger.info("- DISCARTING samplepoint %s,%s for samplename %s", ri, qi, samplename)
+                        #del sampledata[ri][qi]
+                        deletepoints.append( (samplename, ri,qi) )
+        for samplename, ri,qi in reversed(deletepoints):
+            print "-- deleting point {}:{},{}".format(samplename, ri,qi)
+            del datastruct[samplename][ri][qi]
+            print "-- datastruct now: {}".format(datastruct)
+        self.removeEmptyRepEntries()
+        logger.debug("<<<<<< discartOutliersByNameAndValue() completed <<<<<")
+        return datastruct
+
+    def removeEmptyRepEntries(self, datastruct=None):
+
+        logger.info(">>>>> removeEmptyRepEntries initiated >>>>>")
+        if datastruct is None:
+            datastruct = self.DataStruct
+        repdatadelete = list()
+        for samplename, sampledata in datastruct.items():
+            if not sampledata:
+                logger.warning("WARNING, NO SAMPLEDATA FOR SAMPLENAME %s", samplename)
+            for ri, repdata in sampledata.items():
+                if not repdata:
+                    logger.debug("samplename %s, replicate %s is empty and marked for removal", samplename, ri)
+                    repdatadelete.append( (samplename, ri) )
+        # it should be save to delete using keys in a dict:
+        for samplename, ri in reversed(repdatadelete):
+            logger.info( "-- deleting replicate series {}:{}".format(samplename, ri) )
+            del datastruct[samplename][ri]
+            #print "-- datastruct now: {}".format(datastruct)
+        logger.debug("Datastruct, after deleting empty sample replicate enties: %s", datastruct)
+        logger.info("<<<< removeEmptyRepEntries complete <<<<<<<<<")
+
+
+
+
+
     """ -------- DATA SORTING and FILTERING FOR v1 DATASTRUCTURE ---"""
     # Params sorting and ad-hoc grouping:
-    # Unless you have a lot of It is generally easier to simply use 
+    # Unless you have a lot of It is generally easier to simply use
     # a file that lists which samples to plot and in what order.
-    
+
     # LEGACY SORTER.
     def sortdatav1(self, data):
         def getparamsfromsamplename(samplename):
@@ -342,11 +469,11 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             samplenameitems = ["origami", "duration", "exposure", "precipmethod"]
             paramsfromsamplename = dict(zip(samplenameitems, samplename.strip().split(', ')))
             return paramsfromsamplename
-    
+
         def getfieldfromsamplename(field, samplename):
             paramsfromsamplename = getparamsfromsamplename(samplename)
             return paramsfromsamplename[field]
-    
+
         mygraphsortorder = ["origami", "duration", "exposure", "precipmethod"] # How the samples are named:
         mygraphsortorder = ["duration", "precipmethod", "origami", "exposure"] # How the samples were made
         mygraphsortorder = ["precipmethod", "origami", "duration", "exposure"] # How I prefer to see the samples
@@ -363,19 +490,19 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             # params should now be a dict.
             # when sorting a tuple, python first sorts by the first item, then the next, etc.
             #print "params: {}".format(params)
-            return [eachparamsortorder[sortfield].index(params[sortfield]) 
+            return [eachparamsortorder[sortfield].index(params[sortfield])
                         if params[sortfield] in eachparamsortorder[sortfield]
                         else params[sortfield]
                     for sortfield in mygraphsortorder]
-    
+
         def dictdataorderfun(entry):
             return myorderfunc(entry["samplename"])
-    
+
         # Wow, this is vastly easier than the "calculate pos" alternative (my own self-made sorting logic...)
         # If something seems hard to do, it is probably not worth doing :p
         #print "data order before sort:"
         #print "\n".join(["{0:02} {1}".format(i,sample["samplename"]) for i,sample in enumerate(data)])
-    
+
         return sorted(data[0:32], key=dictdataorderfun) + data[32:]
 
     """ ---- Filter v1-type data --- """
@@ -385,7 +512,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
                               "exposure":["blood-plasma","blood-cells"],
                               "precipmethod":["PEG precip."]
                               }
-    
+
         print "N samples before filter: {}".format(len(data))
         samples_to_remove = list()
         for sample in data:
@@ -407,9 +534,9 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
                     #print "Param: {} = {} -- REMOVING SAMPLE".format(p,v)
                     act = "Removing"
                     break
-                #else: 
+                #else:
                 #    print "Param: {} = {} -- OK".format(p,v)
-            
+
             #print "{} sample {} in data: {}".format(act, sample['samplename'], sample in data)
         #print "N samples after filter: {}".format(len(data))
         # If you remove while you loop, then you get a bug (it skips to the next), so doing it afterwards like this:
@@ -453,13 +580,13 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
     def generateStdCurveFromRegexNamed(self, regexlist, curvenames, doprint=False, data=None, regexflagsum=0, VERBOSE=0):
         """
 Standard curve rawdatastruct:
-OrderedDict: str <curve name> : list <curve data> 
+OrderedDict: str <curve name> : list <curve data>
 <curve data>: list of two-tuples -> ( float <conc>, OrderedDict <ct datastruct> )
 <ct datastruct>: biorep_index : list <qpcr replicate measurements for biological replicate>
 
 # qrmean = mean of qpcr replicate measurements for a biological sample replicate
 Standard curve qrmean datastruct: stdcurve_qrmean_data
-OrderedDict: str <curve name> : list <curve data> 
+OrderedDict: str <curve name> : list <curve data>
 <curve data>: list of two-tuples -> ( float <conc>, list <qrmean values> )
 <ct datastruct>: biorep_index : list <qpcr replicate measurements for biological replicate>
 
@@ -512,13 +639,13 @@ OrderedDict: str <curve name> : list <curve data>
 
         Two options:
         1) Use np.linalg.lstsq(A, y)   -- returns least square solution to Ax = y equation system.
-        2) Use np.polyfit(x, y, 1)     -- returns coefficients for 1-degree polynomial. 
+        2) Use np.polyfit(x, y, 1)     -- returns coefficients for 1-degree polynomial.
            - Use np.poly1d(coeffs) to get a polynomial functions for calculating y-values for fit.
         3) Use scipy.stats.linregress(x, y)
            - This has the advantage of returning correlation coefficient, eliminating the roundtrip to np.corrcoef.
            - It is ok to just do: r_squared = r_value**2.
 
-        np.linalg.lstsq returns: coefficients, residues, rank, 
+        np.linalg.lstsq returns: coefficients, residues, rank,
 
         Refs:
         1) http://glowingpython.blogspot.dk/2012/03/linear-regression-with-numpy.html
@@ -545,19 +672,19 @@ OrderedDict: str <curve name> : list <curve data>
             #fitres = np.polyfit(zip(*data), 1, full=True) # full=True also returns residuals, rank, etc.
             #coeffs, residuals = fitres[0:2]
             coeffs = np.polyfit(xdata, ydata, 1)
-            
+
             # method 2, linalg.lstsq:
             # lstsq(A,y) solves the equation A*c = y; A*t = a1*c1+a0*c0 = y
             # with a1 being the 'x' vector and a0=(1,1,...), this is the same as x*c1+c0 = y.
             # lstsq returns: (coeffs, residues_sum, rank, singular_vals)
-            #A = np.array([xdata, np.ones(len(xdata))]) 
+            #A = np.array([xdata, np.ones(len(xdata))])
             #fitres = np.linalg.lstsq(A.T, y)
             #coeffs = fitres[0]
-            
+
             # Correlation:
             correlation = np.corrcoef(xdata, ydata)[0,1] # yes, ugly. corrcoef returns a matrix.
             # correlation is the same as r_value, and r_squared is really just the squared value.
-            
+
             # return (slope, intercept, r-value), similarly to scipy.stats.linregress:
             return (coeffs[0], coeffs[1], correlation)
 
@@ -571,33 +698,33 @@ OrderedDict: str <curve name> : list <curve data>
         return effs
 
 
-    def calcLinRegPoints(self, linfits, stdcurve_qrmean_data=[0, 1e8], logbase=10, 
+    def calcLinRegPoints(self, linfits, stdcurve_qrmean_data=[0, 1e8], logbase=10,
             semiloginput='NotImplemented', semilogoutput='NotImplemented', VERBOSE=0):
         """
         input data must be non-logarithmic conc values (xvalues);
         logbase is the base of the logarithm that was applied before making the linear regression fit.
         if logbase is set to None, then the input/output data will be semilog format.
         the stdcurve_qrmean_data is only used to generate data range and xvalues to calculate for.
-        
-        input stdcurve_qrmean_data must be either a tuple specifying (xmin, xmax), or a 
+
+        input stdcurve_qrmean_data must be either a tuple specifying (xmin, xmax), or a
         stdcurve_qrmean_data datastruct where:
             stdcurve_qrmean_data[curvename] = [ float conc, ct_vals ]
             where ct_vals is list of sample replicate measurements at that concentration, like:
                 [ (sample replicate 1 ct vals), (sample replicate 2 ct vals) ]
-        
+
         input linfitdata must be either :
             dict-like,   linfitdata[curvename] = (SLOPE, INTERCEPT, ...)
             tuple-like,  linfitdata = (SLOPE, INTERCEPT, ...)
-        
+
         Returns: dict[<stdcurvename>] = list of (xval, yfit, ymean, residual, yerr) points.
         Where   xvals = concentration for a point on the standard curve,
                 yfit  = calculated ct value for the fitted standard curve
-                ymean = ct mean values of biological sample replicates at that concentration. 
+                ymean = ct mean values of biological sample replicates at that concentration.
                         (which are calculated from the mean of the measured ct values of each qpcr technical replicate)
                 residual = ymean-yfit
                 yerr  = standard deviation for biological sample replicates.
 
-        Code changes: 
+        Code changes:
             Changed from using a lot of zips of the data to just have a single for loop.
             This is much more readable.
         """
@@ -648,7 +775,7 @@ OrderedDict: str <curve name> : list <curve data>
 
 
 
-    def stdcurveAutomator(self, regexlist=None, curvenames=None, VERBOSE=0):
+    def stdcurveAutomator(self, regexlist=None, curvenames=None, VERBOSE=2):
         if regexlist is None or curvenames is None:
             # self.Stdcurves_defs = (  (curve1name, curve1regex), ... )
             curvenames, regexlist = zip(*self.Stdcurves_defs) # <=> self.Stdcurves_defs = zip(curvenames, regexlist)
@@ -656,17 +783,17 @@ OrderedDict: str <curve name> : list <curve data>
         if VERBOSE > 2:
             print '\nstdcurve_rawdata:'
             print stdcurve_rawdata
-        
+
         stdcurve_qrmean_data = self.calculateStdCurveQrmean(stdcurve_rawdata)
         if VERBOSE > 2 or True:
             print '\nstdcurve_qrmean_data:'
             print stdcurve_qrmean_data
-        
+
         stdcurve_semilog_data = self.generateLogLinStdCurveData(stdcurve_qrmean_data)
         if VERBOSE > 2:
             print '\nstdcurve_semilog_data:'
             print stdcurve_semilog_data
-        
+
         #scipy_available = False
         stdcurve_linfits = self.generateLinearFits(stdcurve_semilog_data)
         if VERBOSE > 2:
@@ -687,16 +814,23 @@ OrderedDict: str <curve name> : list <curve data>
             print '\nstdcurve_linfitpoints:'
             print "\n".join(["{}: {}".format(name, points) for name, points in stdcurve_linfitpoints.items() ])
 
-        # residual[curvename] = (concentration
-        residuals = OrderedDict([ (curvename, 
-            (concpoint[0], np.mean(concpoint[1]), np.std(concpoint[1]) ) )
+
+        # stdcurve_linfitpoints from calcLinRegPoints has format:
+        # <samplename> : list of standard curve points, as tuples:
+        #   (<concentration>, <calculated ct at concentration>, <measured average>, <difference>, <standard error>)
+        # I guess that all values could be arrays, given the code below:
+        logger.info("Making residuals: residual[curvename] = (concentration, <mean>, <stdev>)")
+        # residual[curvename] = (concentration, <mean>, <stdev>)
+        residuals = OrderedDict([ (curvename,
+            (concpoint[0], np.mean(concpoint[1]), np.std(concpoint[1]) ) if hasattr(concpoint[1], '__len__')
+            else (concpoint[0], concpoint[1], 0 ) )
             for curvename, concpoints in stdcurve_linfitpoints.items()
             for concpoint in concpoints])
 
         print "residuals: {}".format(residuals)
 
-        return dict(qrmean_data=stdcurve_qrmean_data, 
-                    linfits=stdcurve_linfits, 
+        return dict(qrmean_data=stdcurve_qrmean_data,
+                    linfits=stdcurve_linfits,
                     linfitpoints=stdcurve_linfitpoints,
                     residuals=residuals,
                     pcr_efficiencies=stdcurve_efficiencies)
@@ -709,12 +843,12 @@ OrderedDict: str <curve name> : list <curve data>
 --- DATA STRUCTURE CONSIDERATIONS -----------------------
 ------------------------------------------------------"""
 
-""" 
+"""
 
 Currently used datastructure is: "datastructurev3minimal".
 - produced by makeDatastructureV4fromPos() !
 
-Alternative minimal datastructurev3minimal: 
+Alternative minimal datastructurev3minimal:
 -- however, this does not leave any place for derived data such as mean, stdev, etc.
 -- but that can probably just as well be calculated on the fly, using map or some custom function...
 datastructurev3minimal:
@@ -725,7 +859,7 @@ datastructurev3minimal:
 
 Datastructure v3
 Added sample replicate grouping in main data structure.
-Datastructure is: 
+Datastructure is:
  samples (list)
   [i] <sample> (dict)
     ["samplename"] string <samplename>
@@ -736,7 +870,7 @@ Datastructure is:
     ["cpstdev"] = derived cpstdev value for all sample replicates
 Pipeline is:
 1) Read extended sample list (1 entry per well/measurement)
-2) 
+2)
 
 New version v2:
 Uses a grouped data-structure rather than flat-flat.
@@ -745,7 +879,7 @@ Primary grouped by: Tech replicates
 
 Secondarily can also be grouped by other parameters, in this case:
 origami, exposure, time, and precipmethod.
-Secondary grouping is done on-the fly; i.e. the data structure produced by 
+Secondary grouping is done on-the fly; i.e. the data structure produced by
 the primary grouping is not permanently affected.
 
 """
@@ -755,10 +889,10 @@ the primary grouping is not permanently affected.
 
 # cpdata is still flat, same as the initial datafile.
 # Now, do grouping:
-# I wonder if it is best to keep as list, or tear down in favor of a dict, and then simply store 
+# I wonder if it is best to keep as list, or tear down in favor of a dict, and then simply store
 # the original index as a field in the dict.? In that case, samplename could be the dict key.
 # If I insist on grouping but keep as list, then I need to determine where to put the samplename.
-# should it be as follows, with =[] indicating list, and ={} indicating dict, 0-> is used to 
+# should it be as follows, with =[] indicating list, and ={} indicating dict, 0-> is used to
 # indicate list indices, while field: indicated dict keys:value pairs.
 # data=[
 # - 0->paramgroup1=[
@@ -777,7 +911,7 @@ the primary grouping is not permanently affected.
 # ----- 0->sample1
 # -------0->qpcr_replicate_1: {samplename:"samplename1", Cp:15.5, ...}
 # alternatives, based on dicts:
-# this alternative does 
+# this alternative does
 # data={
 # - {param1:val1,param2:val2,param3:val3}:paramgroup1={
 #     "params":{paramsdict}
@@ -789,18 +923,18 @@ the primary grouping is not permanently affected.
 
 
 if __name__ == '__main__':
-    
+
     import time
-    
+
     # set up:
     #import os
     dm = DataManager()
     sampledatayaml = 'sampledata/RS157b_qPCR_datastruct.yml' ##os.path.curdir
     cycledatafn = 'sampledata/20130904 wp test.txt'
     sampleposmap = dm.SampleNameManager.makeEmptyFullPosMap(saveToSelf=False)
-    
+
     #dm.loadfromyaml(sampledatayaml)
-    
+
     # tests:
     # regex tests:
     regexlist = ['(\d.*\d) vs Dzol 30 min', '(\d.*\d) active', '(\d.*\d) inactive', '^(\d.*\d)\W*$']
@@ -811,15 +945,15 @@ if __name__ == '__main__':
 #    stdcurve_rawdata = dm.generateStdCurveFromRegexNamed(regexlist, curvenames, doprint=True, VERBOSE=2)
 #    print '\nstdcurve_rawdata:'
 #    print stdcurve_rawdata
-#    
+#
 #    stdcurve_qrmean_data = dm.calculateStdCurveQrmean(stdcurve_rawdata)
 #    print '\nstdcurve_qrmean_data:'
 #    print stdcurve_qrmean_data
-#    
+#
 #    stdcurve_semilog_data = dm.generateLogLinStdCurveData(stdcurve_qrmean_data)
 #    print '\nstdcurve_semilog_data:'
 #    print stdcurve_semilog_data
-#    
+#
 #    #scipy_available = False
 #    stdcurve_linfits = dm.generateLinearFits(stdcurve_semilog_data)
 #    print '\nstdcurve_linfits:'
@@ -859,8 +993,3 @@ if __name__ == '__main__':
 
     # obs: ^ is Bitwise Exclusive Or operator in Python !
 #    print stdcurvedata
-
-
-
-
-

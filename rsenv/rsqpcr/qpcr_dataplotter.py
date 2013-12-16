@@ -7,7 +7,7 @@ Created on Wed Jul 24 10:04:36 2013
 This program is used to process and plot qPCR data from e.g. the LightCycler480.
 
 General usage scheme is as follows:
-- Read Cp data for each position from qPCR datafile. 
+- Read Cp data for each position from qPCR datafile.
 - Read information about which samples are in which wells from a samplelist_ext_with_pos file.
 - Read a samplelist_order file to determine which samples to plot and in which order.
 
@@ -27,17 +27,19 @@ import matplotlib
 import operator
 from collections import OrderedDict
 import random
+import logging
+logger = logging.getLogger(__name__)
 
 from rsenv.rsqpcr.qpcr_datamanager import DataManager
 from rsenv.rsqpcr.rscolormanager import StyleManager
 
 
 class DataPlotter():
-    
+
     def __init__(self):
-        
+
         self.Prefs = dict()
-        self.Datamanager = DataManager() 
+        self.Datamanager = DataManager()
         self.Pickerartistbroker = dict()
         # Default plotting format:
         self.Yrange = ymin, ymax = 0, 40
@@ -71,19 +73,22 @@ class DataPlotter():
                     align='center', alpha=1, zorder=1, linewidth=1.5,
                     antialiased=True
         )
-        if matplotlib.__version__.split('.') < ['1','2','0']:
-            self.Legendprops = dict(size='small', weight='medium') # changed fontsize to size.
+        # Ok, 1.2.1 also does not support 'fontsize', requires 'size'
+        #if matplotlib.__version__.split('.') < ['1','2','0']:
+        if matplotlib.__version__.split('.') < ['1','2','2']:
+            # For old legacy matplotlib versions:
+            self.Legendprops = dict(size='x-small', weight='medium') # changed fontsize to size.
         else:
-            self.Legendprops = dict(fontsize='small', weight='medium')
+            self.Legendprops = dict(fontsize='x-small', weight='medium')
         # Make default hatch (also works as an example of use)
         # Hatch_prepend: Make sure to use this hatch pattern first:
         self.Hatch_pat = None
         self.Hatch_prepend = ['/','xxx','\\xx','\\x','-xx','\\\\','/\\x','//','//\\']
-        # Produce a pseudo-random hatchpattern, prepended by 
+        # Produce a pseudo-random hatchpattern, prepended by
         # example hatch_groupstructure = [5,4,2,7] (Repeat first hatch 5 times, second hatch four times, etc.)
         #self.Hatch_pat = self.makehatchpat(useextra=False,groups=None,prepend_pat=hatch_prepend)
-    
-    
+
+
     def applyFigureFormats(self, axis=None, **kwargs):
         """
         http://matplotlib.org/api/axes_api.html vs http://matplotlib.org/api/pyplot_api.html
@@ -100,7 +105,7 @@ class DataPlotter():
             pyplot.xticks(*zip(*enumerate(xticklabels)), **self.Xlabelprops)
             pyplot.xlim(-1,len(xticklabels))
             #axis.set_xticklabels(*zip(*enumerate(xticklabels)), **self.Xlabelprops) # set_xticks is only for numeric values (tick positions)
-            #axis.set_xlim(-1,len(xticklabels))            
+            #axis.set_xlim(-1,len(xticklabels))
         figure_dpi = kwargs.get('dpi', self.Figure_dpi)
         if 'dpi' in kwargs:
             pyplot.gcf().set_dpi(figure_dpi)  # Doesn't seem to have any effect when saving as pdf or png, always 100 for png.
@@ -111,7 +116,7 @@ class DataPlotter():
         if yrange:
             #pyplot.ylim(yrange)
             axis.set_ylim(yrange)
-        
+
         pyplot.tight_layout()
 
 
@@ -121,13 +126,14 @@ class DataPlotter():
 
 
     """ ------- Plotting replicate-processed data : -------- """
-    
+
     def plotbarsreplicateprocessedv3(self, data=None, barprops=None, hatch_pat=None, axis=None):
         """
         RP = replicate processed, i.e. a mean has been calculated from the (biological) replicates.
         Note: Sample replicate vs (technical replicates = multiple measurements on the same sample)
         axis: the pyplot axis to use for plotting. If None, call pyplot.gca().
         """
+        logger.info("\n>>>>> Initiating plotbarsreplicateprocessedv3 >>>>>>")
         if data is None:
             data = self.Datamanager.DataStruct
         if barprops is None:
@@ -139,27 +145,31 @@ class DataPlotter():
         if axis is None:
             axis = pyplot.gca()
         # This thows a warning because I try to take the average of an empty sequence
-    #   cpmeans_techrep = OrderedDict([ (samplename, OrderedDict([ (replicateno, np.mean(replicate_cpvals)) for replicateno,replicate_cpvals in sampledata.items() ]) ) for samplename,sampledata in data.items() ])
+        #cpmeans_techrep = OrderedDict([ (samplename, OrderedDict([ (replicateno, np.mean(replicate_cpvals)) for replicateno,replicate_cpvals in sampledata.items() ]) ) for samplename,sampledata in data.items() ])
+        logger.info("calculating cpmeans_techrep")
         cpmeans_techrep = OrderedDict([ (samplename, [np.mean(replicate_cpvals) for replicate_cpvals in sampledata.values()] ) for samplename,sampledata in data.items() ])
+        logger.info("calculating cpstdev_techrep")
         cpstdev_techrep = OrderedDict([ (samplename, [ np.std(replicate_cpvals) for replicate_cpvals in sampledata.values()] ) for samplename,sampledata in data.items() ])
-    #    cpstdev_techrep = OrderedDict([(samplename, OrderedDict([ (replicateno, np.std(replicate_cpvals)) for replicateno,replicate_cpvals in sampledata.items() ]) ) for samplename,sampledata in data.items()])
+        #cpstdev_techrep = OrderedDict([(samplename, OrderedDict([ (replicateno, np.std(replicate_cpvals)) for replicateno,replicate_cpvals in sampledata.items() ]) ) for samplename,sampledata in data.items()])
         #print "der"
+        logger.info("calculating cpmeans_replicate")
         cpmeans_replicate = OrderedDict( (samplename, np.mean(cpmeans_techrep)) for samplename,cpmeans_techrep in cpmeans_techrep.items() )
-        print cpmeans_replicate
+        logger.info("calculating cpstdev_replicate")
         cpstdev_replicate = OrderedDict( (samplename, np.std(cpmeans_techrep)) for samplename,cpmeans_techrep in cpmeans_techrep.items() )
-        #print "joe"
-        #print cpmeans
-        #print cpstdev
+
         ind = np.arange(len(cpmeans_replicate))
         #ind = [i-barwidth/2 for i in np.arange(len(samplenames))]
         barprops["yerr"] = cpstdev_replicate.values()
+        logger.info("Plotting barplot (replicateprocessed v3)")
         barplot = axis.bar(ind, cpmeans_replicate.values(), **barprops)
         # pyplot.bar() Return value is a list of matplotlib.patches.Rectangle instances.
+        logger.info("Making hatcing pattern:")
         if hatch_pat:
-            for bar,pat in zip(barplot, hatch_pat*5): 
+            for bar,pat in zip(barplot, hatch_pat*5):
                 # *5 to make sure you have enough patterns.
-                bar.set_hatch(pat) 
+                bar.set_hatch(pat)
         self.Plots.append(barplot)
+        logger.info("<<< plotbarsreplicateprocessedv3 completed <<<< \n")
         return barplot
 
 
@@ -184,8 +194,8 @@ class DataPlotter():
 #        print xyvals
 #        print 'zipped:'
 #        print zip(*xyvals)
-        #yvals = 
-        #xvals = 
+        #yvals =
+        #xvals =
         xvals, yvals = zip(*xyvals)
         #plot = self.getRecentPlot()
         pyplot.plot(xvals, yvals, **plotprops)
@@ -193,11 +203,11 @@ class DataPlotter():
 
 
     """ ------- Plotting flat data : -------- """
-    
+
     def plotIndividualFlat(self, data):
         """ datastructure v1: """
         #xyvalsv1cp = [(xpos,measurement["Cp"]) for xpos,sample in enumerate(data) for measurement in sample["qpcrdata"]]
-    
+
         """ Datastructure v3 : """
         # xy, plotting all points, with with biological replicates side by side (not combined)
         #xyvalsv3flat = [(xpos,cp) for samplename,sampledata in data.items() for xpos,replicatedata in enumerate(sampledata) for cp in replicatedata]
@@ -210,51 +220,55 @@ class DataPlotter():
                 for cp in replicatedata:
                     xyvalsv3flat.append((xpos, cp))
                 xpos += 1 # this should be equal to sampleno+replicateno, which could be used to make a list comprehension.
-    
+
         xyvals = xyvalsv3flat
         samplenames = data.keys() # the nice thing about having an ordereddict :-)
-    
+
         # Muhahah, using zip unpacking :D
         # When you only have two replicates and you are using ddof=0 (default), then the two points are THE SAME as the STD bars.
         # In that case, no reason to plot...
         scatterprops = dict(s=1, c='k', marker='d', zorder=100)
         p1 = pyplot.scatter(*zip(*xyvals), **scatterprops)
         return p1
-    
+
     def plotbarsv1(self, data, samplenames):
         barwidth = 0.8
         ind = np.arange(len(samplenames)) # can be used if you use align='center'
         #ind = [i-barwidth/2 for i in np.arange(len(samplenames))]
-        barprops = dict(yerr = [sample["qpcrstd"] for sample in data], 
+        barprops = dict(yerr = [sample["qpcrstd"] for sample in data],
                     color='y', width = barwidth, edgecolor='k', ecolor='k',
                     align='center', alpha=0.5, zorder=1
                     )
         p2 = pyplot.bar(ind, [sample["qpcrmean"] for sample in data], **barprops)
         return p2
-    
+
     def plotbarsflatv3(self, data):
         barwidth = 0.8
         #ind = np.arange(len(samplenames)) # can be used if you use align='center'
         # This thows a warning because I try to take the average of an empty sequence
+        print "plotbarsflatv3: Calculating cp means:"
         cpmeans = OrderedDict([(samplename+" #{}".format(replicateno), np.mean(replicate_cpvals) ) for samplename,sampledata in data.items() for replicateno,replicate_cpvals in sampledata.items()])
+        print "plotbarsflatv3: Calculating cpstdev:"
         cpstdev = OrderedDict([(samplename+" #{}".format(replicateno), np.std(replicate_cpvals) ) for samplename,sampledata in data.items() for replicateno,replicate_cpvals in sampledata.items()])
 
         ind = np.arange(len(cpmeans))
         #ind = [i-barwidth/2 for i in np.arange(len(samplenames))]
-        barprops = dict(yerr = cpstdev.values(), 
+        print "plotbarsflatv3: Plotting bars:"
+        barprops = dict(yerr = cpstdev.values(),
                     color='y', width = barwidth, edgecolor='k', ecolor='k',
                     align='center', alpha=0.5, zorder=1
                     )
+        print "plotbarsflatv3: Plotting points:"
         p2 = pyplot.bar(ind, cpmeans.values(), **barprops)
         return p2
-    
-    
-    
-    
+
+
+
+
     """------------------------------------
     --- ARTISTIC THINGS -------------------
     ------------------------------------"""
-    
+
     def makehatchpat(self, useextra=False, groups=None, prepend_pat=None):
         hatch1 = ['/', '-', 'x', '\\', '+'] # I do not use '|', it looks weird on vertical bars.
         hatchextra = ['.','*','o','0']   # http://matplotlib.org/api/artist_api.html#matplotlib.patches.Patch.set_hatch
@@ -264,7 +278,7 @@ class DataPlotter():
         # Sorting for easy removal of duplicates on set formation.
         hatch2 = ["".join(sorted(h1+h2)) for h1 in hatch1 for h2 in hatch1]
         hatch3 = ["".join(sorted(h1+h2+h3)) for h1 in hatch1 for h2 in hatch1 for h3 in hatch1]
-        # if there are more than 
+        # if there are more than
         if useextra:
             hatch2e = [h1+h2+h3 for h1 in hatch1 for h2 in hatch1 for h3 in hatchextra]
             hatch3e = [h1+h2+h3+h4 for h1 in hatch1 for h2 in hatch1 for h3 in hatch1 for h4 in hatchextra]
@@ -290,14 +304,14 @@ class DataPlotter():
                 # So, just dont mix -+ with /\.
                 if '\\' in h or '/' in h:
                     hatch_excludes.append(h)
-    
+
         hatch3e = list(set(hatch3e))
         #hatch_pat = ('/', '-', 'x', '\\', '++', '//', 'xx', '\\\\', '-/', '--', 'xxx', '///', 'xx-', '\\-/')
         # Make sure to exclude prepend_pat patterns.
         hatch_pat = list(set(hatch1+hatch2+hatch3+hatch2e+hatch3e)-set(hatch_excludes)-set(sorted(prepend_pat))) # also add semi-randomization...
         random.shuffle(hatch_pat) # further randomization...
         hatch_pat = prepend_pat + hatch_pat
-        #hatch_pat = [h*i for h in hatch1 for i in range(1,7)] # To test how hatches look... 
+        #hatch_pat = [h*i for h in hatch1 for i in range(1,7)] # To test how hatches look...
         if groups is not None:
             hatch_pat_groups = list()
             for hidx,groupsize in enumerate(groups):
@@ -359,7 +373,7 @@ class DataPlotter():
             # points = list of (x,y) tuples
             xvals,yvals = zip(*points)
             #print "plotting with xvals: {}, yvals: {}, stdcurvename: {}".format(xvals, yvals, stdcurvename)
-            #stdcurveaxis.semilogx(xvals, yvals, '*', color=curvecolors[stdcurvename], label=stdcurvename) #marker='*', linestyle=None, 
+            #stdcurveaxis.semilogx(xvals, yvals, '*', color=curvecolors[stdcurvename], label=stdcurvename) #marker='*', linestyle=None,
             #print "'{}' curve plotted.".format(stdcurvename)
         # plot linear fit points:
         print "\nPlotting linear fit points::"
@@ -367,14 +381,14 @@ class DataPlotter():
             #points = [ (datapoint[0], ct_qrmean_val) for datapoint in stdcurve_qrmean_data for ct_qrmean_val in datapoint[1] ]
             # points = list of (x,y) tuples
             xvals,yvals,ymeans,yresiduals,yerr = zip(*fitpointsvals)
-            stdcurveaxis.semilogx(xvals, yvals, linestyle=':', color=curvecolors[stdcurvename], marker=None, label="linfit of {}".format(stdcurvename) )
+            stdcurveaxis.semilogx(xvals, yvals, linestyle=':', color=curvecolors[stdcurvename], marker=None)#, label="linfit of {}".format(stdcurvename) )
             print "xvals: {}".format(xvals)
             print "yvals: {}".format(yvals)
             print "ymeans: {}".format(ymeans)
             print "yresiduals: {}".format(yresiduals)
             print "yerr: {}".format(yerr)
-            
-            stdcurveaxis.errorbar(xvals, ymeans, yerr=yerr, linestyle='None', color=curvecolors[stdcurvename], marker='*', label=stdcurvename) 
+
+            stdcurveaxis.errorbar(xvals, ymeans, yerr=yerr, linestyle='None', color=curvecolors[stdcurvename], marker='*', label=stdcurvename)
             xlim = residualsplotaxis.get_xlim()
             stdcurveaxis.set_xlim(xlim[0]*0.9, xlim[1]*1.1)
             if residualsplotaxis:
@@ -389,12 +403,15 @@ class DataPlotter():
                 residualsplotaxis.axhline(color='k')
                 xlim = residualsplotaxis.get_xlim()
                 residualsplotaxis.set_xlim(xlim[0]*0.9, xlim[1]*1.1)
-                
+
         if makelegend:
+            # Notice: fontsize and other properties not supported in all versions of matplotlib!
+            # If you receive an error, comment out.
             stdcurveaxis.legend(prop=self.Legendprops)
+            #stdcurveaxis.legend()
             if residualsplotaxis:
                 residualsplotaxis.legend(prop=self.Legendprops)
-                # Specifying fontsize seems to not be supported (at least in my matplotlib, which is only 1.1.1) 
+                # Specifying fontsize seems to not be supported (at least in my matplotlib, which is only 1.1.1)
                 #- although according to http://matplotlib.org/api/axes_api.html it should be!
         print "\nStandard curve stats:"
         for stdcurvename, fitdata in stdcurves_info['linfits'].items():
@@ -408,7 +425,7 @@ class DataPlotter():
         """
         Cycledata datastructure is:
             datastruct[key samplename][key replicateno][key qpcr_pos][list index] = (cycle, fluorescenceval)
-        
+
         """
         if cycledata is None:
             cycledata = self.DataManager.Rawcycledatastruct
@@ -484,7 +501,7 @@ class DataPlotter():
 
 
 if __name__ == '__main__':
-    
+
     # set up:
     #import os
     import time
@@ -506,7 +523,7 @@ if __name__ == '__main__':
         # http://matplotlib.org/api/figure_api.html
         # http://matplotlib.org/api/pyplot_api.html
         # http://matplotlib.org/api/axes_api.html
-        
+
         # testing plots:
         dp.plotbarsreplicateprocessedv3(axis=ax1)
         dp.applyFigureFormats(axis=ax1, xticklabels=xticklabels)
