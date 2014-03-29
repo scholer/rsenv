@@ -15,10 +15,10 @@ except ImportError, e:
     print "Notice: SciPy not available.{}".format(e)
     scipy_available = False
 import math
-from matplotlib import pyplot # use as pyplot.scatter(...)
-import operator
+#from matplotlib import pyplot # use as pyplot.scatter(...)
+#import operator
 from collections import OrderedDict
-import random
+#import random
 import yaml
 import logging
 logger = logging.getLogger(__name__)
@@ -353,33 +353,33 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             # consider: while samplepoint_discarted_flag wrapper
             samplepoint_discarted_flag = False
             for samplename, sampledata in datastruct.items():
-                    #datastruct2[samplename] = OrderedDict()
-                    logger.debug("Checking samplename: %s", samplename)
-                    for ri, repdata in sampledata.items():
-                        #datastruct2[samplename][ri] = list()
-                        for qi, cpvalue in enumerate(repdata):
-                            all_other_points = [cp_other for ri_other, repdata_other in sampledata.items()
-                                                            for qi_other, cp_other in enumerate(repdata_other)
-                                                            if not (ri_other == ri and qi_other == qi) ]
-                            if len(all_other_points) < mindatapoints:
-                                logger.info("Samplename, ri = %s, %s -- Number of remaining data points (%s) is less than mindatapoints (%s), cancelling.",
-                                            samplename, ri, all_other_points, mindatapoints)
-                                break
-                            std_other = np.std(all_other_points)
-                            mean_other = np.mean(all_other_points)
-                            diff = np.abs(mean_other-cpvalue)
-                            limit = std_other*stdevlimit+cpdiffconst
-                            if diff > limit:
-                                logger.info("- Marking samplepoint %s: %s,%s for removal (mean_other=%s, difference=%s, std_other=%s, limit=%s)",
-                                            samplename, ri, qi, mean_other, diff, std_other, limit)
-                                logger.debug("ri, repdata: %s, %s", ri, repdata) # repdata is dict
-                                logger.debug("Samplepoints excluding point {},{}={}: {}".format(ri, qi, cpvalue, all_other_points) )
-                                #logger.debug("- mean_other={}, difference={}, std_other={}, limit={}".format(mean_other, diff, std_other, limit) )
-                                # Note: you should never modify a list in place while iterating over it!
-                                # You can, if iterating reversedly, but probably better to delete afterwards.
-                                #del sampledata[ri][qi]
-                                deletepoints.append( (samplename, ri,qi) )
-                                samplepoint_discarted_flag = True
+                #datastruct2[samplename] = OrderedDict()
+                logger.debug("Checking samplename: %s", samplename)
+                for ri, repdata in sampledata.items():
+                    #datastruct2[samplename][ri] = list()
+                    for qi, cpvalue in enumerate(repdata):
+                        all_other_points = [cp_other for ri_other, repdata_other in sampledata.items()
+                                                        for qi_other, cp_other in enumerate(repdata_other)
+                                                        if not (ri_other == ri and qi_other == qi) ]
+                        if len(all_other_points) < mindatapoints:
+                            logger.info("Samplename, ri = %s, %s -- Number of remaining data points (%s) is less than mindatapoints (%s), cancelling.",
+                                        samplename, ri, all_other_points, mindatapoints)
+                            break
+                        std_other = np.std(all_other_points)
+                        mean_other = np.mean(all_other_points)
+                        diff = np.abs(mean_other-cpvalue)
+                        limit = std_other*stdevlimit+cpdiffconst
+                        if diff > limit:
+                            logger.info("- Marking samplepoint %s: %s,%s for removal (mean_other=%s, difference=%s, std_other=%s, limit=%s)",
+                                        samplename, ri, qi, mean_other, diff, std_other, limit)
+                            logger.debug("ri, repdata: %s, %s", ri, repdata) # repdata is dict
+                            logger.debug("Samplepoints excluding point {},{}={}: {}".format(ri, qi, cpvalue, all_other_points) )
+                            #logger.debug("- mean_other={}, difference={}, std_other={}, limit={}".format(mean_other, diff, std_other, limit) )
+                            # Note: you should never modify a list in place while iterating over it!
+                            # You can, if iterating reversedly, but probably better to delete afterwards.
+                            #del sampledata[ri][qi]
+                            deletepoints.append( (samplename, ri, qi) )
+                            samplepoint_discarted_flag = True
                             #else:
                                 #datastruct2[samplename][ri].append(cpvalue)
             # Remove sample points:
@@ -387,8 +387,8 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             # I need to make sure I delete in reverse, otherwise, if I delete index 0 in list [40, 35, 40]
             # and I then try to delete index 2 (the other "40" value), then the list will now be [35, 40],
             # and deleting index 2 is now wrong.
-            for samplename, ri,qi in reversed(deletepoints):
-                logger.debug( "-- deleting point {}:{},{}".format(samplename, ri,qi) )
+            for samplename, ri, qi in reversed(deletepoints):
+                logger.debug( "-- deleting point {}:{},{}".format(samplename, ri, qi) )
                 del datastruct[samplename][ri][qi]
 
         logger.debug("Datastruct, after deleting entries: %s", datastruct)
@@ -505,8 +505,9 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
 
         return sorted(data[0:32], key=dictdataorderfun) + data[32:]
 
-    """ ---- Filter v1-type data --- """
+
     def filter_data(self, data):
+        """ ---- Filter v1-type data --- """
         drop_data_withpars = {"origami":[],
                               "duration":[],
                               "exposure":["blood-plasma","blood-cells"],

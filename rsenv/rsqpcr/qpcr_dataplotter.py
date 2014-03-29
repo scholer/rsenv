@@ -17,14 +17,15 @@ The samplelist files may be conveniently produced using the SampleNameManager cl
 
 
 
+## IMPORTED AS-NEEDED:
+#import numpy as np # use as np.arange(...)
+#from matplotlib import pyplot # use as pyplot.scatter(...)
+#import matplotlib.lines
+#import matplotlib.patches
+#import matplotlib.text
+#import matplotlib
 
-import numpy as np # use as np.arange(...)
-from matplotlib import pyplot # use as pyplot.scatter(...)
-import matplotlib.lines
-import matplotlib.patches
-import matplotlib.text
-import matplotlib
-import operator
+#import operator
 from collections import OrderedDict
 import random
 import logging
@@ -37,6 +38,14 @@ from rsenv.rsqpcr.rscolormanager import StyleManager
 class DataPlotter():
 
     def __init__(self):
+
+        # Dynamic imports:
+        import numpy as np # use as np.arange(...)
+        from matplotlib import pyplot # use as pyplot.scatter(...)
+        import matplotlib.lines
+        import matplotlib.patches
+        import matplotlib.text
+        import matplotlib
 
         self.Prefs = dict()
         self.Datamanager = DataManager()

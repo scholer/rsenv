@@ -1,4 +1,20 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+##    Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
+##
+##    This program is free software: you can redistribute it and/or modify
+##    it under the terms of the GNU General Public License as published by
+##    the Free Software Foundation, either version 3 of the License, or
+##    (at your option) any later version.
+##
+##    This program is distributed in the hope that it will be useful,
+##    but WITHOUT ANY WARRANTY; without even the implied warranty of
+##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+##    GNU General Public License for more details.
+##
+##    You should have received a copy of the GNU General Public License
+##
+# pylint: disable-msg=C0103,C0301
 """
 Created on Wed Jul 24 09:25:39 2013
 
@@ -8,11 +24,11 @@ Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
 """
 
 
-import numpy as np # use as np.arange(...)
-from matplotlib import pyplot # use as pyplot.scatter(...)
-import operator
-from collections import OrderedDict
-import random
+#import numpy as np # use as np.arange(...)
+#from matplotlib import pyplot # use as pyplot.scatter(...)
+#import operator
+#from collections import OrderedDict
+#import random
 
 
 
@@ -32,7 +48,7 @@ def indexToRowColTup(index, ncols=12, nrowmax=8, reverse=False):
     row = (index/ncols) +1 # NOTE: Python 2 specific. Use floor (math module) for python3
     if row > nrowmax:
         print "indexToRowColTup() WARNING > index {0} with ncols={1}, nrowmax={2} will return a row of {3}, exceeding the limit!".format(index, ncols, nrowmax, row)
-    return (row,col)
+    return (row, col)
 
 
 def indexToRowColTupColWise(index, ncols=12, nrowmax=8, reverse=False):
@@ -48,18 +64,20 @@ def indexToRowColTupColWise(index, ncols=12, nrowmax=8, reverse=False):
     col = (index/nrowmax) +1 # Watch out for modulus, returns from 0 to N-1.
     row = (index % nrowmax) +1 # NOTE: Python 2 specific. Use floor (math module) for python3
 #    print "indexToRowColTupColWise(): index: {} --vs-- ncols: {} ; nrowmax: {} --yields-- ({},{})".format(index, ncols, nrowmax,row,col)
-    return (row,col)
+    return (row, col)
 
 
 def indexToPos(index, ncols=12, nrowmax=8, colwise=False, reverse=False, zeropad=None):
+    """ Converts an index '0' or '12' to a position 'A1' or 'C1'. """
     indextotupfun = indexToRowColTupColWise if colwise else indexToRowColTup
-    row,col = indextotupfun(index, ncols, nrowmax, reverse=reverse)
-    pos = rowcolToPos(row,col, zeropad)
+    row, col = indextotupfun(index, ncols, nrowmax, reverse=reverse)
+    pos = rowcolToPos(row, col, zeropad)
     return pos
 
-def rowcolToPos(row,col,zeropad=False):
+def rowcolToPos(row, col, zeropad=False):
+    """ Converts a row, col coordinate pair to a position 'A1', 'C1'. """
     fmtstr = "{0}{1:02}" if zeropad else "{0}{1}"
-    pos = "{0}{1}".format(chr(ord('A')+row-1),col)     # edit: No zero-padding for light-cycler !    (used to be {0}{1:02})
+    pos = fmtstr.format(chr(ord('A')+row-1), col)     # edit: No zero-padding for light-cycler !    (used to be {0}{1:02})
     #print pos
     return pos
 
@@ -68,7 +86,10 @@ def rowcolToPos(row,col,zeropad=False):
 
 
 
-class SampleNameManager():
+class SampleNameManager(object):
+    """
+    Class for managing sample names.
+    """
     def __init__(self):
         self.Prefs = dict()
         self.SamplePosMap = None
@@ -78,6 +99,7 @@ class SampleNameManager():
 
     # get sample names:
     def readSamplenames(self, samplenamesfile):
+        """ Read samplenames from file. """
         with open(samplenamesfile) as f:
             samplenames = [line.strip() for line in f if line.strip()[0] != "#"]
         self.SampleNames = samplenames
@@ -85,6 +107,7 @@ class SampleNameManager():
 
 
     def makeSampleNamePosMap(self, sampleposfile):
+        """ Creates a samplename-to-position map. """
         with open(sampleposfile) as f:
             #metadata = f.readline()
             header = f.readline().strip().split('\t')
@@ -96,8 +119,10 @@ class SampleNameManager():
 
 
     def makeEmptyFullPosMap(self, ncols=24, nrows=16, saveToSelf=True):
+        """ No idea. """
         defaulttuplefun = lambda x: (x, x)
-        sampleposmap = dict([defaulttuplefun(indexToPos(index, ncols, nrows)) for index in range(0,ncols*nrows)])
+        sampleposmap = dict([defaulttuplefun(indexToPos(index, ncols, nrows))
+                             for index in range(0, ncols*nrows)])
         if saveToSelf:
             self.SamplePosMap = sampleposmap
         return sampleposmap
@@ -122,11 +147,10 @@ class SampleNameManager():
                 row = line.strip().split('\t')
                 if row[0][0] == "#":
                     continue
-                nsamplerep
                 if len(row)<2:
-                    nsamplerep=default_replicate_count
+                    nsamplerep = default_replicate_count
                 else:
-                    nsamplerep=row[1]
+                    nsamplerep = row[1]
                 for i in range(nsamplerep):
                     samplename = row[0]+ ", {}".format(i+1) if nsamplerep > 1 else line.strip()
                     samplenames.append(samplename)
@@ -293,12 +317,13 @@ class SampleNameManager():
 
 
 if __name__ == "__main__":
+    pass
 
-    testing = False
-    if testing:
-        indextestseq = [0,1,7,8,11,12,15,16, 383,383-1,383-8*2,383-8*2-1] #" remember, start is index=0, end is index=383
-        for index in indextestseq:
-            tup = indexToRowColTupColWise(index, ncols=2*12, nrowmax=8*2, reverse=True)
-            pos = indexToPos(index, ncols=2*12, nrowmax=8*2, colwise=True, reverse=True)
-            print "index {} -> tup {} -> pos {}".format(index, tup, pos)
-        exit()
+    #testing = False
+    #if testing:
+    #    indextestseq = [0,1,7,8,11,12,15,16, 383,383-1,383-8*2,383-8*2-1] #" remember, start is index=0, end is index=383
+    #    for idx in indextestseq:
+    #        tup = indexToRowColTupColWise(idx, ncols=2*12, nrowmax=8*2, reverse=True)
+    #        pos = indexToPos(idx, ncols=2*12, nrowmax=8*2, colwise=True, reverse=True)
+    #        print "index {} -> tup {} -> pos {}".format(idx, tup, pos)
+    #    exit()
