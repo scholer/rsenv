@@ -6,7 +6,7 @@ Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
 
 @author: scholer
 """
-
+# pylint: disable=C0103
 import numpy as np # use as np.arange(...)
 try:
     import scipy.stats
@@ -23,7 +23,7 @@ import yaml
 import logging
 logger = logging.getLogger(__name__)
 
-from rsenv.rsqpcr.qpcr_samplemanager import SampleNameManager
+from rsenv.rsqpcr.qpcr_samplemanager import SampleNameManager, getnoncommentlines_from_filepath
 
 
 class DataManager():
@@ -100,15 +100,15 @@ class DataManager():
         """
         logic to convert a full sample string to a sample name.
         """
-        sampleparams = samplenamefull.split(",")
         try:
-            replicateno = int(sampleparams[-1].split("#")[-1])
-            # Sample name is samplenamefull.split(",")[:-1]
-            samplename = ",".join(sampleparams[:-1])
+            samplename, replicateno = samplenamefull.rsplit(",", 1)
+            replicateno = int(replicateno.split("#")[-1]) # '#' is sometimes used to specify replicate number, i.e. Mouse#2, time1, #2
         except ValueError:
-            #print "makeDatastructureV4fromPos(): ValueError, could not extract replicateno from samplename '{}'".format(samplenamefull)
+            # ValueError for line 1: Could not split; no ',' in samplenamefull.
+            # ValueError for line 2: Could not cast replicateno to int.
+            # In either case, return 1 for replicateno and samplenamefull for samplename
             replicateno = 1
-            samplename = ",".join(sampleparams)
+            samplename = samplenamefull
         return samplename, replicateno
 
 
@@ -198,6 +198,10 @@ datastructurev3minimal:
     [<samplename>]: dict # originally intended as a list, but index-testing got akward.
       [<replicateno>]: list
         [<qpcr_tech_rep>]: <cp value>
+Thus:
+datastructurev3minimal[<samplename>][<replicateno>][<qpcr_tech_rep>] = <cp value>
+          ^                 ^             ^               ^                 ^
+     OrderedDict         dict-key      dict-key     list-index (int)      float
 Regarding sorting a dict on the fly:
 sort dict d by value: sorted(d.items(), key=operator.itemgetter(1)) -- or sorted(d, d.get) if you only want to have the keys sorted by value.
 sort dict d by key:   sorted(d.items()) as sorted will sort first by the first element in the key-val tuple.
@@ -303,7 +307,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
     def sortDataV3(self, data):
         return data
 
-    def dataByList(self, sampleorder, data=None, persist=True):
+    def dataByList(self, sampleorder, data=None, persist=None):
         """ Sometimes it is just easier to list them in the order you want,
             rather than rely on some particular ordering mechanism.
             # dataByList also changes the format slightly, using an ordered dict for both
@@ -312,13 +316,18 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         """
         if data is None:
             data = self.DataStruct
+            if persist is None:
+                persist = True
         if isinstance(sampleorder, basestring):
-            with open(sampleorder) as f:
-                order = [line.strip() for line in f if len(line) > 1 and line[0] != "#"]
-            sampleorder = order
-        print data.keys()
-        print sampleorder
-        databylist = OrderedDict([(samplename, OrderedDict(sorted(data[samplename].items())) ) for samplename in sampleorder])
+            sampleorder = getnoncommentlines_from_filepath(sampleorder)
+        logger.debug("data.keys(): %s", data.keys())
+        logger.debug("sampleorder: %s", sampleorder)
+        try:
+            databylist = OrderedDict([(samplename, OrderedDict(sorted(data[samplename].items())) ) for samplename in sampleorder])
+        except KeyError as e:
+            logger.error("Error occured while creating data struct from sampleorder. set(sampleorder)-set(data.keys()) = %s, set(data.keys())-set(sampleorder) = %s",
+                         set(sampleorder)-set(data.keys()), set(data.keys())-set(sampleorder))
+            raise e
         if persist:
             self.DataStruct = databylist
         return databylist
@@ -328,7 +337,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
     ### Filtering of outlier data points ###
     ########################################
 
-    def discartOutliersByStdev(self, datastruct=None, stdevlimit=1.5, cpdiffconst=1, mindatapoints=3):
+    def discartOutliersByStdev(self, datastruct=None, stdevlimit=1.6, cpdiffconst=1, mindatapoints=3):
         """
         Runs through all samples and removes outlier data points.
         A point is evaluated by:
@@ -346,50 +355,95 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         if datastruct is None:
             datastruct = self.DataStruct
 
-        samplepoint_discarted_flag = True
-        while samplepoint_discarted_flag:
-            deletepoints = list()
-            #datastruct2 = OrderedDict()
-            # consider: while samplepoint_discarted_flag wrapper
-            samplepoint_discarted_flag = False
-            for samplename, sampledata in datastruct.items():
-                #datastruct2[samplename] = OrderedDict()
-                logger.debug("Checking samplename: %s", samplename)
-                for ri, repdata in sampledata.items():
-                    #datastruct2[samplename][ri] = list()
-                    for qi, cpvalue in enumerate(repdata):
-                        all_other_points = [cp_other for ri_other, repdata_other in sampledata.items()
-                                                        for qi_other, cp_other in enumerate(repdata_other)
-                                                        if not (ri_other == ri and qi_other == qi) ]
-                        if len(all_other_points) < mindatapoints:
-                            logger.info("Samplename, ri = %s, %s -- Number of remaining data points (%s) is less than mindatapoints (%s), cancelling.",
-                                        samplename, ri, all_other_points, mindatapoints)
-                            break
-                        std_other = np.std(all_other_points)
-                        mean_other = np.mean(all_other_points)
-                        diff = np.abs(mean_other-cpvalue)
-                        limit = std_other*stdevlimit+cpdiffconst
-                        if diff > limit:
-                            logger.info("- Marking samplepoint %s: %s,%s for removal (mean_other=%s, difference=%s, std_other=%s, limit=%s)",
-                                        samplename, ri, qi, mean_other, diff, std_other, limit)
-                            logger.debug("ri, repdata: %s, %s", ri, repdata) # repdata is dict
-                            logger.debug("Samplepoints excluding point {},{}={}: {}".format(ri, qi, cpvalue, all_other_points) )
-                            #logger.debug("- mean_other={}, difference={}, std_other={}, limit={}".format(mean_other, diff, std_other, limit) )
-                            # Note: you should never modify a list in place while iterating over it!
-                            # You can, if iterating reversedly, but probably better to delete afterwards.
-                            #del sampledata[ri][qi]
-                            deletepoints.append( (samplename, ri, qi) )
-                            samplepoint_discarted_flag = True
-                            #else:
-                                #datastruct2[samplename][ri].append(cpvalue)
-            # Remove sample points:
-            print "Deletepoints: {}".format(deletepoints)
-            # I need to make sure I delete in reverse, otherwise, if I delete index 0 in list [40, 35, 40]
-            # and I then try to delete index 2 (the other "40" value), then the list will now be [35, 40],
-            # and deleting index 2 is now wrong.
-            for samplename, ri, qi in reversed(deletepoints):
-                logger.debug( "-- deleting point {}:{},{}".format(samplename, ri, qi) )
-                del datastruct[samplename][ri][qi]
+        def mk_diffByIdxtup_keyfunc_closure(sampledata):
+            """
+            Takes a repdata ordereddict: repdata[ri][qi] = ctvalue
+            where ri = replicate index, qi = qpcr-index, ctvalue = qpcr ct measurement.
+            Returns a function which for a particular (ri, qi) tuple calculates
+            how far the corresponding ct value is from the remaining measurements.
+            Question: What is the criteria for which samplepoint is worst (furthest from the others):
+            a) A point which has a ct value that lies far away from the mean of the other points?
+            b) A point with a ct value that lies far outside the stdev of the other points?
+            Is there a difference? Well, the result is most likely the same in most cases.
+            If removing one point changes the stdev a lot more than removing the other point?
+            In that case, we would usually think the first point was also further away from the mean
+            (ctdiff) than the other point.
+            Consider:
+                [20, 30, 30]
+            However, the reason for doing the stdev-based calculation is that now that we have the
+            "other" points, it is easier to calculate stdev and normalize now than to do it again later.
+            One option, then is to return (diff-limit), which has unit of ct value:
+                mean_other = np.mean(all_other_points)
+                diff = np.abs(mean_other-cpvalue)
+                std_other = np.std(all_other_points) # There is a chance that stdev is zero.
+                limit = std_other*stdevlimit+cpdiffconst
+                return diff-limit
+            If this is larger than 0, the point can be discarted.
+            Alternatively, return a value in relative standard deviations (beyond the absolute cpdiffconst):
+                std_other = np.std(all_other_points)  # There is a chance that stdev is zero.
+                mean_other = np.mean(all_other_points)
+                diff = np.abs(mean_other-cpvalue)
+                return (diff-cpdiffconst)/std_other
+            If the returned value is larger than stdevlimit, then the returned point can be discarted.
+            I prefer the latter because it does not include stdevlimit in the keyfunc closure. (1 line less)
+            Edit: Due to the chance that std is zero, I think I prefer this:
+                mean_other = np.mean(all_other_points)
+                diff = np.abs(mean_other-cpvalue)
+                std_other = np.std(all_other_points) # There is a chance that stdev is zero.
+                return diff-std_other*stdevlimit
+            If the returned value is larger than cpdiffconst, then the point can be discarted.
+            """
+            def diff_keyfunc(idxtup):
+                ri, qi = idxtup
+                cpvalue = sampledata[ri][qi]
+                all_other_points = [cp_other for ri_other, repdata_other in sampledata.items()
+                                                for qi_other, cp_other in enumerate(repdata_other)
+                                                if not (ri_other == ri and qi_other == qi) ]
+                mean_other = np.mean(all_other_points)
+                diff = np.abs(mean_other-cpvalue)
+                std_other = np.std(all_other_points) # There is a chance that stdev is zero.
+                return diff-std_other*stdevlimit
+            return diff_keyfunc
+
+        def getnumpoints(sampledata):
+            return sum(1 for repdata in sampledata.values() for val in repdata)
+
+        def getidxtups(sampledata):
+            return [(ri, qi) for ri, repdata in sampledata.items() for qi, ctvalue in enumerate(repdata)]
+
+        def idxtup_discart_generator(sampledata):
+            """
+            Generate (ri, qi) index tuples for sampledata, where
+            sampledata[ri][qi] is the point most suitable for deletion/removal from
+            the sample's datapoints, c.f. the (stdevlimit, cpdiffconst, mindatapoints) criteria.
+            Raises StopIteration exceptions when there are no more suitable points in
+            sampledata.
+            To use:
+            for ri, qi in idxtup_discart_generator(sampledata):
+                del sampledata[ri][qi]
+            """
+            stdev_from_other = mk_diffByIdxtup_keyfunc_closure(sampledata)
+            while getnumpoints(sampledata) > mindatapoints:
+                idxtups = getidxtups(sampledata)
+                #logger.debug("idxtups: %s", idxtups)
+                worst_outlier_idxtup = max(idxtups, key=stdev_from_other) # keyfunc *must* be kwarg
+                idxtup_outlier_margin = stdev_from_other(worst_outlier_idxtup)
+                logger.debug("worst_outlier_idxtup: %s  -- idxtup_outlier_margin=%s (for stdevlimit=%s), cpdiffconst=%s",
+                             worst_outlier_idxtup, idxtup_outlier_margin, stdevlimit, cpdiffconst)
+                if idxtup_outlier_margin > cpdiffconst:
+                    yield worst_outlier_idxtup
+                else:
+                    logger.debug("<<< idxtup_outlier_margin is below cpdiffconst limit, stopping generator for this sample... <<<")
+                    raise StopIteration()
+            logger.debug("<<< The number of remaining sample datapoints (%s) is not higher than mindatapoints (%s); cannot discart any more datapoints in this sampledata. <<<",
+                         getnumpoints(sampledata), mindatapoints)
+
+        for samplename, sampledata in datastruct.items():
+            logger.debug(">>> Discarting datapoints for sample '%s': %s >>>", samplename, sampledata)
+            for ri, qi in idxtup_discart_generator(sampledata):
+                logger.info("Discarting datapoint: '%s', %s, %s = %s", samplename, ri, qi, sampledata[ri][qi])
+                del sampledata[ri][qi]
+                logger.debug("--sampledata after discarting (%s, %s): %s", ri, qi, sampledata)
 
         logger.debug("Datastruct, after deleting entries: %s", datastruct)
         self.removeEmptyRepEntries()

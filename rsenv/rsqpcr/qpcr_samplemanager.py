@@ -14,7 +14,8 @@
 ##
 ##    You should have received a copy of the GNU General Public License
 ##
-# pylint: disable-msg=C0103,C0301
+# pylint: disable-msg=C0103,C0301,R0913
+# R0913: Too many function arguments.
 """
 Created on Wed Jul 24 09:25:39 2013
 
@@ -83,6 +84,14 @@ def rowcolToPos(row, col, zeropad=False):
 
 
 
+def getnoncommentlines_from_filepath(filepath, commentsep="##"):
+    with open(filepath) as filedescriptor:
+        strippedlines = (line.strip() for line in filedescriptor)
+        if commentsep:
+            strippedlines = (line.split(commentsep)[0].strip() for line in strippedlines)
+        noncommentlines = [line for line in strippedlines if line and line[0] != "#"]
+    return noncommentlines
+
 
 
 
@@ -147,7 +156,7 @@ class SampleNameManager(object):
                 row = line.strip().split('\t')
                 if row[0][0] == "#":
                     continue
-                if len(row)<2:
+                if len(row) < 2:
                     nsamplerep = default_replicate_count
                 else:
                     nsamplerep = row[1]
@@ -159,7 +168,7 @@ class SampleNameManager(object):
 
 #    def makeflatsamplelist_v2(samplelist_with_replicate_counts_fn, outputfile, default_replicate_count=3):
     def makesamplelistextended_v2(self, sampleresume_fn, output_fn,
-        default_biological_replicate_count=3, default_qpcr_replicate_count=2, fieldsep='\t',
+        default_biological_replicate_count=3, default_qpcr_replicate_count=2, fieldsep='\t', commentsep="##",
         colwise=False, qpcrrepcolwise=False, reverserack=False, plateformat=None):
         """
         Changes for v2: Instead of inputting a flat samplenames file, input a short samplenames list,
@@ -174,16 +183,20 @@ class SampleNameManager(object):
          - qpcrrepcolwise: specifies whether qpcr replicates are below each other columnwise, else they are next to each other rowwise
          - reverserack: if you have turned the whole rack 180 degree at some point, set this to true and it will compensate.
          - plateformat: tuple(ncols, nrows) specifying the number of columns, rows and number of wells in the plate (=ncols*nrows)
+         - commentsep: Can be used to specify which sequence is used to mark a comment in the samplelist_resume file. The reason I dont just use '#' is that some people like to use '#' in sample names, e.g. "Mouse#2, time 1".
+        Default commenting: '#' at the beginning of line, or '##' at the end of the line marks comments.
         """
-
         if isinstance(sampleresume_fn, basestring):
             with open(sampleresume_fn) as f:
-                sampleresume = [line.strip().split(fieldsep) for line in f if line.strip()[0] != "#"]
+                strippedlines = (line.strip() for line in f)
+                if commentsep:
+                    strippedlines = (line.split(commentsep)[0].strip() for line in strippedlines)
+                noncommentlines = (line for line in strippedlines if line and line[0] != "#")
+                sampleresume = [line.split(fieldsep) for line in noncommentlines]
         else:
             print "Assuming that sampleresume_fn is actually a sampleresume construct..."
             sampleresume = sampleresume_fn
-        print "sampleresume is:"
-        print sampleresume
+        print "sampleresume is: ", sampleresume
         if plateformat is None:
             plateformat = (24, 16) # (ncols, nrows)
         ncols = plateformat[0]
@@ -204,7 +217,7 @@ class SampleNameManager(object):
                     for qpcr_i in range(nqpcrrep):
                         if qpcrrepcolwise == colwise:
                             # This is the simple case, all samples in linear order: (either vertival or horizontal)
-                            pos = indexToPos(index, ncols=ncols,nrowmax=nrows,colwise=colwise,reverse=reverserack)
+                            pos = indexToPos(index, ncols=ncols, nrowmax=nrows, colwise=colwise, reverse=reverserack)
                         elif qpcrrepcolwise == False:
                             # Samples are colwise, but qpcr replicates are side by side, rowwise.
                             # this is how Anders always does it.
@@ -247,7 +260,7 @@ class SampleNameManager(object):
         with open(samplenamesfile, 'wb') as g:
             for filename, nsamplerep in samplefilereplicatetuples:
                 with open(filename) as f:
-                    for line in open(filename):
+                    for line in f:
                         if line.strip()[0] == "#":
                             continue
                         for i in range(nsamplerep):
@@ -296,13 +309,13 @@ class SampleNameManager(object):
         nrows = plateformat[1]
         index = 0
 
-        with open(samplenamesextendedfile,'wb') as f:
+        with open(samplenamesextendedfile, 'wb') as f:
             f.write("General:Pos\tGeneral:Sample Name\n")
-            for si,samplename in enumerate(samplenames):
+            for si, samplename in enumerate(samplenames):
                 for i in range(nqpcrrep):
                     if qpcrrepcolwise == colwise:
                         # This is the simple case, all samples in linear order:
-                        pos = indexToPos(index, ncols=ncols,nrowmax=nrows,colwise=colwise,reverse=reverserack)
+                        pos = indexToPos(index, ncols=ncols, nrowmax=nrows, colwise=colwise, reverse=reverserack)
                     elif qpcrrepcolwise == False:
                         # Samples are colwise, but qpcr replicates are side by side, rowwise.
                         scol = si / nrows # attention: zero-based col. A01=0, A02=1, etc.

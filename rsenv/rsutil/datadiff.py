@@ -13,9 +13,25 @@
 ##    GNU General Public License for more details.
 ##
 ##    You should have received a copy of the GNU General Public License
-##    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+##
+# pylint: disable-msg=C0103,C0301,R0913
+# R0913: Too many function arguments.
 
+"""
+Copyright 2014 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
 
-#from qpcr_dataplotter import DataPlotter
-#from qpcr_datamanager import DataManager
-#from qpcr_samplemanager import SampleNameManager
+@author: scholer
+
+Instead of rolling your own datadiff code, use existing modules, e.g. the datadiff module:
+ - https://pypi.python.org/pypi/datadiff
+Alternatively, see:
+ - http://stackoverflow.com/questions/1165352/fast-comparison-between-two-python-dictionary
+ - http://stackoverflow.com/questions/6632244/difference-in-a-dict
+
+"""
+
+try:
+    import datadiff
+except ImportError:
+    datadiff = None
+

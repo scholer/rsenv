@@ -17,13 +17,13 @@ The samplelist files may be conveniently produced using the SampleNameManager cl
 
 
 
-## IMPORTED AS-NEEDED:
-#import numpy as np # use as np.arange(...)
-#from matplotlib import pyplot # use as pyplot.scatter(...)
-#import matplotlib.lines
-#import matplotlib.patches
-#import matplotlib.text
-#import matplotlib
+## IMPORTED AS-NEEDED ?
+import numpy as np # use as np.arange(...)
+from matplotlib import pyplot # use as pyplot.scatter(...)
+import matplotlib.lines
+import matplotlib.patches
+import matplotlib.text
+import matplotlib
 
 #import operator
 from collections import OrderedDict
@@ -39,13 +39,13 @@ class DataPlotter():
 
     def __init__(self):
 
-        # Dynamic imports:
-        import numpy as np # use as np.arange(...)
-        from matplotlib import pyplot # use as pyplot.scatter(...)
-        import matplotlib.lines
-        import matplotlib.patches
-        import matplotlib.text
-        import matplotlib
+        ## Dynamic imports: -- edit, just importing won't really work due to namespace issues...
+        #import numpy as np # use as np.arange(...)
+        #from matplotlib import pyplot # use as pyplot.scatter(...)
+        #import matplotlib.lines
+        #import matplotlib.patches
+        #import matplotlib.text
+        #import matplotlib
 
         self.Prefs = dict()
         self.Datamanager = DataManager()
@@ -305,7 +305,7 @@ class DataPlotter():
             if h in prepend_pat:
                 hatch_excludes.append(h)
             if '+' in h and len(h)<3 and h.count('+') < 2:
-                print "Excluding pattern: "+h
+                #logger.debug("Excluding pattern: %s", h)
                 hatch_excludes.append(h)
             if any(x in h for x in '-+'):
                 #if h.count('\\') != h.count('/'):
