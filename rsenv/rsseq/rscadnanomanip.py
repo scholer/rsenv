@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##    Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
-## 
+##
 ##    This program is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation, either version 3 of the License, or
@@ -30,12 +30,18 @@ See also:
 
 
 """ ----------------------------------------------------
-Parsing, handling and manipulating set file information 
+Parsing, handling and manipulating set file information
 ---------------------------------------------------- """
-#def filterbycolor(line, 
+
+#import sys
+import logging
+logger = logging.getLogger(__name__)
+
+#import rsseq
+from rsseq import dnacomplement
 
 
-def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, desc=None, writeToFile=True, 
+def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, desc=None, writeToFile=True,
     appendToFile=False, writeheader=False, replacecolor=None, replacemodulename=None, sep=None):
     """
     Simple function that filters lines in a staplesetfile.
@@ -43,8 +49,7 @@ def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, 
     headers = None
     nomodulenameflag = False
     if writeToFile:
-        if appendToFile: fileflags = 'a'
-        else: fileflags = 'w'
+        fileflags = 'a' if appendToFile else 'w'
         if outputfilename is None:
             outputfilename = staplesetfilepath+".filtered"
     else:
@@ -52,24 +57,46 @@ def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, 
 #        import stringio.StringIO as StringIO
 #        newfile = StringIO()
 
-    with open(staplesetfilepath) as inputfile, open(outputfile, fileflags) as outputfile:
-        for line in inputfile:
-            if sep is None:
-                sep = "\t" if "\t" in line else "," if "," in line else ";"
-            row = line.strip().split(sep)
-            if headers is None:
-                headers = row
-                if replacemodulename and "Modulename" not in headers:
-                    headers.append("Modulename")
-                if writeheader:
-                    outputfile.write(sep.join(headers)+"\n")
-            rowdict = dict(zip(header, row))
+    with open(staplesetfilepath) as inputfile, open(outputfilename, fileflags) as outputfile:
+        lines = (line.strip() for line in inputfile if line.strip())
+        testline = lines.next()
+        # If there are more tabs in the first line than there is commas, then use tabs as separator.
+        sep = '\t' if (len(testline.split('\t')) > len(testline.split(','))) else ','
+        headers = testline.split(sep)
+        if replacemodulename and "Modulename" not in headers:
+            headers.append("Modulename")
+        if writeheader:
+            outputfile.write(sep.join(headers)+"\n")
+        for line in lines:
+            row = line.split(sep)
+            rowdict = dict(zip(headers, row))
             if rowdict["Color"] == filtercolor or rowdict["Color"] in filtercolor:
                 if replacecolor:
                     rowdict["Color"] = replacecolor
                 if replacemodulename:
                     rowdict["Modulename"] = replacemodulename
-                outputfile.write(sep.join(rowdict(header) for header in headers)+'\n')
+                outputfile.write(sep.join(rowdict[header] for header in headers)+'\n')
+
+
+class RsFileObject(object):
+    def __init__(self, fileobj, fileflags='r'):
+        if isinstance(fileobj, (str, unicode)):
+            self._filename = fileobj
+            self.fileobj = open(fileobj, fileflags)
+        else:
+            self._filename = None
+            if fileobj:
+                self.fileobj = fileobj
+            else:
+                from StringIO import StringIO
+                self.fileobj = StringIO()
+    def close(self):
+        if self._filename:
+            self.fileobj.close()
+    def write(self, data):
+        self.fileobj.write(data)
+    def writeline(self, data):
+        self.fileobj.write(data+'\n')
 
 
 
@@ -90,13 +117,20 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
         isComplement: If true, will use the reverse complement of the given sequence. Default is False.
         desc        : Description to add to all output sequences.
         verbose     : Output all lines that are also printed to file.
-        outsep:       Force this as the field separator in output file. 
+        outsep:       Force this as the field separator in output file.
                       Set to None to use same separator as input file. Default is '\t'.
-        writeToFile : If false, will write all lines to a StringIO object which is returned. Default is True.
+        writeToFile : Write to this file (like object).
+                    If writeToFile is a string, it is interpreted as a filename/path.
+                    If writeToFile is False, will write all lines to a StringIO object which is returned.
+                    Otherwise, writeToFile is assumed to be a writable file.
+                    Use writeToFile=sys.stdout to print to standard out.
+                    Default is True.
         appendToFivePrime: If true, append appendSeq to 5' end of input sequence. Default is False (appends to 3').
         newfilename : name of output file. If not given, output will be inputfilename+'.append'
-        lnstrformat : format of the lines written by this file. 
-                      lnstrformat magic words are: "orderlist", "combined".
+        lnstrformat : format of the lines written by this file.
+                      lnstrformat magic words are: "orderlist", "combined":
+                        "combined" : Combine old fields with new (if any), keeping the order intact.
+                        "orderlist": Creates a file that is ready for order.
                       if not set, lnstrformat will default to "combined".
         writeonlyfiltered : If true (default) only write lines that passes the filtercolor filter.
                             If set to false, all lines will be written.
@@ -108,7 +142,7 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
     orderlistformat = "{Description}:{Start}\t{Sequence}\t{Length}"
     if lnstrformat is None:
         # "combined" is defined later when the header has been parsed from the input file.
-        print "lnstrformat defaulted to 'combined'."
+        #print "lnstrformat defaulted to 'combined'."
         lnstrformat = "combined"
     elif lnstrformat == "orderlist":
         if desc:
@@ -117,22 +151,23 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
             lnstrformat = "{Sequence}"
     if isComplement:
         appendSeq = dnacomplement(appendSeq).upper()
-        print "Appending seq: " + appendSeq
-    if writeToFile:
-        if appendToFile: fileflags = 'a'
-        else: fileflags = 'w'
-        if newfilename is None:
-            newfilename=staplesetfilepath+'.append'
-        newfile = open(newfilename, fileflags)
+        #print "Appending seq: " + appendSeq
+    if isinstance(writeToFile, (str, unicode)):
+        fileflags = 'a' if appendToFile else 'w'
+        newfile = open(writeToFile, fileflags)
+    elif writeToFile:
+        newfile = writeToFile
     else:
-        import stringio.StringIO as StringIO
+        from StringIO import StringIO    # python2, python3 is stringio.StringIO
         newfile = StringIO()
     with open(staplesetfilepath,'rb') as fp:
         # simple test for whether to use comma or tab as separator:
-        testline = fp.readline().strip()
+        lines = (line.strip() for line in fp if line.strip())
+        testline = lines.next()
         # If there are more tabs in the first line than there is commas, then use tabs as separator.
         sep = '\t' if (len(testline.split('\t')) > len(testline.split(','))) else ','
-        if outsep is None: outsep = sep
+        if outsep is None:
+            outsep = sep
         header = testline.split(sep)
         if desc:
             header.append('Description')
@@ -141,27 +176,24 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
         if lnstrformat == "combined":
             # Combine the existing format with new fields (e.g. description, etc.
             lnstrformat = outsep.join("{0}".format("{"+field+"}") for field in header)
-        print "Line format is: {}".format(lnstrformat)
+        #print "Line format is: {}".format(lnstrformat)
         if writeheader:
             if lnstrformat == orderlistformat:
                 newfile.write(orderlistformat.replace("{","").replace("}","")+'\n')
             else:
                 newfile.write(outsep.join(header)+'\n')
         # Header map: maps a header string to column index
-        hm = dict([(v,i) for i,v in enumerate(header)])
-        #fp.seek(0) # I have only read the header, so no reason to seek back.
-        for line in fp:
-            row = line.strip().split(sep)
+        #hm = {v: i for i, v in enumerate(header)}
+        rows = (line.split(sep) for line in lines)
+        # You may want to capture to list instead of generator and close the file here...
+        for row in rows:
             rowdict = dict(zip(header, row))
+            if keepOrgSequence:
+                rowdict['OriginalSequence'] = rowdict['Sequence']
             if filtercolor is None or (len(row)>1 and (rowdict['Color'] == filtercolor or rowdict['Color'] in filtercolor)) :
                 rowdict['Description'] = desc # if desc is None, then lnstrformat will NOT include Description.
                 seq = rowdict['Sequence']
-                if appendToFivePrime:  
-                    seq = "".join([appendSeq, seq])
-                else:
-                    seq = "".join([seq, appendSeq])
-                if keepOrgSequence:
-                    rowdict['OriginalSequence'] = rowdict['Sequence']
+                seq = "".join([appendSeq, seq]) if appendToFivePrime else "".join([seq, appendSeq])
                 rowdict['Sequence'] = seq
                 if replacecolor:
                     rowdict['Color'] = replacecolor
@@ -169,16 +201,18 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
                     rowdict['Modulename'] = replacemodulename
                 rowdict['Length'] = len(seq)
                 ln = lnstrformat.format(**rowdict)
-                if verbose: print ln
+                if verbose:
+                    print ln
                 newfile.write(ln+"\n")
             elif not writeonlyfiltered:
+                # Write line even if it does not match filter...:
+                rowdict['Description'] = ''
+                ln = lnstrformat.format(**rowdict)
+                newfile.write(ln+"\n")
 #                rowdict['Description'] = rowdict.get('Description', "")
-                newfile.write(outsep.join(row+[""]*(len(header)-len(row)))+'\n')
-    if writeToFile:
+                #newfile.write(outsep.join(row+[""]*(len(header)-len(row)))+'\n')   # uh, what?
+
+    if isinstance(writeToFile, (str, unicode)):
         newfile.close()
     else:
         return newfile
-
-
-
-

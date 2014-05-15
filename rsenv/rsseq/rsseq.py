@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##    Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
-## 
+##
 ##    This program is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation, either version 3 of the License, or
@@ -56,8 +56,10 @@ def dnacomplement_3to5p(a):
     return ''.join([{"t":"a","a":"t","c":"g","g":"c"}[x] for x in a.lower()])   #([start:end:slice])
 
 
-""" Reverse complementary sequence """
 def dnacomplement(a, reverse=True):
+    """
+    Complementary DNA sequence, reversed if reverse=True (default).
+    """
     print "dnacomplement; does ''.join([wcmap[x] for x in a.lower()])[::-1]"
     wcmap = {"t":"a","a":"t","T":"A","A":"T",
              "c":"g","g":"c","C":"G","G":"C",
@@ -67,7 +69,7 @@ def dnacomplement(a, reverse=True):
         return complement[::-1]   #([start:end:slice])
     else:
         return complement
-    
+
     # Alternatively, brug af map function i stedet for for loop)
     b = "".join(map(lambda x: wcmap[x], a.lower())[::-1])
 
@@ -111,7 +113,6 @@ if __name__ == "__main__":
 #    useseq = "GTG CAG ACA AC T".replace(' ','')
 #    # Edit: Actual sisi-linker should be on 3' end, sequence is GTGCAGACAAC
 #    #appendSequenceToStaps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
-#    #appendSequenceToStaps('TR.ZS.i-4T.set', useseq,   filtercolor="#1700de", desc="TR:col08-ss", 
+#    #appendSequenceToStaps('TR.ZS.i-4T.set', useseq,   filtercolor="#1700de", desc="TR:col08-ss",
 #    #                        appendToFivePrime=True, appendToFile=True, isComplement=False)
 #    appendSequenceToStaps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
-
