@@ -45,7 +45,7 @@ def dnaformat(a):
 
 """ Reverse sequence """
 def reverse(a):
-    print "return a[::-1]   #([start:end:slice])"
+    #print "return a[::-1]   #([start:end:slice])"
     return a[::-1]   #([start:end:slice])
     # Alternatively, brug af map function i stedet for for loop)
     b = "".join(map(lambda x: {"t":"a","a":"t","c":"g","g":"c"}[x], a.lower())[::-1])
@@ -60,7 +60,7 @@ def dnacomplement(a, reverse=True):
     """
     Complementary DNA sequence, reversed if reverse=True (default).
     """
-    print "dnacomplement; does ''.join([wcmap[x] for x in a.lower()])[::-1]"
+    #print "dnacomplement; does ''.join([wcmap[x] for x in a.lower()])[::-1]"
     wcmap = {"t":"a","a":"t","T":"A","A":"T",
              "c":"g","g":"c","C":"G","G":"C",
              " ":" "}
