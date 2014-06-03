@@ -85,12 +85,52 @@ def rowcolToPos(row, col, zeropad=False):
 
 
 def getnoncommentlines_from_filepath(filepath, commentsep="##"):
+    """
+    Returns lines in file <filepath> which are not comment lines.
+    Comments may be specified in two ways:
+    - One or more '#' at the beginning of the line.
+    - Two '##' anywhere in the line. (Anything after '##' is considered a comment. )
+    Why not just let '#' be a comment *anywhere* ??
+    - Because a single '#' is often used in sample names, e.g.
+        Mouse#1, Time #3
+
+    The '##' can be replaced using the <commentsep> argument.
+    """
     with open(filepath) as filedescriptor:
         strippedlines = (line.strip() for line in filedescriptor)
         if commentsep:
             strippedlines = (line.split(commentsep)[0].strip() for line in strippedlines)
         noncommentlines = [line for line in strippedlines if line and line[0] != "#"]
     return noncommentlines
+
+def rsplit_integers(samplename, sep=None, maxsplit=1):
+    """
+    Recursively removes an integer from the right.
+        <maxsplit> determines how many splits are maximally allowed. (Default=1)
+        <sep> determines which string is used to split. (Default is same as string rsplit: any whitespace)
+    Returns
+        <head>      : The remainder of the string after stripping integers.
+        <integers>  : list of integers stripped.
+    """
+    integers = list()
+    if not maxsplit or maxsplit < 1:
+        #print maxsplit, " - maxsplit is", maxsplit, "returning samplename and integers: ", samplename, integers
+        return samplename, integers
+    try:
+        head, number = samplename.rsplit(sep, 1)
+        number = int(number)
+    except ValueError as e:
+        ## Is raised either if unpacking or int() conversion failed.
+        #print maxsplit, " - ValueError", e, "raised, returning samplename and integers: ", samplename, integers
+        return samplename, integers
+    else:
+        samplename = head
+    ## Overwrite existing integers and samplename with that returned by recursing:
+    samplename, integers = rsplit_integers(samplename, sep, maxsplit-1)
+    integers.append(number)
+    #print maxsplit, " - All ok, returning samplename and integers: ", samplename, integers
+    return samplename, integers
+
 
 
 
@@ -187,12 +227,13 @@ class SampleNameManager(object):
         Default commenting: '#' at the beginning of line, or '##' at the end of the line marks comments.
         """
         if isinstance(sampleresume_fn, basestring):
-            with open(sampleresume_fn) as f:
-                strippedlines = (line.strip() for line in f)
-                if commentsep:
-                    strippedlines = (line.split(commentsep)[0].strip() for line in strippedlines)
-                noncommentlines = (line for line in strippedlines if line and line[0] != "#")
-                sampleresume = [line.split(fieldsep) for line in noncommentlines]
+            noncommentlines = getnoncommentlines_from_filepath(sampleresume_fn)
+            #with open(sampleresume_fn) as f:
+            #    strippedlines = (line.strip() for line in f)
+            #    if commentsep:
+            #        strippedlines = (line.split(commentsep)[0].strip() for line in strippedlines)
+            #    noncommentlines = (line for line in strippedlines if line and line[0] != "#")
+            sampleresume = [rsplit_integers(line, fieldsep, 2) for line in noncommentlines]
         else:
             print "Assuming that sampleresume_fn is actually a sampleresume construct..."
             sampleresume = sampleresume_fn
@@ -206,12 +247,12 @@ class SampleNameManager(object):
         qpcr_replicate_counts_set = set()
 
         with open(output_fn,'wb') as f:
+            ## Write header:
             f.write("General:Pos\tGeneral:Sample Name\n")
-
-            for sample_index, samplerow in enumerate(sampleresume):
-                nqpcrrep = int(samplerow[2]) if len(samplerow) > 2 else default_qpcr_replicate_count
-                n_replicates = int(samplerow[1]) if len(samplerow) > 1 else default_biological_replicate_count
-                samplename = samplerow[0]
+            ## Write positions and sample names:
+            for samplename, integers in sampleresume:
+                nqpcrrep = int(integers[1]) if len(integers) > 1 else default_qpcr_replicate_count
+                n_replicates = int(integers[0]) if len(integers) > 0 else default_biological_replicate_count
                 qpcr_replicate_counts_set.add(nqpcrrep)
                 for bio_i in range(n_replicates):
                     for qpcr_i in range(nqpcrrep):
