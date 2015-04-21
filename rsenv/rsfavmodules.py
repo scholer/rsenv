@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##    Copyright 2011 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
-## 
+##
 ##    This program is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation, either version 3 of the License, or
@@ -20,8 +20,8 @@ Created on Mon Apr  4 12:00:06 2011
 
 @author: scholer
 
-Imports my favorite modules that makes it possible for me to work efficiently 
-with a python command prompt. It should never be loaded automatically, as loading 
+Imports my favorite modules that makes it possible for me to work efficiently
+with a python command prompt. It should never be loaded automatically, as loading
 takes quite some time.
 
 Load this module with: from rsfavmods import *
@@ -59,23 +59,29 @@ import json     # Persisting data in javascript object notation format
 
 # import email      # For sending emails via python. See also smtplib, poplib and imaplib
 # import xmlrpclib  # Remote procedure call library
-# import curses     # Primitive command-line semi-GUI. 
+# import curses     # Primitive command-line semi-GUI.
 # import tkinter    # Python interface to Tcl/tk primitive GUI (http://docs.python.org/2/library/tk.html)
 #                   #   used for e.g. the IDLE python code editor.
 # For other GUIs, see http://docs.python.org/2/library/othergui.html
 
 
-## Clipboard in GTK:
-import pygtk 
-pygtk.require('2.0')
-import gtk # gtk provides clipboard access:
-# clipboard = gtk.clipboard_get()
-# text = clipboard.wait_for_text()
 
-""" ----------------------------------------
+"""
+--------------------------------------------
 --- Modules outside the standard library ---
 --------------------------------------------
 """
+## Clipboard in GTK:
+try:
+    import pygtk
+    pygtk.require('2.0')
+    import gtk # gtk provides clipboard access:
+    # clipboard = gtk.clipboard_get()
+    # text = clipboard.wait_for_text()
+except ImportError:
+    # Will happen on Windows/Mac:
+    pass
+
 
 try:
     import yaml
@@ -100,6 +106,3 @@ try:
 except ImportError:
     print "numpy module not available."
     print " - this also means no biopython, scipy, etc."
-
-
-

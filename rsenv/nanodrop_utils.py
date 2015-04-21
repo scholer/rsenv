@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##    Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
-## 
+##
 ##    This program is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation, either version 3 of the License, or
@@ -24,10 +24,12 @@ Includes various python code that I use frequently for parsing nanodrop files (.
 Note: This file contains anything related to parsing and handling of nanodrop files.
 rsplot/rsnanodropplotter.py contains code for plotting (it uses this library for parsing!)
 
+Note: This is not for parsing the NanoDrop workbook format, (.tbwk).
+
 SEE ALSO:
- - ComponentAnalyser.py 
+ - ComponentAnalyser.py
  - DataPlotter.py (old; for PVC and CSV files)
- - FluoromaxDataPlotter.py 
+ - FluoromaxDataPlotter.py
 
 """
 
@@ -153,4 +155,3 @@ if __name__ == "__main__":
     get_data_for_xvals(data,range(250,280),sample='RS126h1',doprint=True)
 
     print "Finished test of module rsnanodrop.py ^^^^ "
-
