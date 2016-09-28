@@ -46,7 +46,7 @@ def dnaformat(a):
 
 def reverse(a):
     """ Reverse sequence """
-    print "return a[::-1]   #([start:end:slice])"
+    print("return a[::-1]   #([start:end:slice])")
     return a[::-1]   #([start:end:slice])
     # Alternatively, brug af map function i stedet for for loop)
     b = "".join(map(lambda x: {"t":"a","a":"t","c":"g","g":"c"}[x], a.lower())[::-1])
@@ -60,12 +60,12 @@ def dnacomplement_3to5p(a):
 
 def dnacomplement(a, reverse=True):
     """ Reverse complementary sequence """
-    print "dnacomplement; does ''.join([wcmap[x] for x in a.lower()])[::-1]"
+    print("dnacomplement; does ''.join([wcmap[x] for x in a.lower()])[::-1]")
     #wcmap = {"t":"a","a":"t","T":"A","A":"T",
     #         "c":"g","g":"c","C":"G","G":"C",
     #         " ":" "}
     # easier way to generate:
-    wcmap = dict(zip("ATGC ", "TACG "))
+    wcmap = dict(list(zip("ATGC ", "TACG ")))
     a = a.upper()
     if reverse:
         a = reversed(a)
@@ -92,7 +92,7 @@ def dnarcomp(seqStr):
     if seqStr is not a basestring, it will return a list of the
     reverse complement of each entry.
     """
-    if isinstance(seqStr, basestring):
+    if isinstance(seqStr, str):
         return seqStr.translate(dnacomplementmap)[::-1]
     else:
         # Assume list of strings:

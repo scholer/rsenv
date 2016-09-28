@@ -45,8 +45,8 @@ def getDefaultParams():
     params['PcDataLines'] = [10]#,19] # 7 is HEPES-KCl, 10 is STV 10 uM, 19 is ddUTP-DBCO. 
     #Note: Having 7 there gives a lot of noise. It might be nice to maximize a likelihood function rather than simple least-square. However, can be solved by adjusting the xrange used for analysis.
     params['AnalyteDataLines'] = [16]#,10] # 16 is RS100d-ret, 10 is just for phun.
-    params['AnalysisRange']=(240,320)
-    params['PlotRange']=(None,None) # None means 
+    params['AnalysisRange']=(240, 320)
+    params['PlotRange']=(None, None) # None means 
     params['Parameters Help'] = """
 Xdataline : Define the line in the NDJ file that includes the X-data (and other headers/fields).
 PcDataLines/AnalyteDataLines : List of lines defining lines in the NDJ file with Principal Components / Analytes, respectively.
@@ -69,7 +69,7 @@ class YamlLoader:
             return yaml.safe_load(cfg) # Simple stuff should be loaded with safe_load...
 
     def saveParams(self, filepath, params):
-        print "WARNING: Saving parameters does not preserve key order of the config/param file. /Rasmus"
+        print("WARNING: Saving parameters does not preserve key order of the config/param file. /Rasmus")
         with open(filepath, 'wb') as cfg:
             yaml.dump(params, cfg, width=200)
 
@@ -114,9 +114,9 @@ class ComponentAnalyser:
             try:
                 self.Parameters.update(self.ConfigLoader.loadParams(paramFile))
                 if self.Debug > self.DebugSilentLevel: 
-                    print "ComponentAnalyser() > Using parameters file: {}".format(paramFile)
+                    print("ComponentAnalyser() > Using parameters file: {}".format(paramFile))
             except IOError:
-                print "ERROR : ComponentAnalyser() > Unable to locate parameter file: {}".format(paramFile)
+                print("ERROR : ComponentAnalyser() > Unable to locate parameter file: {}".format(paramFile))
         if params is not None:
             self.Parameters.update(params)
         self.PcResults = [] # Order corresponds to AnalyteYData, each entry is a tuple consisting of coefficients for each principal component.
@@ -124,7 +124,7 @@ class ComponentAnalyser:
         
 
     def findNdjFile(self, path="."):
-        ndjfiles = filter(lambda f: f[-4:].lower()=='.ndj', os.listdir(path))
+        ndjfiles = [f for f in os.listdir(path) if f[-4:].lower()=='.ndj']
         if ndjfiles: return ndjfiles[0]
         else: return None
 
@@ -144,15 +144,15 @@ class ComponentAnalyser:
         elif os.path.isfile(path):
             ndjfilepath = path
         else:
-            print " ".join(["Path '", path, "' does not refer to a valid file or directory!"])
+            print(" ".join(["Path '", path, "' does not refer to a valid file or directory!"]))
             return False
         if self.Debug > self.DebugSilentLevel:
-            print "ComponentAnalyser.readData() > Using file: " + ndjfilepath
+            print("ComponentAnalyser.readData() > Using file: " + ndjfilepath)
         with open(ndjfilepath, 'rb') as ndj:
             # numpy readers include loadtxt and genfromtxt 
             #self.FileData = np.genfromtxt(ndj, delimiter='\t', skip_header=5, dtype=None)
             lineno=0
-            xvaluesindex=[None,None]
+            xvaluesindex=[None, None]
             metadatamask = None
             xydatamask = None
             
@@ -182,9 +182,9 @@ class ComponentAnalyser:
                 else:
                     # Rest should be YDATA ENTRIES
                     #self.Datalabels.append(linedata[0]) # Should equal self.Data[i]["Sample ID"] # 
-                    datadict = dict([(metadatamask[index],value.strip()) for index,value in enumerate(linedata) if metadatamask[index]]) # wow, if this works in the first try...
+                    datadict = dict([(metadatamask[index], value.strip()) for index, value in enumerate(linedata) if metadatamask[index]]) # wow, if this works in the first try...
                     # for ydata: I could also just use if is_numeric(val), but I would like to have an exception thrown if val is not a float.
-                    ydata = [float(val) for index,val in enumerate(linedata) if xydatamask[index]] 
+                    ydata = [float(val) for index, val in enumerate(linedata) if xydatamask[index]] 
                     datadict['Ydata'] = ydata # Xdata is the same for all...
                     if lineno in self.Parameters['PcDataLines']:
                         self.PcYdata.append(ydata)
@@ -196,13 +196,13 @@ class ComponentAnalyser:
                         datadict['PcType']='Analyte'
                     self.Data.append(datadict) # Save datadict later use...
         if self.Debug-self.DebugSilentLevel > 1:
-            print "".join(['File: "', ndjfilepath, '" has been loaded.'])
+            print("".join(['File: "', ndjfilepath, '" has been loaded.']))
             #print self.Xdata
-            print "readData(): self.PcLabels : " + str(self.PcLabels)
+            print("readData(): self.PcLabels : " + str(self.PcLabels))
             #print self.PcYdata
-            print "readData(): self.AnalyteLabels : " + str(self.AnalyteLabels)
+            print("readData(): self.AnalyteLabels : " + str(self.AnalyteLabels))
             #print self.AnalyteYdata
-            print "readData(): self.Data[0].keys() : " + str(self.Data[0].keys())
+            print("readData(): self.Data[0].keys() : " + str(list(self.Data[0].keys())))
 
 
     def doPcAnalysis(self, xrng=None):
@@ -217,19 +217,19 @@ class ComponentAnalyser:
             else:
                 xrng = (None, None)
         if self.Debug-self.DebugSilentLevel > 0:
-            print "ComponentAnalyser.doPcAnalysis() > x-range used for analysis: " + str(xrng)
+            print("ComponentAnalyser.doPcAnalysis() > x-range used for analysis: " + str(xrng))
         # Use xrng to provide indices.
-        rngidx = [None,None] # Tuple does not support item assignment; is "static"
-        for xrngindex,xrngval in enumerate(xrng):
+        rngidx = [None, None] # Tuple does not support item assignment; is "static"
+        for xrngindex, xrngval in enumerate(xrng):
             if xrngval is None:
                 rngidx[xrngindex] = 0 if (xrngindex == 0) else len(self.Xdata)-1
             else: 
                 index, xvalclosest = min(enumerate(self.Xdata), key = lambda iv: abs(iv[1]-xrngval)) # Take the absolute value.
                 rngidx[xrngindex] = index
-                if self.Debug > 0: print "index, xvalclosest : " + str((index, xvalclosest))
+                if self.Debug > 0: print("index, xvalclosest : " + str((index, xvalclosest)))
             if self.Debug > 0: 
-                print "xrngindex, rngidx[xrngindex] : " + str((xrngindex, rngidx[xrngindex]))
-                print "rngidx["+str(xrngindex)+"], self.Xdata["+str(rngidx[xrngindex])+"]) : " + str((rngidx[xrngindex], self.Xdata[rngidx[xrngindex]]))
+                print("xrngindex, rngidx[xrngindex] : " + str((xrngindex, rngidx[xrngindex])))
+                print("rngidx["+str(xrngindex)+"], self.Xdata["+str(rngidx[xrngindex])+"]) : " + str((rngidx[xrngindex], self.Xdata[rngidx[xrngindex]])))
         
         # Arrange data in proper matrix
         # B = self.AnalyteYdata[rngidx[0]:rngidx[1]]  # [myFit(i).targets.ydata]    # I lineær algebra bogen er b det vi skal finde
@@ -241,12 +241,12 @@ class ComponentAnalyser:
         A = A.T # Both needs to be transposed...
         xdataselection = self.Xdata[rngidx[0]:rngidx[1]+1]
         if self.Debug > self.DebugSilentLevel+1:
-            print "doPcAnalysis() xdataselection :"
-            print np.array(xdataselection)
-            print "doPcAnalysis A:"
-            print A
-            print "doPcAnalysis B:"
-            print B
+            print("doPcAnalysis() xdataselection :")
+            print(np.array(xdataselection))
+            print("doPcAnalysis A:")
+            print(A)
+            print("doPcAnalysis B:")
+            print(B)
         #A = self.PcYdata[rngidx[0]:rngidx[1]] # [myFit(i).bases.ydata]      # ved brug af linearcombination af A's søjlevektorer
         # Least squares solution, cf Steven J Leon: Linear Algebra, p 237:
         # The equation system A x = b    (A matrix, x and b vectors) has unique least-square solution:
@@ -256,7 +256,7 @@ class ComponentAnalyser:
         # We can do this for multiple spectra (analytes/targets) using B = (b1,b2,...bn)
         # BACKGROUND subtraction: You may also want to add a constant function and e.g. a polynomial which can be used to background correct.
         
-        (x, residues, rank, singulars) = np.linalg.lstsq(A,B)
+        (x, residues, rank, singulars) = np.linalg.lstsq(A, B)
         
         self.PcResult['PcCoeffs'] = x
         self.PcResult['A'] = A # Nice to have
@@ -265,20 +265,20 @@ class ComponentAnalyser:
         self.PcResult['Rank'] = rank
         self.PcResult['Singulars'] = singulars
         self.PcResult['Xdataselection'] = xdataselection
-        C = np.dot(A,x)
+        C = np.dot(A, x)
         self.PcResult['C'] = C
         self.PcResult['Residuals'] = B - C
         # It might also be interesting to calculate using the full scale, not only the limits. But that can always be done as needed.
         if self.Debug-self.DebugSilentLevel > 1:
-            print "doPcAnalysis() Principal coefficient matrix: "
-            print x
-            print "doPcAnalysis() (residues, rank, singulars): "
-            print (residues, rank, singulars)
-            print "doPcAnalysis() solution constructs, C ('projections / linear combinations'): "
-            print C
+            print("doPcAnalysis() Principal coefficient matrix: ")
+            print(x)
+            print("doPcAnalysis() (residues, rank, singulars): ")
+            print((residues, rank, singulars))
+            print("doPcAnalysis() solution constructs, C ('projections / linear combinations'): ")
+            print(C)
         elif self.Debug-self.DebugSilentLevel > 0:
-            print "ComponentAnalyser.doPcAnalysis() > R-squared value(s) (1-residues):"
-            print 1-residues
+            print("ComponentAnalyser.doPcAnalysis() > R-squared value(s) (1-residues):")
+            print(1-residues)
             # Important note: NumPy array does not treat * as matrix-multiplication  (dot), but scalar. 
             # A*B will multiply every item of A with the corresponding of B.
             # To get A*x correct, use dot(A,x) or A.dot(x). Or let A be a NumPy-MATRIX rather than ARRAY (not recommended c.f. http://www.scipy.org/NumPy_for_Matlab_Users) 
@@ -295,15 +295,15 @@ class ComponentAnalyser:
         
         # First, produce the component reconstruction using pc result data:
         
-        for i,ydata in enumerate(self.PcYdata):
+        for i, ydata in enumerate(self.PcYdata):
             lbl = 'Pc'+str(self.Parameters['PcDataLines'][i])+': '+self.PcLabels[i]
             mpl.pyplot.plot(self.Xdata, ydata, label=lbl)
-        for i,ydata in enumerate(self.AnalyteYdata):
+        for i, ydata in enumerate(self.AnalyteYdata):
             lbl = 'B-'+str(self.Parameters['AnalyteDataLines'][i])+': '+self.AnalyteLabels[i]
             mpl.pyplot.plot(self.Xdata, ydata, label=lbl)
 
         # Consider using zip rather than enumerate looping.
-        for i,ydata in enumerate(self.PcResult['C'].T): # Note that we transpose to get one solution per row (and not column)
+        for i, ydata in enumerate(self.PcResult['C'].T): # Note that we transpose to get one solution per row (and not column)
             lbl = 'C-'+str(self.Parameters['AnalyteDataLines'][i])+'='
             lbl += "+".join(['{0:.2F}xPc{1}'.format(*pair) for pair in zip(self.PcResult['PcCoeffs'].T[i], self.Parameters['PcDataLines']) ])
             lbl += ", R2={0:.3F}".format(1-self.PcResult['ResidueSums'][i])
@@ -320,8 +320,8 @@ class ComponentAnalyser:
         # Add the last finish to the plot:
         mpl.pyplot.ylabel('AU/mm')
         mpl.pyplot.xlabel('nm')
-        mpl.pyplot.xlim(220,450)
-        mpl.pyplot.ylim(-0.05,1.6)
+        mpl.pyplot.xlim(220, 450)
+        mpl.pyplot.ylim(-0.05, 1.6)
         mpl.pyplot.legend(loc='upper right')
         mpl.pyplot.show()
 
@@ -350,10 +350,10 @@ if __name__ == "__main__":
     printParametersHelp = False
     if printParametersHelp:
         if 'Parameters Help' in ca.Parameters:
-            print "Parameters Help: (parameters are stored in YAML file {}".format(paramfile)
-            print ca.Parameters['Parameters Help']
+            print("Parameters Help: (parameters are stored in YAML file {}".format(paramfile))
+            print(ca.Parameters['Parameters Help'])
     else:
-        print "(parameters help is stored in parameter-file)"
+        print("(parameters help is stored in parameter-file)")
 
 
     ca.readData()

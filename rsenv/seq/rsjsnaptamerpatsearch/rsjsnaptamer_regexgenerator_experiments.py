@@ -48,7 +48,7 @@ bases = "ATGC"
 
 ## UTIL FUNCTIONS:
 
-dnacomplementmap = string.maketrans('ACGTacgt ','TGCATGCA ')
+dnacomplementmap = string.maketrans('ACGTacgt ', 'TGCATGCA ')
 def dnarcomp(seqStr):
     """Returns the reverse complement of the sequence in seqStr."""
     return seqStr.translate(dnacomplementmap)[::-1]
@@ -56,7 +56,7 @@ def dnacomp(seqStr):
     """Returns the complement of the sequence in seqStr."""
     return seqStr.translate(dnacomplementmap)
 
-bc = dict(A="T",T="A",G="C",C="G")
+bc = dict(A="T", T="A", G="C", C="G")
 
 
 
@@ -82,7 +82,7 @@ with open("BION.BAR_C8.F.clean.FR.clean.uniq") as fh:
     # Note: this reverses the dataset, if you do not apply [::-1] or similar...
     # *[fh]*4 <-- 4 denotes the number of lines in a single "read element".
     seqdata = [("{atid}_{count}".format(atid=seqitem[0].strip(), count=seqitem[2].strip().split("=")[1]),
-                seqitem[1].strip().upper()) for seqitem in itertools.izip_longest(*[fh]*4)]
+                seqitem[1].strip().upper()) for seqitem in itertools.zip_longest(*[fh]*4)]
 
 
 
@@ -96,12 +96,12 @@ if len(seqdata)<100 and False:
     print("Seqdata:")
     print("\n".join([" > ".join(seqitem) for seqitem in seqdata]))
 else:
-    with open("Seqdata_filtered.txt".format(this_run_id),'wb') as f:
-        print("Seqdata:",file=f)
-        print("\n".join([" > ".join(seqitem) for seqitem in seqdata]),file=f)
-    with open("Seqdata_filtered.csv",'wb') as f:
-        print("seqid,reads,sequence",file=f)
-        print("\n".join([",".join(seqitem[0].split("_")+list(seqitem[1:])) for seqitem in seqdata]),file=f)
+    with open("Seqdata_filtered.txt".format(this_run_id), 'wb') as f:
+        print("Seqdata:", file=f)
+        print("\n".join([" > ".join(seqitem) for seqitem in seqdata]), file=f)
+    with open("Seqdata_filtered.csv", 'wb') as f:
+        print("seqid,reads,sequence", file=f)
+        print("\n".join([",".join(seqitem[0].split("_")+list(seqitem[1:])) for seqitem in seqdata]), file=f)
     reads = [int(seqitem[0].split("_")[1]) for seqitem in seqdata]
     print("Total sequences / reads : {0} / {1}".format(len(reads), sum(reads)))
 
@@ -120,7 +120,7 @@ def findPatternB_with_generator4(infile=None):
 
 #    hp4perms = ("".join([AGTC[i],AGTC[ii],AGTC[iii],AGTC[iv],".*",AGTC[iv-2],AGTC[iii-2],AGTC[ii-2],AGTC[i-2]])
 #                    for i in range(4) for ii in range(4) for iii in range(4) for iv in range(4) )
-    hp4perms = ["".join([s1a2, s1a3, s1a4, constseq1,s2a1,s2a2,s2a3,s2a4,".*",bc[s2a4],bc[s2a3],bc[s2a2],bc[s2a1],constseq2, bc[s1a4], bc[s1a3], bc[s1a2]])
+    hp4perms = ["".join([s1a2, s1a3, s1a4, constseq1, s2a1, s2a2, s2a3, s2a4, ".*", bc[s2a4], bc[s2a3], bc[s2a2], bc[s2a1], constseq2, bc[s1a4], bc[s1a3], bc[s1a2]])
                     for s2a1 in bases for s2a2 in bases for s2a3 in bases for s2a4 in bases
                     for s1a2 in bases for s1a3 in bases for s1a4 in bases
                     ]
@@ -137,7 +137,7 @@ def findPatternB_with_generator4(infile=None):
         prog = re.compile(search_pat)
         print(search_pat, file=outputpatterns)
 #        continue
-        for i,seqstring in enumerate(seqdata):
+        for i, seqstring in enumerate(seqdata):
             match = prog.search(seqstring[1])
             #match = re.search(search_pat, seqstring[1])
             if match:
@@ -174,7 +174,7 @@ def findPatternB_with_generator3(infile=None):
 
 #    hp4perms = ("".join([AGTC[i],AGTC[ii],AGTC[iii],AGTC[iv],".*",AGTC[iv-2],AGTC[iii-2],AGTC[ii-2],AGTC[i-2]])
 #                    for i in range(4) for ii in range(4) for iii in range(4) for iv in range(4) )
-    hp4perms = ["".join([constseq1,s2a1,s2a2,s2a3,s2a4,".*",bc[s2a4],bc[s2a3],bc[s2a2],bc[s2a1],constseq2])
+    hp4perms = ["".join([constseq1, s2a1, s2a2, s2a3, s2a4, ".*", bc[s2a4], bc[s2a3], bc[s2a2], bc[s2a1], constseq2])
                     for s2a1 in bases for s2a2 in bases for s2a3 in bases for s2a4 in bases
 #                    for s1a4 in bases
                     ]
@@ -182,8 +182,8 @@ def findPatternB_with_generator3(infile=None):
 
     seqgenhp4 = ("{stem1}({stem2}){stem1rc}".format(\
         constseq1=constseq1, constseq2=constseq2,
-        stem1="".join([a1,a2,a3,a4]), stem2=stem2alternations,
-        stem1rc="".join([bc[a4],bc[a3],bc[a2],bc[a1]])) \
+        stem1="".join([a1, a2, a3, a4]), stem2=stem2alternations,
+        stem1rc="".join([bc[a4], bc[a3], bc[a2], bc[a1]])) \
         for a1 in bases for a2 in bases for a3 in bases for a4 in bases)
 
     nmatch = 0
@@ -191,7 +191,7 @@ def findPatternB_with_generator3(infile=None):
         prog = re.compile(search_pat)
         print(search_pat, file=outputpatterns)
 #        continue
-        for i,seqstring in enumerate(seqdata):
+        for i, seqstring in enumerate(seqdata):
             match = prog.search(seqstring[1])
             #match = re.search(search_pat, seqstring[1])
             if match:
@@ -227,7 +227,7 @@ def findPatternB_with_generator2(infile=None):
 
 
     AGTC = "AGTC" # this makes it easy, a complement to bases[i] is always bases[i-2].
-    hp4perms = ("".join([AGTC[i],AGTC[ii],AGTC[iii],AGTC[iv],".*",AGTC[iv-2],AGTC[iii-2],AGTC[ii-2],AGTC[i-2]])
+    hp4perms = ("".join([AGTC[i], AGTC[ii], AGTC[iii], AGTC[iv], ".*", AGTC[iv-2], AGTC[iii-2], AGTC[ii-2], AGTC[i-2]])
                     for i in range(4) for ii in range(4) for iii in range(4) for iv in range(4) )
 #    seqgenhp4 = ["".join([a1,a2,a3,a4,".*",bc[a4],bc[a3],bc[a2],bc[a1] ])
 #                    for a1 in bases for a2 in bases for a3 in bases for a4 in bases]
@@ -235,8 +235,8 @@ def findPatternB_with_generator2(infile=None):
 
     seqgenhp4 = ("{stem1}{constseq1}({stem2}){constseq2}{stem1rc}".format(\
         constseq1=constseq1, constseq2=constseq2,
-        stem1="".join([a1,a2,a3,a4]), stem2=stem2alternations,
-        stem1rc="".join([bc[a4],bc[a3],bc[a2],bc[a1]])) \
+        stem1="".join([a1, a2, a3, a4]), stem2=stem2alternations,
+        stem1rc="".join([bc[a4], bc[a3], bc[a2], bc[a1]])) \
         for a1 in bases for a2 in bases for a3 in bases for a4 in bases)
 
     nmatch = 0
@@ -244,7 +244,7 @@ def findPatternB_with_generator2(infile=None):
         prog = re.compile(search_pat)
         print(search_pat, file=outputpatterns)
 #        continue
-        for i,seqstring in enumerate(seqdata):
+        for i, seqstring in enumerate(seqdata):
             match = prog.search(seqstring[1])
             #match = re.search(search_pat, seqstring[1])
             if match:
@@ -278,16 +278,16 @@ def findPatternB_with_generator(infile=None):
     outputpatterns = open("outputpatternsB_generator.txt", "wb")
     results = open("N35_pat2_results_2_generator1.txt", "wb")
     resultsdata = list()
-    seqgenhp4 = ("{a1}{a2}{a3}{a4}.*?{b1}{b2}{b3}{b4}".format(a1=a1,a2=a2,a3=a3,a4=a4,b1=bc[a1],b2=bc[a2],b3=bc[a3],b4=bc[a4])
+    seqgenhp4 = ("{a1}{a2}{a3}{a4}.*?{b1}{b2}{b3}{b4}".format(a1=a1, a2=a2, a3=a3, a4=a4, b1=bc[a1], b2=bc[a2], b3=bc[a3], b4=bc[a4])
                 for a1 in bases for a2 in bases for a3 in bases)
     # optimization: insert constant stuff:
     regextemplate = "{part1}{constseq1}{part2}.*?{part1rc}{constseq2}{part2rc}".format(part1="{part1}",
-        constseq1=constseq1,part2="{part2}",part1rc="{part1rc}",constseq2=constseq2,part2rc="{part2rc}")
+        constseq1=constseq1, part2="{part2}", part1rc="{part1rc}", constseq2=constseq2, part2rc="{part2rc}")
 
     seqgenhp4 = ("{stem1}{constseq1}{stem2}.*?{stem2rc}{constseq2}{stem1rc}".format(\
         constseq1=constseq1, constseq2=constseq2,
-        stem1="".join([a1,a2,a3,a4]), stem2="".join([b1,b2,b3,b4]),
-        stem1rc="".join([bc[a4],bc[a3],bc[a2],bc[a1]]), stem2rc="".join([bc[b4],bc[b3],bc[b2],bc[b1]])) \
+        stem1="".join([a1, a2, a3, a4]), stem2="".join([b1, b2, b3, b4]),
+        stem1rc="".join([bc[a4], bc[a3], bc[a2], bc[a1]]), stem2rc="".join([bc[b4], bc[b3], bc[b2], bc[b1]])) \
         for a1 in bases for a2 in bases for a3 in bases for a4 in bases \
         for b1 in bases for b2 in bases for b3 in bases for b4 in bases )
 #    seqgenhp4m = ("{part1rc}{constseq2}{part2rc}.*?{part1}{constseq1}{part2}".format(\
@@ -301,7 +301,7 @@ def findPatternB_with_generator(infile=None):
         prog = re.compile(search_pat)
         print(search_pat, file=outputpatterns)
 #        continue
-        for i,seqstring in enumerate(seqdata):
+        for i, seqstring in enumerate(seqdata):
             match = prog.search(seqstring[1])
             #match = re.search(search_pat, seqstring[1])
             if match:
@@ -345,29 +345,29 @@ def findPatternB_with_forLoops():
             for b3 in bases:
                 #print("Searching for sequences in format of {} (and other with hairpin on other side)".format("".join([b1,b2,b3,"("])+constseq1+"((((.*?))))"+constseq2+")"+dnarcomp("".join([b1,b2,b3]))))
                 for b4 in bases:
-                    part1="".join([b1,b2,b3,b4])
+                    part1="".join([b1, b2, b3, b4])
                     #print("Searching for sequences in format of {}".format(part1+constseq+"NNNN.*?NNNN"+dnarcomp(part1+constseq)))
                     #print("Searching for sequences in format of {}".format(part1+constseq1+"NNNN.*?NNNN"+constseq2+dnarcomp(part1)))
                     for b12 in bases:
                         for b13 in bases:
                             for b14 in bases:
                                 for b15 in bases:
-                                    part2="".join([b12,b13,b14,b15])
-                                    seqpat = "".join([part1,constseq,part2])
+                                    part2="".join([b12, b13, b14, b15])
+                                    seqpat = "".join([part1, constseq, part2])
                                     seqpat2 = dnarcomp(part2)+constseq2+dnarcomp(part1)
                                     #seqpat2b = dnarcomp(part1+const2_3p5p+part2)
                                     #seqpat2c = 
                                     #if not seqpat2 == seqpat2b:
                                     #    print("seqpat2 is not same as seqpat2b:\n{0}\n{1}".format(seqpat2,seqpat2b))
                                     #    raise Exception
-                                    search_pat = ".*?".join([seqpat,seqpat2])
-                                    search_pat2 = ".*?".join([seqpat2,seqpat])
+                                    search_pat = ".*?".join([seqpat, seqpat2])
+                                    search_pat2 = ".*?".join([seqpat2, seqpat])
                                     progs = [re.compile(pat) for pat in [search_pat]]#, search_pat2]]  ------ NOTE THIS IS COMMENTED OUT FOR DEBUGGING !! 
                                     #print([prog.pattern for prog in progs], file=outputpatterns)
                                     #print search_pat
                                     print(search_pat, file=outputpatterns)
 #                                    continue
-                                    for i,seqstring in enumerate(seqdata):
+                                    for i, seqstring in enumerate(seqdata):
                                         for prog in progs:
                                             match = prog.search(seqstring[1])
                                             if match:
@@ -409,7 +409,7 @@ def makepat():
     Not used at this moment.
     """
     # Various search pattern options, stored for later use.
-    seqpat = "".join([part1,constseq,part2])
+    seqpat = "".join([part1, constseq, part2])
     # search only for NNNN.*?GCTGTTA.*?NNNN
     search_pat1 = ".*?".join([
         part1,
@@ -418,7 +418,7 @@ def makepat():
     # Search for "NNNNGCTGTTANNNN.*?"+dnarcomp(NNNNGCTGTTANNNN)
     search_pat2 = ".*?".join([seqpat, dnarcomp(seqpat)])
     seqpat2 = dnarcomp(part2)+constseq2+dnarcomp(part1)
-    search_pat3 = ".*?".join([seqpat,seqpat2])
+    search_pat3 = ".*?".join([seqpat, seqpat2])
     search_pat=search_pat3
 
 
@@ -427,7 +427,7 @@ def makepat():
 
 def parseseqfile(f):
     print("parseseqfile() !")
-    seqdata = [(seqid,seqstr.upper()) for seqid,seqstr in itertools.izip_longest(*[f]*2)]
+    seqdata = [(seqid, seqstr.upper()) for seqid, seqstr in itertools.zip_longest(*[f]*2)]
 
 
 if __name__ == "__main__":

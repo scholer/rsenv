@@ -41,23 +41,23 @@ else:
 
 def clipboard():
     if not gkt_available:
-        print "GTK not available..."
+        print("GTK not available...")
         return
-    print "Clipboard content: gtk.clipboard_get().wait_for_text()"
-    print " - Also: wait_for_image(), etc. Set with set_text(...)"
+    print("Clipboard content: gtk.clipboard_get().wait_for_text()")
+    print(" - Also: wait_for_image(), etc. Set with set_text(...)")
     ret = gtk.clipboard_get().wait_for_text()
-    print ret
+    print(ret)
     return ret
 
 def cbget():
     if not gkt_available:
-        print "GTK not available..."
+        print("GTK not available...")
         return
-    print "Clipboard content: gtk.clipboard_get().wait_for_text()"
+    print("Clipboard content: gtk.clipboard_get().wait_for_text()")
     return gtk.clipboard_get().wait_for_text()
 def cbset(txt):
     if not gkt_available:
-        print "GTK not available..."
+        print("GTK not available...")
         return
     gtk.clipboard_get().set_text(txt)
 
@@ -89,7 +89,7 @@ def rgbconv(color):
   if isinstance(color, tuple):
     # Certainly a RGB colorÉ
     return rgbdectohex(color)
-  if isinstance(color, basestring):
+  if isinstance(color, str):
     if color[0] == "#":
       return rgbhextodec(color)
 
@@ -125,7 +125,7 @@ def combinationsexclude(elems, r=2, excludepairs=set(), doprint=True, returnstr=
      - http://docs.python.org/2/library/itertools.html
      - http://docs.python.org/2/library/sets.html
     """
-    if isinstance(elems,int):
+    if isinstance(elems, int):
         elems = range(elems)
     excludepairs = set(excludepairs) # Make sure we have a set of tuples and not just a list of tuples.
     import itertools
@@ -135,13 +135,13 @@ def combinationsexclude(elems, r=2, excludepairs=set(), doprint=True, returnstr=
     # This is only guaranteed to work if r <= 2.(It might work, not certain)
     #F = [tup for tup in itertools.combinations(elems,r) if not (tup in excludepairs or reversed(tup) in excludepairs)]
     # If r > 2, I have to check whether any permutation of the tuple is among the excluded pairs list:
-    H = [tup for tup in itertools.combinations(elems,r) if not set(itertools.permutations(tup)).intersection(excludepairs)]
+    H = [tup for tup in itertools.combinations(elems, r) if not set(itertools.permutations(tup)).intersection(excludepairs)]
 #    set1.intersection(set2) shorthand: set1 & set2
     # filter-based alternative. I generally find the list-comprehension-with-condition easier to read.
     #G = filter(lambda tup: not (set(itertools.permutations(tup)).intersection(excludepairs)), itertools.combinations(elems,r))
     s="\n".join([" ".join([str(i) for i in tup]) for tup in H])
     if doprint:
-        print s
+        print(s)
     if returnstr:
         return s
     return H
@@ -169,7 +169,7 @@ def getEmailAddFromString(a, returntype="string"):
         return ", ".join([b.split("<")[1][0:-1] for b in a.split(",")])
 
 if __name__ == "__main__":
-  print "Input single tuple argument:"
-  rgbdectohex((0,0,127))
-  print "Input three individual arguments"
-  rgbdectohex(0,0,128)
+  print("Input single tuple argument:")
+  rgbdectohex((0, 0, 127))
+  print("Input three individual arguments")
+  rgbdectohex(0, 0, 128)

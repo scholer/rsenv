@@ -19,8 +19,8 @@ Also consider:
 
 #__all__ = ['confluence', 'exceptions', 'fs_util', 'help', 'nanodrop_utils', 'phys', 'plotting', 'protein', 'qpcr', 'rsfavmodules', 'seq', 'utils', 'various']
 
-import rsfavmodules as fav
-import seq
+# from . import rsfavmodules as fav
+from . import seq
 
 
 #import plotting
@@ -39,8 +39,8 @@ import seq
 # from rsfavmodules import *
 
 
-""" from http://conjurecode.com/enable-auto-complete-in-python-interpreter/
-If If the PYTHONSTARTUP variable is set to a readable file, then the contents of that file will be
-run before anything else when the interactive interpreter is run."""
+# from http://conjurecode.com/enable-auto-complete-in-python-interpreter/
+# If If the PYTHONSTARTUP variable is set to a readable file, then the contents of that file will be
+# run before anything else when the interactive interpreter is run.
 #import rlcompleter, readline
 #readline.parse_and_bind('tab:complete')

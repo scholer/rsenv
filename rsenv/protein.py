@@ -20,9 +20,7 @@ Created on Fri Feb 8 2013
 @author: scholer
 
 Includes various python code that I use frequently for proteins
-"""
 
-"""
 -------------------------------------
 -- Protein/amino acid calculations --
 -------------------------------------
@@ -30,39 +28,52 @@ Includes various python code that I use frequently for proteins
 
 --------- Protein charge --------------
 # http://njms2.umdnj.edu/biochweb/education/bioweb/PreK2010/AminoAcids.htm
-"""
-def aacharge(aa, pH=7):
-  if len(aa) > 1: 
-    print "aa should only be one aminoacid. Use proteincharge for sequences..."
-    return None
-  aa = aa.lower()
-  nonpolar="avliopmfw"
-  polar="gstcnqy" # histidine only +0.1
-  anionic="de"
-  cationic="kr"
-  if (aa in nonpolar) or (aa in polar): return 0
-  if aa in anionic: return -1
-  if aa in cationic: return 1
-  if aa is "h": return 0.1
-  return None
 
 """
-Specific count, e.g. lysine and arginines:
-aacount = len([aa for aa in protseq if aa in "kr"])
-"""
+from __future__ import print_function, absolute_import
+
+
+def aacharge(aa, pH=7):
+    if len(aa) > 1:
+        print("aa should only be one aminoacid. Use proteincharge for sequences...")
+        return None
+    aa = aa.lower()
+    nonpolar = "avliopmfw"
+    polar = "gstcnqy"  # histidine only +0.1
+    anionic = "de"
+    cationic = "kr"
+    if (aa in nonpolar) or (aa in polar):
+      return 0
+    if aa in anionic:
+      return -1
+    if aa in cationic:
+      return 1
+    if aa is "h":
+      return 0.1
+    return None
+
 def aacount(protseq, aatocount):
+    """
+    Specific count, e.g. lysine and arginines:
+    aacount = len([aa for aa in protseq if aa in "kr"])
+    """
     return len([aa for aa in protseq if aa in aatocount])
 
 
 class AminoAcidProp():
     def __init__(self):
-        aa="avliopmfwgstcnqyh de kr h"
-        aachargemap = {"a":0,"v":0,"l":0,"i":0,"o":0,"p":0,"m":0,"f":0,"w":0,"g":0,"s":0,"t":0,"c":0,"n":0,"q":0,"y":0,"d":-1,"e":-1,"k":1,"r":1,"h":0.1}
+        aa = "avliopmfwgstcnqyh de kr h"
+        aachargemap = {
+            "a": 0, "v": 0, "l": 0, "i": 0, "o": 0, "p": 0, "m": 0, "f": 0, "w": 0,
+            "g": 0, "s": 0, "t": 0, "c": 0, "n": 0, "q": 0, "y": 0,
+            "d": -1, "e": -1,
+            "k": 1, "r": 1, "h": 0.1
+        }
 
     def protcharge(self, protseq):
         # protseq=<aa seq>
         aachargemap = self.aachargemap
-        return sum([aachargemap[aa] for aa in protseq.lower() if aa in aachargemap])
+        return sum(aachargemap[aa] for aa in protseq.lower() if aa in aachargemap)
 
     def protchargealt(protseq):
         return aacharge(protseq)

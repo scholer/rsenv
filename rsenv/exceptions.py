@@ -27,16 +27,19 @@ Contains a few exceptions that I use to make it easier to determine what has hap
 class RsError(Exception):
     def __init__(self, value):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
 
-class RsFileInputError(Exception):
 
+class RsFileInputError(Exception):
     def __init__(self, filename):
         pass
+
 
 class RsEmptyDirectoryError(Exception):
     def __init__(self, directory):
         self.Directory = directory
+
     def __str__(self):
         return repr(self.directory)

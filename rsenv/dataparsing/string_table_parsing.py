@@ -22,8 +22,8 @@ Module for parsing text (e.g. from copy/pasted from clipboard).
 
 """
 
-from tabulated_data import tabdata_as_dictlist
-from textdata_util import gen_trimmed_lines
+from .tabulated_data import tabdata_as_dictlist
+from .textdata_util import gen_trimmed_lines
 
 def strtable_to_dictlist(strtable, headers=None, sep=None, stripcells=True):
     """
@@ -64,4 +64,4 @@ AluI	AGCT	4	blunt	1	1017
     assert row['Overhang'] == 'blunt'
     assert row['Frequency'] == '1'
     assert row['Cut Positions'] == '1017'
-    print "ALL OK!"
+    print("ALL OK!")

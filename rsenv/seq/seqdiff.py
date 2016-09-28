@@ -22,7 +22,7 @@ Module for diff'ing sequences (not directly aligning).
 
 from collections import namedtuple
 
-from seqgen import endanchored_part_generator_simple, endanchored_part_generator_halving
+from .seqgen import endanchored_part_generator_simple, endanchored_part_generator_halving
 
 def binary_insert_diff(seq1, seq2):
     """
@@ -44,7 +44,7 @@ def binary_insert_diff(seq1, seq2):
     #start_found = end_found = False
     start_part = end_part = ''
     #from_start_offset = from_end_offset = 0
-    part = seq1_part_gen.next()
+    part = next(seq1_part_gen)
     # We need to exhaust the generator to be sure that we have found the right part (the last delta is 1)
     #for part in seq1_part_gen:
     try:

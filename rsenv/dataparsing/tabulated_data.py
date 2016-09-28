@@ -64,7 +64,7 @@ header1, header2\
     #rows = list(rows)
     #for row in rows:
     #    print zip(headers, row)
-    dictlist = [dict(zip(headers, row)) for row in rows]
+    dictlist = [dict(list(zip(headers, row))) for row in rows]
     return dictlist
 
 

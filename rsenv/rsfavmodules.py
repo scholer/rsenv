@@ -66,11 +66,10 @@ import json     # Persisting data in javascript object notation format
 
 
 
-"""
---------------------------------------------
---- Modules outside the standard library ---
---------------------------------------------
-"""
+# --------------------------------------------
+# --- Modules outside the standard library ---
+# --------------------------------------------
+
 ## Clipboard in GTK:
 try:
     import pygtk
@@ -80,29 +79,36 @@ try:
     # text = clipboard.wait_for_text()
 except ImportError:
     # Will happen on Windows/Mac:
-    pass
+    pygtk = None
+    gtk = None
 
 
 try:
     import yaml
 except ImportError:
-    print "YAML module not available."
+    print("YAML module not available.")
+    yaml = None
+
 
 try:
     import psycopg2
 except ImportError:
-    print "psycopg2 module not available"
+    print("psycopg2 module not available")
+    psycopg2 = None
 
 try:
     import numpy
     try:
         import scipy
     except ImportError:
-        print "scipy module not available."
+        print("scipy module not available.")
     try:
-        import Bio as biopython #http://biopython.org/DIST/docs/tutorial/Tutorial.html
+        import Bio as biopython  # http://biopython.org/DIST/docs/tutorial/Tutorial.html
     except ImportError:
-        print "biopython ('Bio') module not available."
+        print("biopython ('Bio') module not available.")
 except ImportError:
-    print "numpy module not available."
-    print " - this also means no biopython, scipy, etc."
+    print("numpy module not available.")
+    print(" - this also means no biopython, scipy, etc.")
+    numpy = None
+    scipy = None
+    biopython = None

@@ -28,13 +28,13 @@ for the pattern "*.py" (including the quotation marks).
 """
 
 import re
-from itertools import product, chain, izip_longest
+from itertools import product, chain, zip_longest
 
 from rsseqgen import genparts
 
 
 atgc = "ATGC"
-basemap = dict(zip("ATGC", "TACG"))
+basemap = dict(list(zip("ATGC", "TACG")))
 def rcompl(seq):
     """ Returns reversed complement of seq. """
     return "".join(basemap[n] for n in reversed(seq))
@@ -69,7 +69,7 @@ def patSeqGen(seqpat):
         #pairs = izip_longest(N_gens, const_tups)
     #else:
     #    pairs = izip_longest(const_tups, N_gens)
-    gens = (gen for gen in chain(*izip_longest(const_tups, N_gens)) if gen)
+    gens = (gen for gen in chain(*zip_longest(const_tups, N_gens)) if gen)
     return ("".join(comb) for comb in product(*gens))
 
 
@@ -97,16 +97,16 @@ def scanForPattern(pattern, dataset, hitcondition=None, sumcondition=None):
     parts = patSeqGen(pattern)
     for part in parts:
         if part == "GGTCC":
-            print "Processing part '%s'" % part
+            print("Processing part '%s'" % part)
         matches = [row for row in dataset if hitcondition(part, row[1])]
         if sumcondition(part, matches):
             if part == "GGTCC":
-                print "Part '%s' passed sumcondition '%s' with matches '%s'" % (part, sumcondition, matches)
+                print("Part '%s' passed sumcondition '%s' with matches '%s'" % (part, sumcondition, matches))
             rcompl_matches = [row[0] for row in dataset if rcompl(part) in row[1]]
             #print "Part %s matches condition in %s oligos: %s (rcomplement in %s)" % (part, len(matches), ", ".join(matches), ", ".join(rcompl_matches))
             return_parts.append((part, matches, rcompl_matches, len(matches), len(rcompl_matches), len(set(matches)|set(rcompl_matches))))
         elif part == "GGTCC":
-            print "Part '%s' did not pass sumcondition '%s', matches '%s'" % (part, sumcondition, matches)
+            print("Part '%s' did not pass sumcondition '%s', matches '%s'" % (part, sumcondition, matches))
     return return_parts
 
 #rep = scanForRepeats(analyse_ds)
@@ -161,7 +161,7 @@ def makesubMatchWithExtra(sublength, extra5p='', extra3p=''):
         # Note: returns True for a hit.
         if part in fullseq:
             if part == "GGTCC":
-                print "Part '%s' is in fullseq '%s'" % (part, fullseq)
+                print("Part '%s' is in fullseq '%s'" % (part, fullseq))
             return True
         subparts = list(genparts(sublength, seqs=extra5p+part+extra3p)) # list for debugging
         # if part == "GGTCC":
@@ -169,7 +169,7 @@ def makesubMatchWithExtra(sublength, extra5p='', extra3p=''):
         for subpart in subparts:
             if subpart in fullseq:
                 if part == "GGTCC":
-                    print "Discarting part '%s', subpart '%s' in fullseq '%s'" % (part, subpart, fullseq)
+                    print("Discarting part '%s', subpart '%s' in fullseq '%s'" % (part, subpart, fullseq))
                 return True
         # if any(subpart in fullseq for subpart in subparts):
         #     return False

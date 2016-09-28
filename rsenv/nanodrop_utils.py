@@ -33,8 +33,11 @@ SEE ALSO:
 
 """
 
+from __future__ import print_function, absolute_import
 import os
 import glob
+from builtins import input
+from six import string_types
 
 
 def get_data(datafile):
@@ -43,7 +46,7 @@ def get_data(datafile):
     Data is returned as a list of lists, with stripped string elements.
     ACTION: data = [[elem.strip() for elem in line.split('\t')] for line in datafile]
     Notice: The first five (5) lines in the ndj file is metadata..."""
-    if isinstance(datafile, basestring):
+    if isinstance(datafile, string_types):
         datafile = open(datafile)
     data = [[elem.strip() for elem in line.split('\t')] for line in datafile]
     return data
@@ -63,10 +66,12 @@ def get_measurements(data):
     measurements = data[5:]
     return measurements
 
+
 def get_samplelist(data):
     measurements = data[5:]
     sampleids = [m[0] for m in measurements]
     return sampleids
+
 
 def get_sampleindex(sample, data):
     try:
@@ -75,6 +80,7 @@ def get_sampleindex(sample, data):
         measurements = data[5:] # Do not include the first five lines.
         sample = [m[0] for m in measurements].index(sample)
     return sample
+
 
 def get_data_for_xvals(data, xvals=None, sample=0,doprint=False,returnTuple=False):
     #print "One-liner: for i in range(250,270): "
@@ -87,8 +93,8 @@ def get_data_for_xvals(data, xvals=None, sample=0,doprint=False,returnTuple=Fals
     measurement = measurements[sample]  # Basically just the line in the ndj file; offset by 5.
     yvals = [float(measurement[headers.index('{:.1f}'.format(float(xval)))]) for xval in xvals]
     if doprint:
-        for i,xval in enumerate(xvals):
-            print "{xval}: {yval}".format(xval=xval, yval=yvals[i])
+        for i, xval in enumerate(xvals):
+            print("{xval}: {yval}".format(xval=xval, yval=yvals[i]))
 
     if returnTuple:
         return (yvals, xvals, sample)
@@ -103,10 +109,11 @@ def select_ndj_file(path=None):
         raise NotImplementedError("Specifying a path in select_ndj_file() is not implemented.")
     ndjfiles = sorted(glob.glob("*.ndj"))
     if len(ndjfiles) < 1:
-        raise RsEmptyDirectoryError(path)
-    print "Nanodrop files in directory:"
-    print "\n".join(["[{0}] : {1}".format(i, ndjfile) for i,ndjfile in enumerate(ndjfiles)])
-    fileindex = raw_input("Which file do you want to plot data from? (Hit enter to select the last file in list; use ctrl+c to cancel.)  ")
+        raise ValueError("No .ndj files found in directory '%s'" % path)
+    print("Nanodrop files in directory:")
+    print("\n".join(["[{0}] : {1}".format(i, ndjfile) for i, ndjfile in enumerate(ndjfiles)]))
+    fileindex = input(("Which file do you want to plot data from? "
+                       "(Hit enter to select the last file in list; use ctrl+c to cancel.)  "))
     if not fileindex:
         return ndjfiles[-1]
     try:
@@ -114,14 +121,14 @@ def select_ndj_file(path=None):
         try:
             datafile = ndjfiles[fileindex]
         except IndexError:
-            print "IndexError: Perhaps you entered a wrong number?"
+            print("IndexError: Perhaps you entered a wrong number?")
             datafile = select_ndj_file()
     except ValueError:
         # The user probably entered a filename...
         if fileindex in ndjfiles:
             pass
         else:
-            print "Input not recognized..."
+            print("Input not recognized...")
             datafile = select_ndj_file()
 
     return datafile
@@ -139,19 +146,21 @@ def produce_samplelist_for_files(printformat=None, filelist=None):
         printformat = "{filename}:{sampleindex} {samplename}"
     for ndj in filelist:
         data = get_data(ndj)
-        print "\n".join([printformat.format(samplename=name, sampleindex=index, filename=ndj) for index,name in enumerate(get_samplelist(data))])
+        print("\n".join(
+            printformat.format(samplename=name, sampleindex=index, filename=ndj)
+            for index, name in enumerate(get_samplelist(data))))
 
 
 
 """ Testing """
 if __name__ == "__main__":
-    print "Starting test of module rsnanodrop.py ----"
+    print("Starting test of module rsnanodrop.py ----")
 
-    datafile="/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/today.ndj"
-    data = get_data(datafile)
-    print get_metadata(data)
+    testfile="/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/today.ndj"
+    data = get_data(testfile)
+    print(get_metadata(data))
     #print get_measurements(data)
-    print get_samplelist(data)
-    get_data_for_xvals(data,range(250,280),sample='RS126h1',doprint=True)
+    print(get_samplelist(data))
+    get_data_for_xvals(data, range(250, 280), sample='RS126h1', doprint=True)
 
-    print "Finished test of module rsnanodrop.py ^^^^ "
+    print("Finished test of module rsnanodrop.py ^^^^ ")

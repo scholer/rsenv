@@ -54,7 +54,7 @@ class DataPlotter():
         self.Yrange = ymin, ymax = 0, 40
         self.StyleManager = StyleManager()
         self.Stdcurve_colors = self.StyleManager.Colors
-        self.Plotsize = (12,7) #None # (width,height)
+        self.Plotsize = (12, 7) #None # (width,height)
         # Larger figure sizes require larger fonts and wider lines.
         # Bitmap files will increase with size, while pdf and other vector formats are invariant to size.
         # Setting matplotlib.rcParams['figure.figsize'] = 5, 10 has been reported to be more portable.
@@ -84,7 +84,7 @@ class DataPlotter():
         )
         # Ok, 1.2.1 also does not support 'fontsize', requires 'size'
         #if matplotlib.__version__.split('.') < ['1','2','0']:
-        if matplotlib.__version__.split('.') < ['1','2','2']:
+        if matplotlib.__version__.split('.') < ['1', '2', '2']:
             # For old legacy matplotlib versions:
             self.Legendprops = dict(size='x-small', weight='medium') # changed fontsize to size.
         else:
@@ -92,7 +92,7 @@ class DataPlotter():
         # Make default hatch (also works as an example of use)
         # Hatch_prepend: Make sure to use this hatch pattern first:
         self.Hatch_pat = None
-        self.Hatch_prepend = ['/','xxx','\\xx','\\x','-xx','\\\\','/\\x','//','//\\']
+        self.Hatch_prepend = ['/', 'xxx', '\\xx', '\\x', '-xx', '\\\\', '/\\x', '//', '//\\']
         # Produce a pseudo-random hatchpattern, prepended by
         # example hatch_groupstructure = [5,4,2,7] (Repeat first hatch 5 times, second hatch four times, etc.)
         #self.Hatch_pat = self.makehatchpat(useextra=False,groups=None,prepend_pat=hatch_prepend)
@@ -111,8 +111,8 @@ class DataPlotter():
             #print 'xticklabels:'
             #print xticklabels
             #print '--'
-            pyplot.xticks(*zip(*enumerate(xticklabels)), **self.Xlabelprops)
-            pyplot.xlim(-1,len(xticklabels))
+            pyplot.xticks(*list(zip(*enumerate(xticklabels))), **self.Xlabelprops)
+            pyplot.xlim(-1, len(xticklabels))
             #axis.set_xticklabels(*zip(*enumerate(xticklabels)), **self.Xlabelprops) # set_xticks is only for numeric values (tick positions)
             #axis.set_xlim(-1,len(xticklabels))
         figure_dpi = kwargs.get('dpi', self.Figure_dpi)
@@ -156,25 +156,25 @@ class DataPlotter():
         # This thows a warning because I try to take the average of an empty sequence
         #cpmeans_techrep = OrderedDict([ (samplename, OrderedDict([ (replicateno, np.mean(replicate_cpvals)) for replicateno,replicate_cpvals in sampledata.items() ]) ) for samplename,sampledata in data.items() ])
         logger.info("calculating cpmeans_techrep")
-        cpmeans_techrep = OrderedDict([ (samplename, [np.mean(replicate_cpvals) for replicate_cpvals in sampledata.values()] ) for samplename,sampledata in data.items() ])
+        cpmeans_techrep = OrderedDict([ (samplename, [np.mean(replicate_cpvals) for replicate_cpvals in list(sampledata.values())] ) for samplename, sampledata in list(data.items()) ])
         logger.info("calculating cpstdev_techrep")
-        cpstdev_techrep = OrderedDict([ (samplename, [ np.std(replicate_cpvals) for replicate_cpvals in sampledata.values()] ) for samplename,sampledata in data.items() ])
+        cpstdev_techrep = OrderedDict([ (samplename, [ np.std(replicate_cpvals) for replicate_cpvals in list(sampledata.values())] ) for samplename, sampledata in list(data.items()) ])
         #cpstdev_techrep = OrderedDict([(samplename, OrderedDict([ (replicateno, np.std(replicate_cpvals)) for replicateno,replicate_cpvals in sampledata.items() ]) ) for samplename,sampledata in data.items()])
         #print "der"
         logger.info("calculating cpmeans_replicate")
-        cpmeans_replicate = OrderedDict( (samplename, np.mean(cpmeans_techrep)) for samplename,cpmeans_techrep in cpmeans_techrep.items() )
+        cpmeans_replicate = OrderedDict( (samplename, np.mean(cpmeans_techrep)) for samplename, cpmeans_techrep in list(cpmeans_techrep.items()) )
         logger.info("calculating cpstdev_replicate")
-        cpstdev_replicate = OrderedDict( (samplename, np.std(cpmeans_techrep)) for samplename,cpmeans_techrep in cpmeans_techrep.items() )
+        cpstdev_replicate = OrderedDict( (samplename, np.std(cpmeans_techrep)) for samplename, cpmeans_techrep in list(cpmeans_techrep.items()) )
 
         ind = np.arange(len(cpmeans_replicate))
         #ind = [i-barwidth/2 for i in np.arange(len(samplenames))]
-        barprops["yerr"] = cpstdev_replicate.values()
+        barprops["yerr"] = list(cpstdev_replicate.values())
         logger.info("Plotting barplot (replicateprocessed v3)")
-        barplot = axis.bar(ind, cpmeans_replicate.values(), **barprops)
+        barplot = axis.bar(ind, list(cpmeans_replicate.values()), **barprops)
         # pyplot.bar() Return value is a list of matplotlib.patches.Rectangle instances.
         logger.info("Making hatcing pattern:")
         if hatch_pat:
-            for bar,pat in zip(barplot, hatch_pat*5):
+            for bar, pat in zip(barplot, hatch_pat*5):
                 # *5 to make sure you have enough patterns.
                 bar.set_hatch(pat)
         self.Plots.append(barplot)
@@ -191,9 +191,9 @@ class DataPlotter():
             data = self.Datamanager.DataStruct
         if plotprops is None:
             plotprops = self.Pointprops
-            print "Point plot props: {}".format(plotprops)
+            print("Point plot props: {}".format(plotprops))
         for sampleindex, (samplename, sampledata) in enumerate(data.items()):
-            print "{}, '{}' : {}".format(sampleindex, samplename, ", ".join(["{}".format(lst) for lst in sampledata.values()]) )
+            print("{}, '{}' : {}".format(sampleindex, samplename, ", ".join(["{}".format(lst) for lst in list(sampledata.values())]) ))
         # sampledata is currently an OrderedDict, *not* just a list;
         xyvals = [ (sampleindex+replicateshift*(replicateindex-0.5*len(sampledata)),   measurement) \
             for sampleindex, (samplename, sampledata) in enumerate(data.items()) \
@@ -205,7 +205,7 @@ class DataPlotter():
 #        print zip(*xyvals)
         #yvals =
         #xvals =
-        xvals, yvals = zip(*xyvals)
+        xvals, yvals = list(zip(*xyvals))
         #plot = self.getRecentPlot()
         pyplot.plot(xvals, yvals, **plotprops)
 
@@ -222,22 +222,22 @@ class DataPlotter():
         #xyvalsv3flat = [(xpos,cp) for samplename,sampledata in data.items() for xpos,replicatedata in enumerate(sampledata) for cp in replicatedata]
         xyvalsv3flat = list() # So close that I could make a list comprehension, but the xpos was tricky.
         xpos = 0
-        print data
-        for samplename,sampledata in data.items():
-            print "samplename, sampledata: {}, {}".format(samplename, sampledata)
-            for replicateno,replicatedata in sampledata.items(): # edit: I'm using a sorted ordereddict now, so no need to constantly sort the replicates.
+        print(data)
+        for samplename, sampledata in list(data.items()):
+            print("samplename, sampledata: {}, {}".format(samplename, sampledata))
+            for replicateno, replicatedata in list(sampledata.items()): # edit: I'm using a sorted ordereddict now, so no need to constantly sort the replicates.
                 for cp in replicatedata:
                     xyvalsv3flat.append((xpos, cp))
                 xpos += 1 # this should be equal to sampleno+replicateno, which could be used to make a list comprehension.
 
         xyvals = xyvalsv3flat
-        samplenames = data.keys() # the nice thing about having an ordereddict :-)
+        samplenames = list(data.keys()) # the nice thing about having an ordereddict :-)
 
         # Muhahah, using zip unpacking :D
         # When you only have two replicates and you are using ddof=0 (default), then the two points are THE SAME as the STD bars.
         # In that case, no reason to plot...
         scatterprops = dict(s=1, c='k', marker='d', zorder=100)
-        p1 = pyplot.scatter(*zip(*xyvals), **scatterprops)
+        p1 = pyplot.scatter(*list(zip(*xyvals)), **scatterprops)
         return p1
 
     def plotbarsv1(self, data, samplenames):
@@ -255,20 +255,20 @@ class DataPlotter():
         barwidth = 0.8
         #ind = np.arange(len(samplenames)) # can be used if you use align='center'
         # This thows a warning because I try to take the average of an empty sequence
-        print "plotbarsflatv3: Calculating cp means:"
-        cpmeans = OrderedDict([(samplename+" #{}".format(replicateno), np.mean(replicate_cpvals) ) for samplename,sampledata in data.items() for replicateno,replicate_cpvals in sampledata.items()])
-        print "plotbarsflatv3: Calculating cpstdev:"
-        cpstdev = OrderedDict([(samplename+" #{}".format(replicateno), np.std(replicate_cpvals) ) for samplename,sampledata in data.items() for replicateno,replicate_cpvals in sampledata.items()])
+        print("plotbarsflatv3: Calculating cp means:")
+        cpmeans = OrderedDict([(samplename+" #{}".format(replicateno), np.mean(replicate_cpvals) ) for samplename, sampledata in list(data.items()) for replicateno, replicate_cpvals in list(sampledata.items())])
+        print("plotbarsflatv3: Calculating cpstdev:")
+        cpstdev = OrderedDict([(samplename+" #{}".format(replicateno), np.std(replicate_cpvals) ) for samplename, sampledata in list(data.items()) for replicateno, replicate_cpvals in list(sampledata.items())])
 
         ind = np.arange(len(cpmeans))
         #ind = [i-barwidth/2 for i in np.arange(len(samplenames))]
-        print "plotbarsflatv3: Plotting bars:"
-        barprops = dict(yerr = cpstdev.values(),
+        print("plotbarsflatv3: Plotting bars:")
+        barprops = dict(yerr = list(cpstdev.values()),
                     color='y', width = barwidth, edgecolor='k', ecolor='k',
                     align='center', alpha=0.5, zorder=1
                     )
-        print "plotbarsflatv3: Plotting points:"
-        p2 = pyplot.bar(ind, cpmeans.values(), **barprops)
+        print("plotbarsflatv3: Plotting points:")
+        p2 = pyplot.bar(ind, list(cpmeans.values()), **barprops)
         return p2
 
 
@@ -280,7 +280,7 @@ class DataPlotter():
 
     def makehatchpat(self, useextra=False, groups=None, prepend_pat=None):
         hatch1 = ['/', '-', 'x', '\\', '+'] # I do not use '|', it looks weird on vertical bars.
-        hatchextra = ['.','*','o','0']   # http://matplotlib.org/api/artist_api.html#matplotlib.patches.Patch.set_hatch
+        hatchextra = ['.', '*', 'o', '0']   # http://matplotlib.org/api/artist_api.html#matplotlib.patches.Patch.set_hatch
         hatchextra = ['.'] # They all look weird.
         if prepend_pat is None:
             prepend_pat = list()
@@ -323,10 +323,10 @@ class DataPlotter():
         #hatch_pat = [h*i for h in hatch1 for i in range(1,7)] # To test how hatches look...
         if groups is not None:
             hatch_pat_groups = list()
-            for hidx,groupsize in enumerate(groups):
+            for hidx, groupsize in enumerate(groups):
                 for i in range(groupsize):
                     hatch_pat_groups.append(hatch_pat[hidx])
-            hatch_pat_groups = [hatch_pat[hidx] for hidx,groupsize in enumerate(groups) for i in range(groupsize)]
+            hatch_pat_groups = [hatch_pat[hidx] for hidx, groupsize in enumerate(groups) for i in range(groupsize)]
             hatch_pat = hatch_pat_groups
         self.Hatch_pat = hatch_pat
         return hatch_pat
@@ -334,24 +334,24 @@ class DataPlotter():
 
     def plot_stdcurves_fromsamplename_regex(self, regexlist, curvenames):
         curvedata = self.Datamanager.generateStdCurveFromRegexNamed(regexlist, curvenames, doprint=True)
-        for curvename,stdcurvedata in curvedata.items():
+        for curvename, stdcurvedata in list(curvedata.items()):
             if len(stdcurvedata) < 1:
                 continue
-            print 'stdcurvedata 11:'
-            print stdcurvedata
-            x_repmeans = [ (entry[0], [np.mean(repdata) for repindex,repdata in entry[1].items()]) for entry in stdcurvedata]
-            print 'x_repmeans 22: '
-            print x_repmeans
+            print('stdcurvedata 11:')
+            print(stdcurvedata)
+            x_repmeans = [ (entry[0], [np.mean(repdata) for repindex, repdata in list(entry[1].items())]) for entry in stdcurvedata]
+            print('x_repmeans 22: ')
+            print(x_repmeans)
             data_processed = [ (entry[0], np.mean(entry[1]), np.std(entry[1]) ) for entry in x_repmeans]
-            print 'data_processed 33:'
-            print data_processed
+            print('data_processed 33:')
+            print(data_processed)
             #conc, ctmean, cterr = zip(*data_processed)
             #print conc, ctmean, cterr
-            xvals, yvals = zip(*[ (entry[0], yval) for entry in x_repmeans for yval in entry[1]] )
-            print 'xvals:'
-            print xvals
-            print 'yvals:'
-            print yvals
+            xvals, yvals = list(zip(*[ (entry[0], yval) for entry in x_repmeans for yval in entry[1]] ))
+            print('xvals:')
+            print(xvals)
+            print('yvals:')
+            print(yvals)
             pyplot.semilogx(xvals, yvals, hold=True, marker='*', label=curvename)
             pyplot.legend() # make legend using existing lines...
 #            pyplot.plot(conc, ctmean) #, yerr=cterr)
@@ -367,42 +367,42 @@ class DataPlotter():
         if 'standard' in (stdcurveaxis, residualsplotaxis):
             # call signature is subplot2grid( (total_rows, total_cols), (row_index, col_inxex), rowspan=N, colspan=N)
             # note that indices are 0-based.
-            stdcurveaxis = pyplot.subplot2grid( (1,2), (0,0) )
-            residualsplotaxis = pyplot.subplot2grid( (1,2), (0,1) )
+            stdcurveaxis = pyplot.subplot2grid( (1, 2), (0, 0) )
+            residualsplotaxis = pyplot.subplot2grid( (1, 2), (0, 1) )
         elif stdcurveaxis is None:
             stdcurveaxis = pyplot.gca()
         stdcurves_info = self.Datamanager.stdcurveAutomator(regexlist, curvenames, VERBOSE=0)
-        curvecolors = dict( zip(stdcurves_info['qrmean_data'].keys(), colors*5) )
-        print 'curvecolors:\n'+'\n'.join(["{}: {}".format(name, color) for name, color in curvecolors.items() ])
+        curvecolors = dict( list(zip(list(stdcurves_info['qrmean_data'].keys()), colors*5)) )
+        print('curvecolors:\n'+'\n'.join(["{}: {}".format(name, color) for name, color in list(curvecolors.items()) ]))
         # plot datapoints:
-        for stdcurvename, stdcurve_qrmean_data in stdcurves_info['qrmean_data'].items():
+        for stdcurvename, stdcurve_qrmean_data in list(stdcurves_info['qrmean_data'].items()):
             points = [ (datapoint[0], ct_qrmean_val) for datapoint in stdcurve_qrmean_data for ct_qrmean_val in datapoint[1] ]
             if len(points) < 1:
                 continue
             # points = list of (x,y) tuples
-            xvals,yvals = zip(*points)
+            xvals, yvals = list(zip(*points))
             #print "plotting with xvals: {}, yvals: {}, stdcurvename: {}".format(xvals, yvals, stdcurvename)
             #stdcurveaxis.semilogx(xvals, yvals, '*', color=curvecolors[stdcurvename], label=stdcurvename) #marker='*', linestyle=None,
             #print "'{}' curve plotted.".format(stdcurvename)
         # plot linear fit points:
-        print "\nPlotting linear fit points::"
-        for stdcurvename, fitpointsvals in stdcurves_info['linfitpoints'].items():
+        print("\nPlotting linear fit points::")
+        for stdcurvename, fitpointsvals in list(stdcurves_info['linfitpoints'].items()):
             #points = [ (datapoint[0], ct_qrmean_val) for datapoint in stdcurve_qrmean_data for ct_qrmean_val in datapoint[1] ]
             # points = list of (x,y) tuples
-            xvals,yvals,ymeans,yresiduals,yerr = zip(*fitpointsvals)
+            xvals, yvals, ymeans, yresiduals, yerr = list(zip(*fitpointsvals))
             stdcurveaxis.semilogx(xvals, yvals, linestyle=':', color=curvecolors[stdcurvename], marker=None)#, label="linfit of {}".format(stdcurvename) )
-            print "xvals: {}".format(xvals)
-            print "yvals: {}".format(yvals)
-            print "ymeans: {}".format(ymeans)
-            print "yresiduals: {}".format(yresiduals)
-            print "yerr: {}".format(yerr)
+            print("xvals: {}".format(xvals))
+            print("yvals: {}".format(yvals))
+            print("ymeans: {}".format(ymeans))
+            print("yresiduals: {}".format(yresiduals))
+            print("yerr: {}".format(yerr))
 
             stdcurveaxis.errorbar(xvals, ymeans, yerr=yerr, linestyle='None', color=curvecolors[stdcurvename], marker='*', label=stdcurvename)
             xlim = residualsplotaxis.get_xlim()
             stdcurveaxis.set_xlim(xlim[0]*0.9, xlim[1]*1.1)
             if residualsplotaxis:
-                print 'Plotting residuals for {} curve'.format(stdcurvename)
-                print 'yresiduals: {}'.format(yresiduals)
+                print('Plotting residuals for {} curve'.format(stdcurvename))
+                print('yresiduals: {}'.format(yresiduals))
                 # uh... is yerr only available in barplots and errorplot?
                 # see http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.errorbar
                 # for log, search for 'scale' (linear or log) - you can use the set_xscale() method of an axis object :)
@@ -422,11 +422,11 @@ class DataPlotter():
                 residualsplotaxis.legend(prop=self.Legendprops)
                 # Specifying fontsize seems to not be supported (at least in my matplotlib, which is only 1.1.1)
                 #- although according to http://matplotlib.org/api/axes_api.html it should be!
-        print "\nStandard curve stats:"
-        for stdcurvename, fitdata in stdcurves_info['linfits'].items():
-            print "{name}: R2={r_squared:.3f}, Eff={eff:.3f}, Slope={slope:.2f}, Intercept={intercept:.1f}".format(
+        print("\nStandard curve stats:")
+        for stdcurvename, fitdata in list(stdcurves_info['linfits'].items()):
+            print("{name}: R2={r_squared:.3f}, Eff={eff:.3f}, Slope={slope:.2f}, Intercept={intercept:.1f}".format(
                     name=stdcurvename, r_squared=fitdata[2]**2, slope=fitdata[0], intercept=fitdata[1],
-                    eff=stdcurves_info['pcr_efficiencies'][stdcurvename])
+                    eff=stdcurves_info['pcr_efficiencies'][stdcurvename]))
 #        self.plot_stdcurves_fromsamplename_regex(regexlist, curvenames)
 
 
@@ -439,7 +439,7 @@ class DataPlotter():
         if cycledata is None:
             cycledata = self.DataManager.Rawcycledatastruct
         if cycledata is None or len(cycledata) < 1:
-            print "No cycledata..."
+            print("No cycledata...")
             return
         if ax is None:
             fig = pyplot.figure()
@@ -447,23 +447,23 @@ class DataPlotter():
         plts = list()
         legend_plts = list()
         legend_labels = list()
-        print "Input cycledata: {}".format(type(cycledata))
-        for samplename, samplereplicates in cycledata.items():
+        print("Input cycledata: {}".format(type(cycledata)))
+        for samplename, samplereplicates in list(cycledata.items()):
             (switched, (color, linestyle, marker)) = self.StyleManager.switchStyle(new=samplename)
-            for replicateno, qpcr_replicates in samplereplicates.items():
-                for qpcr_pos, well_cycledata in qpcr_replicates.items():
+            for replicateno, qpcr_replicates in list(samplereplicates.items()):
+                for qpcr_pos, well_cycledata in list(qpcr_replicates.items()):
                     label = "{samplename},{replicateno} ({pos})".format(pos=qpcr_pos, samplename=samplename, replicateno=replicateno)
                     #print "pos: {pos}, samplename: {samplename}, replicateno: {replicateno}".format(pos=qpcr_pos, samplename=samplename, replicateno=replicateno)
                     # notice the (plt, ) unpacking; plot() returns a *list* of 'matplotlib.lines.Line2D' instances.
-                    plt, = pyplot.plot(*zip(*well_cycledata), picker=picker, marker=marker, color=color, ls=linestyle,
+                    plt, = pyplot.plot(*list(zip(*well_cycledata)), picker=picker, marker=marker, color=color, ls=linestyle,
                         label=label )
                     plts.append(plt)
             if switched:
-                print "Adding label: {}".format(label)
+                print("Adding label: {}".format(label))
                 legend_plts.append(plt)
                 legend_labels.append(label)
             else:
-                print "NOT adding label: {}".format(label)
+                print("NOT adding label: {}".format(label))
         if yscale:
             ax.set_yscale(yscale)
         if xscale:
@@ -497,13 +497,13 @@ class DataPlotter():
             ind = event.ind
             # np.take is basically just object-independent index-based addressing
             # label is str instance.
-            print 'onpick1 line: {} at (x,y)=({}, {})'.format(label, np.take(xdata, ind), np.take(ydata, ind))
+            print('onpick1 line: {} at (x,y)=({}, {})'.format(label, np.take(xdata, ind), np.take(ydata, ind)))
         elif isinstance(event.artist, matplotlib.patches.Rectangle):
             patch = event.artist
-            print('onpick1 patch:', patch.get_path())
+            print(('onpick1 patch:', patch.get_path()))
         elif isinstance(event.artist, matplotlib.text.Text):
             text = event.artist
-            print('onpick1 text:', text.get_text())
+            print(('onpick1 text:', text.get_text()))
 
 
 
@@ -519,14 +519,14 @@ if __name__ == '__main__':
     def testStdcurvePlotting():
         sampledatayaml = 'sampledata/RS157b_qPCR_datastruct.yml' ##os.path.curdir
         dp.Datamanager.loadfromyaml(sampledatayaml)
-        xticklabels = dp.Datamanager.DataStruct.keys()
+        xticklabels = list(dp.Datamanager.DataStruct.keys())
         # (rows, cols)
     #    ax1 = pyplot.subplot2grid( (2,3), (0,0), colspan=2, rowspan=2 )
     #    ax2 = pyplot.subplot2grid( (2,3), (0,2) )
     #    ax3 = pyplot.subplot2grid( (2,3), (1,2) )
-        ax1 = pyplot.subplot2grid( (2,2), (0,0), colspan=1, rowspan=2 )
-        ax2 = pyplot.subplot2grid( (2,2), (0,1) )
-        ax3 = pyplot.subplot2grid( (2,2), (1,1) )
+        ax1 = pyplot.subplot2grid( (2, 2), (0, 0), colspan=1, rowspan=2 )
+        ax2 = pyplot.subplot2grid( (2, 2), (0, 1) )
+        ax3 = pyplot.subplot2grid( (2, 2), (1, 1) )
         # http://matplotlib.org/users/gridspec.html
         # see also matplotlib.figure.Figure.add_subplot(...)
         # http://matplotlib.org/api/figure_api.html
@@ -550,16 +550,16 @@ if __name__ == '__main__':
     def testCycledataPlotting():
         cycledatafn = 'sampledata/20130904 wp test.txt'
         sampleposmap = dp.Datamanager.SampleNameManager.makeEmptyFullPosMap(ncols=5, saveToSelf=False)
-        print "Empty sampleposmap generated... ({})".format(time.clock()-startclock)
+        print("Empty sampleposmap generated... ({})".format(time.clock()-startclock))
         data = dp.Datamanager.makeRawcycledatastructure(cycledatafn, sampleposmap)
-        print "Cycledata datastruct generated... ({})".format(time.clock()-startclock)
+        print("Cycledata datastruct generated... ({})".format(time.clock()-startclock))
         dp.plotCycledata(data)
         "Dataplotter: cycledata plotted, showing plot figure ({})".format(time.clock()-startclock)
         pyplot.show()
 
     testCycledataPlotting()
 
-    print "Dataplotter: MAIN/TEST RUN FINISHED... ({})".format(time.clock()-startclock)
+    print("Dataplotter: MAIN/TEST RUN FINISHED... ({})".format(time.clock()-startclock))
 
 
 #####################################################

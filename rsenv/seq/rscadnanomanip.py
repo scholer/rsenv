@@ -38,7 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 #import rsseq
-from rsseq import dnacomplement
+from .rsseq import dnacomplement
 
 
 def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, desc=None, writeToFile=True,
@@ -59,7 +59,7 @@ def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, 
 
     with open(staplesetfilepath) as inputfile, open(outputfilename, fileflags) as outputfile:
         lines = (line.strip() for line in inputfile if line.strip())
-        testline = lines.next()
+        testline = next(lines)
         # If there are more tabs in the first line than there is commas, then use tabs as separator.
         sep = '\t' if (len(testline.split('\t')) > len(testline.split(','))) else ','
         headers = testline.split(sep)
@@ -69,7 +69,7 @@ def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, 
             outputfile.write(sep.join(headers)+"\n")
         for line in lines:
             row = line.split(sep)
-            rowdict = dict(zip(headers, row))
+            rowdict = dict(list(zip(headers, row)))
             if rowdict["Color"] == filtercolor or rowdict["Color"] in filtercolor:
                 if replacecolor:
                     rowdict["Color"] = replacecolor
@@ -80,7 +80,7 @@ def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, 
 
 class RsFileObject(object):
     def __init__(self, fileobj, fileflags='r'):
-        if isinstance(fileobj, (str, unicode)):
+        if isinstance(fileobj, str):
             self._filename = fileobj
             self.fileobj = open(fileobj, fileflags)
         else:
@@ -88,7 +88,7 @@ class RsFileObject(object):
             if fileobj:
                 self.fileobj = fileobj
             else:
-                from StringIO import StringIO
+                from io import StringIO
                 self.fileobj = StringIO()
     def close(self):
         if self._filename:
@@ -152,18 +152,18 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
     if isComplement:
         appendSeq = dnacomplement(appendSeq).upper()
         #print "Appending seq: " + appendSeq
-    if isinstance(writeToFile, (str, unicode)):
+    if isinstance(writeToFile, str):
         fileflags = 'a' if appendToFile else 'w'
         newfile = open(writeToFile, fileflags)
     elif writeToFile:
         newfile = writeToFile
     else:
-        from StringIO import StringIO    # python2, python3 is stringio.StringIO
+        from io import StringIO    # python2, python3 is stringio.StringIO
         newfile = StringIO()
-    with open(staplesetfilepath,'rb') as fp:
+    with open(staplesetfilepath, 'rb') as fp:
         # simple test for whether to use comma or tab as separator:
         lines = (line.strip() for line in fp if line.strip())
-        testline = lines.next()
+        testline = next(lines)
         # If there are more tabs in the first line than there is commas, then use tabs as separator.
         sep = '\t' if (len(testline.split('\t')) > len(testline.split(','))) else ','
         if outsep is None:
@@ -179,7 +179,7 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
         #print "Line format is: {}".format(lnstrformat)
         if writeheader:
             if lnstrformat == orderlistformat:
-                newfile.write(orderlistformat.replace("{","").replace("}","")+'\n')
+                newfile.write(orderlistformat.replace("{", "").replace("}", "")+'\n')
             else:
                 newfile.write(outsep.join(header)+'\n')
         # Header map: maps a header string to column index
@@ -187,7 +187,7 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
         rows = (line.split(sep) for line in lines)
         # You may want to capture to list instead of generator and close the file here...
         for row in rows:
-            rowdict = dict(zip(header, row))
+            rowdict = dict(list(zip(header, row)))
             if keepOrgSequence:
                 rowdict['OriginalSequence'] = rowdict['Sequence']
             if filtercolor is None or (len(row)>1 and (rowdict['Color'] == filtercolor or rowdict['Color'] in filtercolor)) :
@@ -202,7 +202,7 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
                 rowdict['Length'] = len(seq)
                 ln = lnstrformat.format(**rowdict)
                 if verbose:
-                    print ln
+                    print(ln)
                 newfile.write(ln+"\n")
             elif not writeonlyfiltered:
                 # Write line even if it does not match filter...:
@@ -212,7 +212,7 @@ def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, append
 #                rowdict['Description'] = rowdict.get('Description', "")
                 #newfile.write(outsep.join(row+[""]*(len(header)-len(row)))+'\n')   # uh, what?
 
-    if isinstance(writeToFile, (str, unicode)):
+    if isinstance(writeToFile, str):
         newfile.close()
     else:
         return newfile

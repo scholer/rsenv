@@ -85,14 +85,14 @@ def endanchored_part_generator_halving(seq1, from_start=True, expand_part=True):
     fe_delta_generator = chain((L/2**i for i in xrange(1, int(log(L, 2))+1)), (1 for i in xrange(2)))
     while True:
         if directive['from_start']:
-            delta = fs_delta_generator.next()
+            delta = next(fs_delta_generator)
             from_start_offset += delta if directive['expand_part'] else -delta
             #print "delta is", delta, ", from_start_offset is", from_start_offset
             msg = yield seq1[:from_start_offset]
         else:
             # Wait... This should adapt to the result of the first search from the start.
             # Seems better to make a new generator.
-            delta = fe_delta_generator.next()
+            delta = next(fe_delta_generator)
             from_end_offset += -delta if directive['expand_part'] else delta
             #print "delta is", delta, ", from_end_offset is", from_end_offset
             msg = yield seq1[from_end_offset:]
@@ -117,7 +117,7 @@ def genparts(length, seqs=None):
     """
     if seqs is None:
         return ("".join(comb) for comb in product(atgc, repeat=length))
-    if isinstance(seqs, basestring):
+    if isinstance(seqs, str):
         combseq = seqs
     else:
         combseq = "".join(seqs)
@@ -137,7 +137,7 @@ def seqPermuts(seqs=None, permlen=5, copyToClipboard=False, includerevcompl=Fals
 
     if seqs is None:
         get_clipboard()
-    if isinstance(seqs, basestring):
+    if isinstance(seqs, str):
         seqs = [seq.replace(",", "").strip() for seq in seqs.split()]
 
     if includerevcompl:
@@ -181,14 +181,14 @@ def testSeqPermuts():
     #existingHandles=existingHandles.split()
 #    permuts = seqPermuts(existingHandles[0])
     permuts = seqPermuts(existingHandles, permlen=5, copyToClipboard=True, includerevcompl=True)
-    print existingHandles
-    print ",".join(permuts)
+    print(existingHandles)
+    print(",".join(permuts))
 
     permuts4 = seqPermuts(existingHandles, permlen=4, includerevcompl=True)
 
-    permuts4 = filter(lambda seq: sum(map(lambda x: x.upper() in "GC", seq))>2, permuts4)
+    permuts4 = [seq for seq in permuts4 if sum([x.upper() in "GC" for x in seq])>2]
 
-    print ",".join(permuts4)
+    print(",".join(permuts4))
 
 
 def checkMatch(needle, haystack):
@@ -210,7 +210,7 @@ def checkCandidates(candlist, existingSet, permlen=5):
     #print candidates5mers
     matchdata = [[[(i, candidates[i], cand5mer, existing) for existing in existingSet if cand5mer in existing]
                                                 for cand5mer in cand5mers]
-                                            for i,cand5mers in enumerate(candidates5mers)]
+                                            for i, cand5mers in enumerate(candidates5mers)]
     match5mer = {match[0] for candidate5mers in candidates5mers for cand5mer in candidate5mers for match in cand5mer}
     candidates = set(candidates) - match5mer # set algorithmics. Just make sure both are sets.
     return candidates, matchdata
@@ -244,9 +244,9 @@ def testcheckCandidates(candidates=None):
 "GATCCGGATACAGGTCTTGCG" # third-last, with some alterations. Still matches other strands, though.
         ]
     cand, matchdata = checkCandidates(candidates, existingSet, permlen=5)
-    print "Candidates (after filter):"
-    print cand
-    print "Matchdata:"
+    print("Candidates (after filter):")
+    print(cand)
+    print("Matchdata:")
     from pprint import pprint
     pprint(matchdata)
 #    for candidate5mers in matchdata:
@@ -260,14 +260,14 @@ def generateRandomSeqs(seqlength, desiredseqs, haltAfter=10000, verbose=False, p
     Can also be implemented as iterator...
     """
     def semirandomnewseq(seq):
-        return "".join([N if randint(0,1) else nucs[randint(0,3)] for N in seq])
+        return "".join([N if randint(0, 1) else nucs[randint(0, 3)] for N in seq])
     def randomnewseq(seq):
-        return "".join([nucs[randint(0,3)] for N in seq])
+        return "".join([nucs[randint(0, 3)] for N in seq])
     if newseq == "semi-random":
-        print "Using SEMIrandom-style new sequence generator"
+        print("Using SEMIrandom-style new sequence generator")
         newseqgen = semirandomnewseq
     else:
-        print "Using random-style new sequence generator"
+        print("Using random-style new sequence generator")
         newseqgen = randomnewseq
 
     seqs = set() # Could also be a dict...
@@ -279,7 +279,7 @@ def generateRandomSeqs(seqlength, desiredseqs, haltAfter=10000, verbose=False, p
     GCcontent = (0.4, 0.7)
     # Many approaches, either systematic, random or mathematically clever. I go with random...
     from random import randint
-    seq = "".join([nucs[randint(0,3)] for i in range(seqlength)])
+    seq = "".join([nucs[randint(0, 3)] for i in range(seqlength)])
     # Not sure what is better, have as list or cast to tuple/generator/whatever (must be hashable)
     nTries = 0
     while nTries < haltAfter and len(seqs) < desiredseqs:
@@ -302,7 +302,7 @@ def generateRandomSeqs(seqlength, desiredseqs, haltAfter=10000, verbose=False, p
                     failedseqs.add(seq2)
                 else:
                     if verbose:
-                        print "{1}: {0}/{3} New sequence: {2}".format(len(seqs), nTries, seq2, desiredseqs)
+                        print("{1}: {0}/{3} New sequence: {2}".format(len(seqs), nTries, seq2, desiredseqs))
                     seqs.add(seq2)
                     usedpermuts.update(set(permuts))
                     seq=seq2

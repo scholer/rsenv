@@ -44,43 +44,43 @@ def plot_measurement(datafile=None, selection=None, interval=None, showplot=True
         try:
             datafile = nd_utils.select_ndj_file()
         except RsEmptyDirectoryError as e:
-            print "No nanodrop (*.ndj) files in directory {0}!".format(e.Directory)
+            print("No nanodrop (*.ndj) files in directory {0}!".format(e.Directory))
             return None
         except KeyboardInterrupt:
-            print "KeyboardInterrupt; plotting cancelled completely.\n"
+            print("KeyboardInterrupt; plotting cancelled completely.\n")
             return
 #    print "Nanodrop files in directory: {0}  (using last one)".format(len(ndjfiles))
-    print "Using nanodrop datafile: {0}".format(datafile)
+    print("Using nanodrop datafile: {0}".format(datafile))
     data = get_data(datafile)
     metadata = get_metadata(data)
     samplenames = get_samplelist(data)
     def select_ndj_samples(datafile, samplenames):
-        print "=== SAMPLES in file '{}': ===".format(datafile)
-        print "\n".join(["[{0}] : {1}".format(i, samplename) for i,samplename in enumerate(samplenames)])
-        return raw_input("Which sample(s) do you want to plot? (separate with comma; use ctrl+c to cancel.) ")
+        print("=== SAMPLES in file '{}': ===".format(datafile))
+        print("\n".join(["[{0}] : {1}".format(i, samplename) for i, samplename in enumerate(samplenames)]))
+        return input("Which sample(s) do you want to plot? (separate with comma; use ctrl+c to cancel.) ")
     while selection is None or selection == '':
         try:
             selection = select_ndj_samples(datafile, samplenames)
         except KeyboardInterrupt:
-            print "KeyboardInterrupt; Plotting of this file cancelled.\n"
+            print("KeyboardInterrupt; Plotting of this file cancelled.\n")
             plot_measurement()
             return
-        print "Selection is: {0}".format(selection)
+        print("Selection is: {0}".format(selection))
         if selection == '':
             "Nothing selected. Please try again."
-    if isinstance(selection, basestring):
+    if isinstance(selection, str):
         selection = selection.split(',')
     xdata = [float(val) for val in metadata["xdomain"]]
     legend = list()
-    ymin,ymax = 0,0.1
+    ymin, ymax = 0, 0.1
     colors = "bgrcmy"
     linestyles = ('-', '--', ':')
     colorstyles = [(colors[i % len(colors)], linestyles[i / len(colors) % len(linestyles)]) for i in range(len(selection))]
-    for i,sample in enumerate([sample.strip() for sample in selection]):
+    for i, sample in enumerate([sample.strip() for sample in selection]):
         sampleindex = get_sampleindex(sample, data)
         ydata = get_data_for_xvals(data, interval, sample, doprint=False)
-        ymin = min(ymin,min(ydata))
-        ymax = max(ymax,max(ydata))
+        ymin = min(ymin, min(ydata))
+        ymax = max(ymax, max(ydata))
         #ydata.append(get_data_for_xvals(data, interval, sample, False))
         # Plot using pyplot:
         label = samplenames[sampleindex]
@@ -94,7 +94,7 @@ def plot_measurement(datafile=None, selection=None, interval=None, showplot=True
     pyplot.ylabel("Absorbance (AU/{0})".format(metadata["lightpath"]))
     pyplot.title(datafile)
     pyplot.xlim(min(xdata), max(xdata))
-    pyplot.ylim(ymin,ymax)
+    pyplot.ylim(ymin, ymax)
     #pyplot.legend(legend, prop={'size':'smaller'}, loc=0)
     if legend:
         # If I add labels during plot, I dont need to pass the legend labels; 
@@ -107,7 +107,7 @@ def plot_measurement(datafile=None, selection=None, interval=None, showplot=True
     if showplot:
         pylab.show()
 
-    plot_again=raw_input("Do another plot?\n  Press 'y' or enter to plot with same datafile;\n  press 'f' to select a new file;\n  press 'n' or any other key to exit.\n")
+    plot_again=input("Do another plot?\n  Press 'y' or enter to plot with same datafile;\n  press 'f' to select a new file;\n  press 'n' or any other key to exit.\n")
     if len(plot_again)==0 or plot_again[0].lower() == 'y':
         plot_measurement(datafile)
     elif plot_again[0].lower() == 'f':
@@ -145,7 +145,7 @@ def plot_postprocessing(self, legend=None, title=None, export=False, showplot=Fa
             exportname = self.ExportBasename
         else:
             exportname = self.getTimebasedFilename()
-        print "Saving plot as: "+ exportname
+        print("Saving plot as: "+ exportname)
         pyplot.savefig(exportname, dpi=300)
     if self.Showplot:
         pylab.show()
@@ -157,9 +157,9 @@ def plot_postprocessing(self, legend=None, title=None, export=False, showplot=Fa
 
 if __name__ == "__main__":
     """
-    Note: To invoke this from command line, use the driver in rsenv/bin/nanodrop_plotsamples.py
+    Note: To invoke this from command line, use the driver in rsenv/examples/nanodrop_plotsamples.py
     """
-    print "Starting test of module rsnanodrop.py ----"
+    print("Starting test of module rsnanodrop.py ----")
     
     start_dir = None
     test_dir = "/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/"
@@ -177,5 +177,5 @@ if __name__ == "__main__":
     plot_measurement()
     if start_dir:
         os.chdir(start_dir)
-    print "Finished test of module rsnanodrop.py ^^^^ "
+    print("Finished test of module rsnanodrop.py ^^^^ ")
 

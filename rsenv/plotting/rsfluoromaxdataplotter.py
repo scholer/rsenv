@@ -75,10 +75,10 @@ class DataPlotter(object):
             else:
                 # Use the filename as caption
                 captions.append(line[0])
-        print "\n- ".join(["Files: "] + filenames)
-        print "\n- ".join(["Captions: "] + captions)
+        print("\n- ".join(["Files: "] + filenames))
+        print("\n- ".join(["Captions: "] + captions))
         
-        print loc
+        print(loc)
         self.plotFiles(filenames, captions, costumlines=costumlines, **kwargs)
                        #samePlot=samePlot, showplot=show,
                        #export=export, exportBaseName=basename, loc=loc, fontsize=fontsize,
@@ -99,13 +99,13 @@ class DataPlotter(object):
             lines.append((colors[i % len(colors)], linestyles[i / len(colors) % len(linestyles)]))
         
         #pyplot.hold(samePlot)
-        print "filepaths: " + str(filepaths)
-        print "samePlot: " + str(samePlot)
-        for i,path in enumerate(filepaths):
+        print("filepaths: " + str(filepaths))
+        print("samePlot: " + str(samePlot))
+        for i, path in enumerate(filepaths):
             linecolor = lines[i][0]
             linestyle = lines[i][1]
-            print "Plotting file: " + str(path)
-            print "linestyle: " + linestyle
+            print("Plotting file: " + str(path))
+            print("linestyle: " + linestyle)
             if legend:
                 caption = legend[i]
             else:
@@ -114,9 +114,9 @@ class DataPlotter(object):
                 if costumlines[i]:
                     linestyle = costumlines[i][1]
                     linecolor = costumlines[i][0]
-            print "linecolor is: " + linecolor
-            print "linestyle is: " + linestyle
-            plotfile(path, cols=(0,1), names=("Wavelength (nm)", caption),
+            print("linecolor is: " + linecolor)
+            print("linestyle is: " + linestyle)
+            plotfile(path, cols=(0, 1), names=("Wavelength (nm)", caption),
                      delimiter=delimiter, checkrows=0, newfig=newfig, subplots=False,
                      label=caption, 
                      #ls='r--')
@@ -124,10 +124,10 @@ class DataPlotter(object):
                      #)
             if not samePlot:
                 if export:
-                    print "exporting individual plot..."
+                    print("exporting individual plot...")
                     pyplot.savefig(exportBaseName+path, dpi=300)
-        print legend
-        print fontsize
+        print(legend)
+        print(fontsize)
         font = font_manager.FontProperties(size=14)
         # loc: 0 is "best", 1 upper right, 2 upper left
         # http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.legend
@@ -137,13 +137,13 @@ class DataPlotter(object):
         if export:
             if samePlot and exportBaseName:
                 pyplot.savefig(exportBaseName, dpi=300)
-                print "exporting collective plot"
+                print("exporting collective plot")
             else: 
-                print "plotFiles(): samePlot or exportBaseName is false."
-                print " - samePlot: " + str(samePlot)
-                print " - exportBaseName: " + str(exportBaseName)
+                print("plotFiles(): samePlot or exportBaseName is false.")
+                print(" - samePlot: " + str(samePlot))
+                print(" - exportBaseName: " + str(exportBaseName))
         else:
-            print "plotFiles(): export is False."
+            print("plotFiles(): export is False.")
         if showplot:
             show()
         
@@ -163,7 +163,7 @@ if __name__ == "__main__":
     showplot = None # Be careful not to override show() callable
     delimiter = '\t'
     for arg in sys.argv[1:]:
-        print arg
+        print(arg)
         if arg.lower() == '--listfile':
             plotlist = True
             sameplot = True
@@ -176,7 +176,7 @@ if __name__ == "__main__":
             continue
         elif arg.lower() == '--export':
             export = True
-            print "export set to True."
+            print("export set to True.")
             continue
         elif arg.lower() == '--showplot':
             showplot = True
@@ -200,13 +200,13 @@ if __name__ == "__main__":
         
     dp = DataPlotter()
     if plotlistfile:
-        print "Plotting files from filelist-file: " + str(plotlistfile)
+        print("Plotting files from filelist-file: " + str(plotlistfile))
         dp.plotfilelist(plotlistfile, samePlot=sameplot, export=export, showplot=showplot, loc=loc, fontsize=fontsize)
     elif plotfiles:
-        print "\n- ".join(["Plotting files:"] + plotfiles)
+        print("\n- ".join(["Plotting files:"] + plotfiles))
         dp.plotFiles(plotfiles, samePlot=sameplot, export=export, showplot=showplot, loc=loc, fontsize=fontsize)
     else:
-        print "Uhm, no arguments. Really?"
+        print("Uhm, no arguments. Really?")
 
 ## TIPS:
 ##            # Use a high number for checkrows, otherwise if the first 10 are ints 

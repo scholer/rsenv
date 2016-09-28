@@ -41,7 +41,7 @@ import os
 import sys
 
 try:
-    from Tkinter import Tk
+    from tkinter import Tk
 except ImportError:
     from tkinter import Tk
 
@@ -59,14 +59,14 @@ except ImportError:
 ## win32clipboard:
 try:
     import win32clipboard
-    print "win32clipboard is available."
+    print("win32clipboard is available.")
 except ImportError:
     pass
 
 ## pyperclip:
 try:
     import pyperclip
-    print "pyperclip is available."
+    print("pyperclip is available.")
 except ImportError:
     # check for import with
     # globals(), locals(), vars() or sys.modules.keys()
@@ -85,14 +85,14 @@ def set_clipboard(text, datatype=None):
     Arg datatype currently not used. Will generally assumed to be unicode text.
     From http://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
     """
-    if 'xerox' in sys.modules.keys():
+    if 'xerox' in list(sys.modules.keys()):
         xerox.copy(text)
-    elif 'pyperclip' in sys.modules.keys():
+    elif 'pyperclip' in list(sys.modules.keys()):
         pyperclip.copy(text)
-    elif 'gtk' in sys.modules.keys():
+    elif 'gtk' in list(sys.modules.keys()):
         clipboard = gtk.clipboard_get()
         text = clipboard.set_text(text)
-    elif 'win32clipboard' in sys.modules.keys():
+    elif 'win32clipboard' in list(sys.modules.keys()):
         wcb = win32clipboard
         wcb.OpenClipboard()
         wcb.EmptyClipboard()
@@ -100,7 +100,7 @@ def set_clipboard(text, datatype=None):
         # SetClipboardData Usage:
         # >>> wcb.SetClipboardData(<type>, <data>)
         # wcb.SetClipboardData(wcb.CF_TEXT, text.encode('utf-8')) # doesn't work
-        wcb.SetClipboardData(wcb.CF_UNICODETEXT, unicode(text)) # works
+        wcb.SetClipboardData(wcb.CF_UNICODETEXT, str(text)) # works
         wcb.CloseClipboard() # User cannot use clipboard until it is closed.
     else:
         # If code is run from within e.g. an ipython qt console, invoking Tk root's mainloop() may hang the console.
@@ -115,34 +115,34 @@ def get_clipboard():
     """
     Get content of OS clipboard.
     """
-    if 'xerox' in sys.modules.keys():
-        print "Returning clipboard content using xerox..."
+    if 'xerox' in list(sys.modules.keys()):
+        print("Returning clipboard content using xerox...")
         return xerox.paste()
-    elif 'pyperclip' in sys.modules.keys():
-        print "Returning clipboard content using pyperclip..."
+    elif 'pyperclip' in list(sys.modules.keys()):
+        print("Returning clipboard content using pyperclip...")
         return pyperclip.paste()
-    elif 'gtk' in sys.modules.keys():
-        print "Returning clipboard content using gtk..."
+    elif 'gtk' in list(sys.modules.keys()):
+        print("Returning clipboard content using gtk...")
         clipboard = gtk.clipboard_get()
         return clipboard.wait_for_text()
-    elif 'win32clipboard' in sys.modules.keys():
+    elif 'win32clipboard' in list(sys.modules.keys()):
         wcb = win32clipboard
         wcb.OpenClipboard()
         try:
             data = wcb.GetClipboardData(wcb.CF_TEXT)
         except TypeError as e:
-            print e
-            print "No text in clipboard."
+            print(e)
+            print("No text in clipboard.")
         wcb.CloseClipboard() # User cannot use clipboard until it is closed.
         return data
     else:
-        print "locals.keys() is: ", sys.modules.keys().keys()
-        print "falling back to Tk..."
+        print("locals.keys() is: ", list(sys.modules.keys()).keys())
+        print("falling back to Tk...")
         r = Tk()
         r.withdraw()
         result = r.selection_get(selection="CLIPBOARD")
         r.destroy()
-        print "Returning clipboard content using Tkinter..."
+        print("Returning clipboard content using Tkinter...")
         return result
 
 
@@ -174,6 +174,6 @@ def copy_file_to_clipboard(fd):
     >>> copy_file_to_clipboard('/path/to/a/textfile.txt')
     >>> content = get_clipboard() # returns content of file.
     """
-    if isinstance(fd, basestring):
+    if isinstance(fd, str):
         fd = open(fd)
     set_clipboard(fd.read())

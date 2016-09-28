@@ -27,4 +27,4 @@ dplotter.plotfiles(filelist)
 
 
 
-print "\nTest script completed."
+print("\nTest script completed.")

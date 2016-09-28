@@ -22,9 +22,10 @@ tools list, so you can look up conversions when you cannot remember them.
 
 """
 
-from constants import *
+from .constants import h, c
 
-wavenumber_to_energy(wavenumber):
+
+def wavenumber_to_energy(wavenumber):
     """
     Converts wavenumber (in reciprocal cm) to energy in Joule.
     Wavenumber is defined as 1/wavelength, also written as
@@ -33,7 +34,7 @@ wavenumber_to_energy(wavenumber):
     """
     E = h*c*wavenumber # Probably needs unit conversion?
 
-wavenumber_to_wavelength(wavenumber):
+def wavenumber_to_wavelength(wavenumber):
     """
     Converts wavenumber (in reciprocal cm) to wavelength in nm.
     Wavenumber is defined as 1/wavelength, also written as

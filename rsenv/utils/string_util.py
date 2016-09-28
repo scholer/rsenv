@@ -60,7 +60,7 @@ def text_to_table(text, ncols, sep='\n', nskip=0):
     nskip can be used to skip the first few entries.
     As one-liner: list( itertools.izip_longest(*[(line for line in text.split(sep)[1:])]*ncols) )
     """
-    return list( itertools.izip_longest(*[(line for line in text.split(sep)[nskip:])]*ncols) )
+    return list( itertools.zip_longest(*[(line for line in text.split(sep)[nskip:])]*ncols) )
 
 
 
@@ -85,12 +85,12 @@ space         String  the key of the space that this page belongs to
     """
     tl = text_to_table(text, ncols, sep, nskip)
     if outsep == 'constantwidth':
-        fieldwidths = map(lambda *x: max(map(len, x)), *tl)
+        fieldwidths = list(map(lambda *x: max(list(map(len, x))), *tl))
         linefmt = " ".join("{:<%s}" %i for i in fieldwidths)
     else:
         linefmt = outsep.join("{}" for i in ncols)
     ret = "\n".join( linefmt.format(*fields) for fields in tl )
     if doprint:
-        print ret
+        print(ret)
     return ret
 

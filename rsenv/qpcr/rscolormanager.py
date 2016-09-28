@@ -120,12 +120,12 @@ class ColorManager(object):
         elif fuzzywuzzy_available:
             fuzzywuzzy.fuzz.ratio(new, old)
         elif difflib_available:
-            print "Comparing {} with {} using difflib.SequenceMatcher.".format(new, old)
+            print("Comparing {} with {} using difflib.SequenceMatcher.".format(new, old))
             ratio = difflib.SequenceMatcher(None, new, old).ratio()
         elif simhash_available:
             ratio = simhash_compare(new, old)
         else:
-            print "No string diff lib available!"
+            print("No string diff lib available!")
             ratio = 0.9
         return ratio
 
@@ -141,9 +141,9 @@ class ColorManager(object):
             self.Lastswithstring = new
             self.Colorque.rotate(-1)
             if self.VERBOSE > 2:
-                print "ColorManager.switchColor:: Ratio={}, SWITCHING color to: '{}'.".format(ratio, self.Colorque[0])
+                print("ColorManager.switchColor:: Ratio={}, SWITCHING color to: '{}'.".format(ratio, self.Colorque[0]))
         elif self.VERBOSE > 3:
-            print "ColorManager.switchColor:: > Ratio={}, keeping color: '{}'.".format(ratio, self.Colorque[0])
+            print("ColorManager.switchColor:: > Ratio={}, keeping color: '{}'.".format(ratio, self.Colorque[0]))
         return self.Colorque[0]
 
 
@@ -177,7 +177,7 @@ class StyleManager(ColorManager):
             self.Lastswithstring = new
             self.AllStyleTuplesQue.rotate(-1)
             if self.VERBOSE > 2:
-                print "ColorManager.switchColor() > Ratio is {}, switching style to: '{}'.".format(ratio, self.AllStyleTuplesQue[0])
+                print("ColorManager.switchColor() > Ratio is {}, switching style to: '{}'.".format(ratio, self.AllStyleTuplesQue[0]))
         elif self.VERBOSE > 3:
-            print "ColorManager.switchColor() > Ratio is {}, keeping style: '{}'.".format(ratio, self.AllStyleTuplesQue[0])
+            print("ColorManager.switchColor() > Ratio is {}, keeping style: '{}'.".format(ratio, self.AllStyleTuplesQue[0]))
         return (styleswitch, self.AllStyleTuplesQue[0])

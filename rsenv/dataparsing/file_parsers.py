@@ -24,8 +24,8 @@ Module for parsing data files.
 
 import csv
 
-from tabulated_data import tabdata_as_dictlist
-from textdata_util import gen_trimmed_lines
+from .tabulated_data import tabdata_as_dictlist
+from .textdata_util import gen_trimmed_lines
 
 
 def trimmed_lines_from_file(filepath, commentchar='#', commentmidchar=None):

@@ -11,8 +11,8 @@ import numpy as np # use as np.arange(...)
 try:
     import scipy.stats
     scipy_available = True
-except ImportError, e:
-    print "Notice: SciPy not available.{}".format(e)
+except ImportError as e:
+    print("Notice: SciPy not available.{}".format(e))
     scipy_available = False
 import math
 #from matplotlib import pyplot # use as pyplot.scatter(...)
@@ -51,15 +51,15 @@ class DataManager():
             cp_metadata = f.readline()
             cpheader = f.readline().strip().split('\t')
             # edit: instead of having a list of lists, I change so I have a list of dicts.
-            cpdata = [dict(zip(cpheader, line.strip().split('\t'))) for line in f if line.strip()[0] != "#"]
+            cpdata = [dict(list(zip(cpheader, line.strip().split('\t')))) for line in f if line.strip()[0] != "#"]
         # cast all cp data to float:
         for entry in cpdata:
             try:
                 # for some reason using entry.get("Cp", qpcr_no_signal_cp_value)) yielded all empty Cp fields
                 entry["Cp"] = float(entry["Cp"]) if entry["Cp"] else qpcr_no_signal_cp_value
-            except ValueError, e:
-                print e
-                print "entry: {}, cp: '{}'".format(entry, entry.get("Cp", qpcr_no_signal_cp_value))
+            except ValueError as e:
+                print(e)
+                print("entry: {}, cp: '{}'".format(entry, entry.get("Cp", qpcr_no_signal_cp_value)))
         self.Cpdata = cpdata
         self.Metadata = cp_metadata
         return cpdata, cp_metadata
@@ -71,7 +71,7 @@ class DataManager():
             expmetadata = f.readline() # first line is metadata
             fields = f.readline().strip().split('\t')
             for line in f:
-                yield dict(zip(fields, line.strip().split('\t')))
+                yield dict(list(zip(fields, line.strip().split('\t'))))
 
 
     def loadfromyaml(self, yamlfilename):
@@ -162,10 +162,10 @@ class DataManager():
                     samplenamefull = sampleposmap[pos]
                 except KeyError:
                     if VERBOSE > 2:
-                        print "makeDatastructureV(): KeyError, no sample found for pos {} (probably just an empty well)".format(pos)
+                        print("makeDatastructureV(): KeyError, no sample found for pos {} (probably just an empty well)".format(pos))
                     if usePosAsSampleName:
                         if VERBOSE > 2:
-                            print "Using samplenamefull = pos"
+                            print("Using samplenamefull = pos")
                         samplenamefull = pos
                     else:
                         continue
@@ -220,7 +220,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             try:
                 samplenamefull = sampleposmap[pos]
             except KeyError:
-                print "makeDatastructureV(): KeyError, no sample found for pos {} (probably just an empty well)".format(pos)
+                print("makeDatastructureV(): KeyError, no sample found for pos {} (probably just an empty well)".format(pos))
                 continue
             if samplenamefull == 'None':
                 # None is used as a filler during sample-name generation (typically only needed for Anders' non-sequential plate layout...)
@@ -269,17 +269,17 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             qpcrdata = list()
             data.append({"samplename":samplename, "qpcrdata":qpcrdata})
             for i in range(tech_rep):
-                qpcrdata.append(cpdatasequence.next())
+                qpcrdata.append(next(cpdatasequence))
         if len(samplenames) != len(data):
-            print "WARNING: len(samplenames) =! len(data)  -- ({} vs {})".format(len(samplenames),len(data))
+            print("WARNING: len(samplenames) =! len(data)  -- ({} vs {})".format(len(samplenames), len(data)))
 
         """ --- Calculating mean and stdev --- """
-        print "Mean, STD - Samplename"
+        print("Mean, STD - Samplename")
         for sample in data:
             cpvals =  [measurement["Cp"] for measurement in sample["qpcrdata"] ]
             sample["qpcrmean"] = np.mean( cpvals )
             sample["qpcrstd"] = np.std( cpvals, dtype=np.float64)#,ddof=1)
-            print "{0}, {1} - {2}".format(sample["qpcrmean"], sample["qpcrstd"], sample["samplename"])
+            print("{0}, {1} - {2}".format(sample["qpcrmean"], sample["qpcrstd"], sample["samplename"]))
         return data
 
 
@@ -318,9 +318,9 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             data = self.DataStruct
             if persist is None:
                 persist = True
-        if isinstance(sampleorder, basestring):
+        if isinstance(sampleorder, str):
             sampleorder = getnoncommentlines_from_filepath(sampleorder)
-        logger.debug("data.keys(): %s", data.keys())
+        logger.debug("data.keys(): %s", list(data.keys()))
         logger.debug("sampleorder: %s", sampleorder)
         try:
             databylist = OrderedDict([(samplename, OrderedDict(sorted(data[samplename].items())) ) for samplename in sampleorder])
@@ -351,7 +351,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         datastruct[<key_samplename>][key_replicateno][]
         """
         print_header = "Discarting outliers by standard deviation"
-        print "#"*(6+len(print_header))+"\n{}\n".format(print_header)+"#"*(6+len(print_header))
+        print("#"*(6+len(print_header))+"\n{}\n".format(print_header)+"#"*(6+len(print_header)))
         if datastruct is None:
             datastruct = self.DataStruct
 
@@ -396,7 +396,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             def diff_keyfunc(idxtup):
                 ri, qi = idxtup
                 cpvalue = sampledata[ri][qi]
-                all_other_points = [cp_other for ri_other, repdata_other in sampledata.items()
+                all_other_points = [cp_other for ri_other, repdata_other in list(sampledata.items())
                                                 for qi_other, cp_other in enumerate(repdata_other)
                                                 if not (ri_other == ri and qi_other == qi) ]
                 mean_other = np.mean(all_other_points)
@@ -406,10 +406,10 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             return diff_keyfunc
 
         def getnumpoints(sampledata):
-            return sum(1 for repdata in sampledata.values() for val in repdata)
+            return sum(1 for repdata in list(sampledata.values()) for val in repdata)
 
         def getidxtups(sampledata):
-            return [(ri, qi) for ri, repdata in sampledata.items() for qi, ctvalue in enumerate(repdata)]
+            return [(ri, qi) for ri, repdata in list(sampledata.items()) for qi, ctvalue in enumerate(repdata)]
 
         def idxtup_discart_generator(sampledata):
             """
@@ -438,7 +438,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
             logger.debug("<<< The number of remaining sample datapoints (%s) is not higher than mindatapoints (%s); cannot discart any more datapoints in this sampledata. <<<",
                          getnumpoints(sampledata), mindatapoints)
 
-        for samplename, sampledata in datastruct.items():
+        for samplename, sampledata in list(datastruct.items()):
             logger.debug(">>> Discarting datapoints for sample '%s': %s >>>", samplename, sampledata)
             for ri, qi in idxtup_discart_generator(sampledata):
                 logger.info("Discarting datapoint: '%s', %s, %s = %s", samplename, ri, qi, sampledata[ri][qi])
@@ -467,21 +467,21 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         if datastruct is None:
             datastruct = self.DataStruct
         deletepoints = list()
-        for samplename, sampledata in datastruct.items():
+        for samplename, sampledata in list(datastruct.items()):
             if samplename not in discartNames:
                 continue
             #print "\nFor samplename: {}".format(samplename)
             logger.debug("samplename %s is in discartNames, checking to see if any replicates are empty...", samplename)
-            for ri, repdata in sampledata.items():
+            for ri, repdata in list(sampledata.items()):
                 for qi, cpvalue in enumerate(repdata):
                     if cpvalue >= discartValue:
                         logger.info("- DISCARTING samplepoint %s,%s for samplename %s", ri, qi, samplename)
                         #del sampledata[ri][qi]
-                        deletepoints.append( (samplename, ri,qi) )
-        for samplename, ri,qi in reversed(deletepoints):
-            print "-- deleting point {}:{},{}".format(samplename, ri,qi)
+                        deletepoints.append( (samplename, ri, qi) )
+        for samplename, ri, qi in reversed(deletepoints):
+            print("-- deleting point {}:{},{}".format(samplename, ri, qi))
             del datastruct[samplename][ri][qi]
-            print "-- datastruct now: {}".format(datastruct)
+            print("-- datastruct now: {}".format(datastruct))
         self.removeEmptyRepEntries()
         logger.debug("<<<<<< discartOutliersByNameAndValue() completed <<<<<")
         return datastruct
@@ -492,10 +492,10 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         if datastruct is None:
             datastruct = self.DataStruct
         repdatadelete = list()
-        for samplename, sampledata in datastruct.items():
+        for samplename, sampledata in list(datastruct.items()):
             if not sampledata:
                 logger.warning("WARNING, NO SAMPLEDATA FOR SAMPLENAME %s", samplename)
-            for ri, repdata in sampledata.items():
+            for ri, repdata in list(sampledata.items()):
                 if not repdata:
                     logger.debug("samplename %s, replicate %s is empty and marked for removal", samplename, ri)
                     repdatadelete.append( (samplename, ri) )
@@ -521,7 +521,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         def getparamsfromsamplename(samplename):
             #origamis, durations, exposures, precipmethods
             samplenameitems = ["origami", "duration", "exposure", "precipmethod"]
-            paramsfromsamplename = dict(zip(samplenameitems, samplename.strip().split(', ')))
+            paramsfromsamplename = dict(list(zip(samplenameitems, samplename.strip().split(', '))))
             return paramsfromsamplename
 
         def getfieldfromsamplename(field, samplename):
@@ -533,13 +533,13 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         mygraphsortorder = ["precipmethod", "origami", "duration", "exposure"] # How I prefer to see the samples
         #mygraphsortorder = ["origami", "duration", "exposure", "precipmethod"] # Custom/adhoc
         # If you want non-alfabetical sorting, you need to make a dict-list:
-        eachparamsortorder = {"origami":["PegTR","StdTR"],
-                              "duration":["Non-incubated","Incubated"],
-                              "exposure":["water","serum","blood-plasma","blood-cells"],
-                              "precipmethod":["PEG precip.","DNAzol precip."]
+        eachparamsortorder = {"origami":["PegTR", "StdTR"],
+                              "duration":["Non-incubated", "Incubated"],
+                              "exposure":["water", "serum", "blood-plasma", "blood-cells"],
+                              "precipmethod":["PEG precip.", "DNAzol precip."]
                               }
         def myorderfunc(params):
-            if isinstance(params, basestring):
+            if isinstance(params, str):
                 params = getparamsfromsamplename(params)
             # params should now be a dict.
             # when sorting a tuple, python first sorts by the first item, then the next, etc.
@@ -564,11 +564,11 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         """ ---- Filter v1-type data --- """
         drop_data_withpars = {"origami":[],
                               "duration":[],
-                              "exposure":["blood-plasma","blood-cells"],
+                              "exposure":["blood-plasma", "blood-cells"],
                               "precipmethod":["PEG precip."]
                               }
 
-        print "N samples before filter: {}".format(len(data))
+        print("N samples before filter: {}".format(len(data)))
         samples_to_remove = list()
         for sample in data:
             act = "Skipping"
@@ -580,7 +580,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         #    print pars.items()
             #print pars.items()
             act = "Not removing"
-            for p,v in pars.items():
+            for p, v in list(pars.items()):
                 #print "p,v = {},{}".format(p,v)
                 if v in drop_data_withpars[p]:
                     #print "removing sample {} in data: {}".format(sample['samplename'], sample in data)
@@ -597,7 +597,7 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         # If you remove while you loop, then you get a bug (it skips to the next), so doing it afterwards like this:
         for sample in samples_to_remove:
             data.remove(sample)
-        print "N samples after filter: {}".format(len(data))
+        print("N samples after filter: {}".format(len(data)))
         return data
 
 
@@ -613,21 +613,21 @@ sort dict d by key:   sorted(d.items()) as sorted will sort first by the first e
         for regex in regexlist:
             pat = re.compile(regex, regexflagsum)
             this_regex_data = list()
-            for samplename, sampledata in data.items():
+            for samplename, sampledata in list(data.items()):
                 match = pat.match(samplename)
                 if match:
                     xval = match.groups()[0].replace('10^', '1e')
                     try:
                         xval = float(xval)
-                    except ValueError, e:
-                        print "Could not convert conc value: {}".format(e)
+                    except ValueError as e:
+                        print("Could not convert conc value: {}".format(e))
                     this_regex_data.append( (xval, sampledata) )
                     # also: match.groupdict() returns dict.
                     if VERBOSE > 1:
-                        print "'{}' MATCHED '{}' <---".format(regex, samplename)
+                        print("'{}' MATCHED '{}' <---".format(regex, samplename))
                 else:
                     if VERBOSE > 2:
-                        print "'{}' did not match '{}'".format(regex, samplename)
+                        print("'{}' did not match '{}'".format(regex, samplename))
             stdcurves_datastruct.append(this_regex_data) # list of (conc,[replicate ct vals])
         return stdcurves_datastruct
 
@@ -649,23 +649,23 @@ OrderedDict: str <curve name> : list <curve data>
         stdcurvedata = self.generateStandardCurvesFromSamplenameRegex(regexlist, data, regexflagsum, VERBOSE)
         if doprint:
             for i, regexdata in enumerate(stdcurvedata):
-                print "'{}' curve:".format(curvenames[i])
-                print "conc\tyvals:"
+                print("'{}' curve:".format(curvenames[i]))
+                print("conc\tyvals:")
                 # e, E, f, F, g, G, %
                 # e = always exponential, f = always fixed point, g = exponential or fixed.
-                print "\n".join([ "{:.3g}\t{}".format(conc, ", ".join(["{}".format(lst) for lst in sampledata.values()]) ) for conc, sampledata in regexdata] )
+                print("\n".join([ "{:.3g}\t{}".format(conc, ", ".join(["{}".format(lst) for lst in list(sampledata.values())]) ) for conc, sampledata in regexdata] ))
         curvedata = dict([ (curvenames[i], regexdata) for i, regexdata in enumerate(stdcurvedata)  ])
         return curvedata
 
 
     def calculateStdCurveQrmean(self, stdcurve_rawdata):
         def mymean(vals):
-            print vals
+            print(vals)
             return np.mean(vals)
         stdcurve_qrmean_data = OrderedDict()
-        for curvename,curvedata in stdcurve_rawdata.items():
+        for curvename, curvedata in list(stdcurve_rawdata.items()):
             #print curvedata
-            stdcurve_qrmean_data[curvename] = [ (c[0], map(np.mean, c[1].values() )) for c in curvedata ]
+            stdcurve_qrmean_data[curvename] = [ (c[0], list(map(np.mean, list(c[1].values()) ))) for c in curvedata ]
         return stdcurve_qrmean_data
 
 
@@ -683,7 +683,7 @@ OrderedDict: str <curve name> : list <curve data>
             else:
                 log = lambda x: math.log(x, base)
         logdata = OrderedDict()
-        for curvename,curvedata in stdcurve_qrmean_data.items():
+        for curvename, curvedata in list(stdcurve_qrmean_data.items()):
             logdata[curvename] = [(log(c[0]), c[1]) for c in curvedata]
         return logdata
 
@@ -708,10 +708,10 @@ OrderedDict: str <curve name> : list <curve data>
            http://sdtidbits.blogspot.dk/2009/03/curve-fitting-and-plotting-in-python.html
         """
         linfitdata = OrderedDict()
-        for curvename,curvedata in stdcurve_qrmean_data.items():
+        for curvename, curvedata in list(stdcurve_qrmean_data.items()):
             data = [ (c[0], qrmean) for c in curvedata for qrmean in c[1]]
             if VERBOSE > 1:
-                print data
+                print(data)
             if len(data) < 1:
                 continue
             linfitdata[curvename] = self.linregress( data )
@@ -719,7 +719,7 @@ OrderedDict: str <curve name> : list <curve data>
         return linfitdata
 
     def linregress(self, data):
-        xdata,ydata = zip(*data)
+        xdata, ydata = list(zip(*data))
         if scipy_available:
             return scipy.stats.linregress( data )
         else:
@@ -737,7 +737,7 @@ OrderedDict: str <curve name> : list <curve data>
             #coeffs = fitres[0]
 
             # Correlation:
-            correlation = np.corrcoef(xdata, ydata)[0,1] # yes, ugly. corrcoef returns a matrix.
+            correlation = np.corrcoef(xdata, ydata)[0, 1] # yes, ugly. corrcoef returns a matrix.
             # correlation is the same as r_value, and r_squared is really just the squared value.
 
             # return (slope, intercept, r-value), similarly to scipy.stats.linregress:
@@ -749,7 +749,7 @@ OrderedDict: str <curve name> : list <curve data>
             fun = lambda x: math.exp(-x[0]**-1)-1
         else:
             fun = lambda x: math.pow(base, -x[0]**-1)-1
-        effs = OrderedDict( [( curvename, fun(fitdata) ) for curvename, fitdata in linfits.items() ]  )
+        effs = OrderedDict( [( curvename, fun(fitdata) ) for curvename, fitdata in list(linfits.items()) ]  )
         return effs
 
 
@@ -792,12 +792,12 @@ OrderedDict: str <curve name> : list <curve data>
         # Trying to establish what range we should calculate curve points for:
         linregpoints = OrderedDict()
         def calc_yfit_tuple(a, b, xval, ymean, yerr):
-            print "calculating tuple for conc point: {}, {}, {}".format(xval, ymean, yerr)
+            print("calculating tuple for conc point: {}, {}, {}".format(xval, ymean, yerr))
             yfit = a*transform(xval)+b
             residual = ymean-yfit if ymean else None
             return (xval, yfit, ymean, residual, yerr)
         def calc_yfit_tuple_multi(a, b, xval, ymean, yerr):
-            print "calculating tuple for conc point: {}, {}, {}".format(xval, ymean, yerr)
+            print("calculating tuple for conc point: {}, {}, {}".format(xval, ymean, yerr))
             yfit = a*transform(xval)+b
             yerr = np.std(ymean)
             ymean = np.mean(ymean)
@@ -809,23 +809,23 @@ OrderedDict: str <curve name> : list <curve data>
             xmax = stdcurve_qrmean_data[1]
             xvals = [np.linspace(xmin, xmax, num=20) for fit in linfits]
             try:
-                for curvename, linfitdata in linfits.items():
+                for curvename, linfitdata in list(linfits.items()):
                     a, b = linfitdata[0:2]
-                    linregpoints[curvename] = [calc_yfit_tuple(a,b, xval, None, None) for xval in xvals]
+                    linregpoints[curvename] = [calc_yfit_tuple(a, b, xval, None, None) for xval in xvals]
             except Exception as e:
-                print "calcLinRegPoints() :: Exception, perhaps you've provided linfits without the outer dict[curvename]=fitdata structure?"
+                print("calcLinRegPoints() :: Exception, perhaps you've provided linfits without the outer dict[curvename]=fitdata structure?")
                 linregpoints = [calc_yfit_tuple(linfits[0], linfits[1], xval, None, None) for xval in xvals]
             return linregpoints
         except Exception as e:
             pass
             # Assume stdcurve_qrmean_data is the main datastructure, and linregpoints structure on this input:
-        for curvename, curvedata in stdcurve_qrmean_data.items():
+        for curvename, curvedata in list(stdcurve_qrmean_data.items()):
             a, b = linfits[curvename][0:2]
             linregpoints[curvename] = [calc_yfit_tuple_multi(a, b, concpointdata[0], concpointdata[1], None) for concpointdata in curvedata]
             if VERBOSE > 3:
-                print "\ncalcLinRegPoints() :: Values for curve '{}':".format(curvename)
-                print "\n".join( ["{:03g} : {}, {}, {}, {}".format(*point) for point in linregpoints[curvename] ])
-                print "\n"
+                print("\ncalcLinRegPoints() :: Values for curve '{}':".format(curvename))
+                print("\n".join( ["{:03g} : {}, {}, {}, {}".format(*point) for point in linregpoints[curvename] ]))
+                print("\n")
         return linregpoints
 
 
@@ -833,32 +833,32 @@ OrderedDict: str <curve name> : list <curve data>
     def stdcurveAutomator(self, regexlist=None, curvenames=None, VERBOSE=2):
         if regexlist is None or curvenames is None:
             # self.Stdcurves_defs = (  (curve1name, curve1regex), ... )
-            curvenames, regexlist = zip(*self.Stdcurves_defs) # <=> self.Stdcurves_defs = zip(curvenames, regexlist)
+            curvenames, regexlist = list(zip(*self.Stdcurves_defs)) # <=> self.Stdcurves_defs = zip(curvenames, regexlist)
         stdcurve_rawdata = self.generateStdCurveFromRegexNamed(regexlist, curvenames, doprint=(VERBOSE>1), VERBOSE=VERBOSE)
         if VERBOSE > 2:
-            print '\nstdcurve_rawdata:'
-            print stdcurve_rawdata
+            print('\nstdcurve_rawdata:')
+            print(stdcurve_rawdata)
 
         stdcurve_qrmean_data = self.calculateStdCurveQrmean(stdcurve_rawdata)
         if VERBOSE > 2 or True:
-            print '\nstdcurve_qrmean_data:'
-            print stdcurve_qrmean_data
+            print('\nstdcurve_qrmean_data:')
+            print(stdcurve_qrmean_data)
 
         stdcurve_semilog_data = self.generateLogLinStdCurveData(stdcurve_qrmean_data)
         if VERBOSE > 2:
-            print '\nstdcurve_semilog_data:'
-            print stdcurve_semilog_data
+            print('\nstdcurve_semilog_data:')
+            print(stdcurve_semilog_data)
 
         #scipy_available = False
         stdcurve_linfits = self.generateLinearFits(stdcurve_semilog_data)
         if VERBOSE > 2:
-            print '\nstdcurve_linfits:'
-            print stdcurve_linfits
+            print('\nstdcurve_linfits:')
+            print(stdcurve_linfits)
 
         stdcurve_efficiencies = self.calcPcrEfficiencies(stdcurve_linfits)
         if VERBOSE > 2:
-            print '\nstdcurve_linfits:'
-            print "\n".join(["{}: {}".format(name, eff) for name, eff in stdcurve_efficiencies.items() ])
+            print('\nstdcurve_linfits:')
+            print("\n".join(["{}: {}".format(name, eff) for name, eff in list(stdcurve_efficiencies.items()) ]))
 
         stdcurve_linfitpoints = self.calcLinRegPoints(stdcurve_linfits, stdcurve_qrmean_data)
         # should be equivalent to:
@@ -866,8 +866,8 @@ OrderedDict: str <curve name> : list <curve data>
         #stdcurve_linfitpoints = dm.calcLinRegPoints(stdcurve_linfits, stdcurve_semilog_data, logbase=None)
         # semilog in, semilog out; must either be plotted on axis with log(conc) on the x-axis, or transformed before plotting.
         if VERBOSE > 2 or True:
-            print '\nstdcurve_linfitpoints:'
-            print "\n".join(["{}: {}".format(name, points) for name, points in stdcurve_linfitpoints.items() ])
+            print('\nstdcurve_linfitpoints:')
+            print("\n".join(["{}: {}".format(name, points) for name, points in list(stdcurve_linfitpoints.items()) ]))
 
 
         # stdcurve_linfitpoints from calcLinRegPoints has format:
@@ -879,10 +879,10 @@ OrderedDict: str <curve name> : list <curve data>
         residuals = OrderedDict([ (curvename,
             (concpoint[0], np.mean(concpoint[1]), np.std(concpoint[1]) ) if hasattr(concpoint[1], '__len__')
             else (concpoint[0], concpoint[1], 0 ) )
-            for curvename, concpoints in stdcurve_linfitpoints.items()
+            for curvename, concpoints in list(stdcurve_linfitpoints.items())
             for concpoint in concpoints])
 
-        print "residuals: {}".format(residuals)
+        print("residuals: {}".format(residuals))
 
         return dict(qrmean_data=stdcurve_qrmean_data,
                     linfits=stdcurve_linfits,
@@ -1037,12 +1037,12 @@ if __name__ == '__main__':
         if test_loop_count:
             break
     elapsed = (time.clock() - start)
-    print "Cycledata generator forloop time: {}".format(elapsed)
+    print("Cycledata generator forloop time: {}".format(elapsed))
     # Testing cycledata datastruct generation:
     start = time.clock()
     cycledatastruct = dm.makeRawcycledatastructure(cycledatafn, sampleposmap)
     elapsed = (time.clock() - start)
-    print "Cycledata datastruct generation time: {}".format(elapsed)
+    print("Cycledata datastruct generation time: {}".format(elapsed))
 
 
 

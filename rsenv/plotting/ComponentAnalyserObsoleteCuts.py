@@ -1,5 +1,5 @@
 
-
+"""
 #From doPcAnalysis():
 
                 #if xrngindex == 0: rngidx[0] = 0
@@ -21,3 +21,4 @@
         if xrng[0] is None: rngidx[1] = len(self.Xdata)-1
         else: rngidx[1] = dict([(val,index) for index,val in enumerate(self.Xdata)])[xrng[1]]
         
+"""

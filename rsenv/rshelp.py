@@ -35,12 +35,12 @@ class RsHelper(object):
         maxlength = max([len(i) for i in self.helpTopicsOrder])
         ndecorators = 3
         for topic in self.helpTopicsOrder:
-            print "\n"
-            print "-"*(maxlength+2*(ndecorators+1))
-            print " ".join(["-"*ndecorators, topic.center(maxlength), "-"*ndecorators])
-            print "-"*(maxlength+2*(ndecorators+1))
-            print 
-            print "\n".join(self.helpItems[topic])
+            print("\n")
+            print("-"*(maxlength+2*(ndecorators+1)))
+            print(" ".join(["-"*ndecorators, topic.center(maxlength), "-"*ndecorators]))
+            print("-"*(maxlength+2*(ndecorators+1)))
+            print() 
+            print("\n".join(self.helpItems[topic]))
     
     def settopic(self, topic):
         self.helpTopic = topic

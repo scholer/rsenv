@@ -31,7 +31,7 @@ Alternatively, see:
 """
 
 try:
-    import datadiff
+    from . import datadiff
 except ImportError:
     datadiff = None
 

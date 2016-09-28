@@ -77,8 +77,8 @@ class RsDataPlotter(object):
 
     def setByExample(self, filepath):
         self.DataReader.setByExample(filepath)
-        print "Scheme is now: " + self.Scheme
-        print "Dialect is now: " + str(self.Dialect)
+        print("Scheme is now: " + self.Scheme)
+        print("Dialect is now: " + str(self.Dialect))
 
 
     def plotfilelist(self, filelistfile, **kwargs):
@@ -105,8 +105,8 @@ class RsDataPlotter(object):
             else:
                 # Use the filename as caption
                 captions.append(os.path.basename(line[0]))
-        print "\n- ".join(["Files: "] + filenames)
-        print "\n- ".join(["Captions: "] + captions)
+        print("\n- ".join(["Files: "] + filenames))
+        print("\n- ".join(["Captions: "] + captions))
         
         self.setByExample(filenames[0])
         self.plotfiles(filenames, captions, costumlines=costumlines, **kwargs)
@@ -136,16 +136,16 @@ class RsDataPlotter(object):
         for i in range(len(filepaths)):
             lines.append((colors[i % len(colors)], linestyles[i / len(colors) % len(linestyles)]))
         
-        print lines
+        print(lines)
         
         #pyplot.hold(samePlot)
-        print "filepaths: " + str(filepaths)
-        print "samePlot: " + str(samePlot)
-        for i,path in enumerate(filepaths):
+        print("filepaths: " + str(filepaths))
+        print("samePlot: " + str(samePlot))
+        for i, path in enumerate(filepaths):
             linecolor = lines[i][0]
             linestyle = lines[i][1]
-            print "Plotting file: " + str(path)
-            print "linestyle: " + linestyle
+            print("Plotting file: " + str(path))
+            print("linestyle: " + linestyle)
             if legend:
                 caption = legend[i]
             else:
@@ -154,18 +154,18 @@ class RsDataPlotter(object):
                 if costumlines[i]:
                     linestyle = costumlines[i][1]
                     linecolor = costumlines[i][0]
-            print "linecolor is: " + linecolor
-            print "linestyle is: " + linestyle
-            pyplot.plotfile(path, cols=(0,1), names=("Wavelength (nm)", caption),
+            print("linecolor is: " + linecolor)
+            print("linestyle is: " + linestyle)
+            pyplot.plotfile(path, cols=(0, 1), names=("Wavelength (nm)", caption),
                      delimiter=delimiter, checkrows=0, newfig=newfig, subplots=False,
                      label=caption, 
                      color=linecolor, linestyle=linestyle)
             if not samePlot:
                 if export:
-                    print "exporting individual plot..."
+                    print("exporting individual plot...")
                     pyplot.savefig(exportBaseName+path, dpi=300)
-        print legend
-        print fontsize
+        print(legend)
+        print(fontsize)
         font = font_manager.FontProperties(size=14)
         # loc: 0 is "best", 1 upper right, 2 upper left
         # http://matplotlib.sourceforge.net/api/pyplot_api.html#matplotlib.pyplot.legend
@@ -175,13 +175,13 @@ class RsDataPlotter(object):
         if export:
             if samePlot and exportBaseName:
                 pyplot.savefig(exportBaseName, dpi=300)
-                print "exporting collective plot"
+                print("exporting collective plot")
             else: 
-                print "plotFiles(): samePlot or exportBaseName is false."
-                print " - samePlot: " + str(samePlot)
-                print " - exportBaseName: " + str(exportBaseName)
+                print("plotFiles(): samePlot or exportBaseName is false.")
+                print(" - samePlot: " + str(samePlot))
+                print(" - exportBaseName: " + str(exportBaseName))
         else:
-            print "plotFiles(): export is False."
+            print("plotFiles(): export is False.")
         if showplot:
             # I should probably use "pylab" namespace for these...
             pylab.show()
@@ -229,7 +229,7 @@ class RsDataPlotter(object):
         if legend:
             pyplot.legend(legend, prop={'size':'smaller'}, loc=self.LegendLoc)
         else:
-            print "No legend?"
+            print("No legend?")
         if title:
             pyplot.title(title)
         
@@ -240,7 +240,7 @@ class RsDataPlotter(object):
                 exportname = self.ExportBasename
             else:
                 exportname = self.getTimebasedFilename()
-            print "Saving plot as: "+ exportname
+            print("Saving plot as: "+ exportname)
             pyplot.savefig(exportname, dpi=300)
         if self.Showplot:
             pylab.show()
@@ -260,7 +260,7 @@ class RsDataPlotter(object):
             if os.path.exists(fp):
                 ok.append(fp)
             else:
-                print "Warning, file does not exists and will be excluded: " + fp
+                print("Warning, file does not exists and will be excluded: " + fp)
         self.Filepaths = ok
         return ok
 
@@ -362,7 +362,7 @@ class RsDataReader(object):
         for row in reader:
             if first:
                 if not columns:
-                    columns = range(len(row))
+                    columns = list(range(len(row)))
                 #data = [list()]*len(columns) # Wait! This is bad!
                 # The above will give us a list of lists, but all the lists are actually the same object.__class__
                 # The each entry in the list of lists references the same object.
@@ -371,7 +371,7 @@ class RsDataReader(object):
                 for i in range(len(columns)):
                     data.append(list())
                 first = False
-            for i,col in enumerate(columns):
+            for i, col in enumerate(columns):
                 data[i].append(row[col])
 
         return RsDatasetObject(data)
@@ -462,15 +462,15 @@ Specify data files to plot using a list instead of providing them on the command
     argparser.parse_args(namespace=dp)
 
     if dp.Plotlistfile:
-        print "Plotting files from filelist-file: " + str(dp.Plotlistfile)
+        print("Plotting files from filelist-file: " + str(dp.Plotlistfile))
         dp.plotfilelist(dp.Plotlistfile)
     elif dp.Plotfiles:
-        print "\n- ".join(["Plotting files:"] + dp.Plotfiles)
+        print("\n- ".join(["Plotting files:"] + dp.Plotfiles))
         if not dp.Scheme:
             dp.setByExample(dp.Plotfiles[0])
         dp.plotfiles(dp.Plotfiles)
     else:
-        print "Error, no plotfiles or plotlistfile given."
+        print("Error, no plotfiles or plotlistfile given.")
         argparser.print_help()
 
     ## ---- OLD CODE:  ----  ##

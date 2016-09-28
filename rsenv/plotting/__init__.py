@@ -11,7 +11,7 @@ See also:
 
 
 
-import nanodropplotter                   # This is fairly light-weight.
+from . import nanodropplotter                   # This is fairly light-weight.
 
 # BEFORE I CAN INCLUDE THESE AUTOMATICALLY, THEY SHOULD BE RE-CODED SO THEY DO NOT LOAD 
 # A LOT OF HEAVY MODULE UPON INITIAL IMPORT, BUT ONLY WHEN THEY ARE ACTUALLY USED.
@@ -29,7 +29,7 @@ the import must be inside a method. Putting the import inside the class but outs
 of any method still causes the import to occur when the module is initialized.
 """
 
-import rscomponentanalyser          # Imports YAML, numpy, scipy, matplotlib, etc.
-import rsfluoromaxdataplotter       # This also imports a lot of the same heavy modules.
-import rsdataplotter1               # Also imports numpy, scipy, pyplot, etc.
+from . import rscomponentanalyser          # Imports YAML, numpy, scipy, matplotlib, etc.
+from . import rsfluoromaxdataplotter       # This also imports a lot of the same heavy modules.
+from . import rsdataplotter1               # Also imports numpy, scipy, pyplot, etc.
 

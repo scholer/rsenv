@@ -48,7 +48,7 @@ def indexToRowColTup(index, ncols=12, nrowmax=8, reverse=False):
     col = (index % ncols) +1 # Watch out for modulus, returns from 0 to N-1.
     row = (index/ncols) +1 # NOTE: Python 2 specific. Use floor (math module) for python3
     if row > nrowmax:
-        print "indexToRowColTup() WARNING > index {0} with ncols={1}, nrowmax={2} will return a row of {3}, exceeding the limit!".format(index, ncols, nrowmax, row)
+        print("indexToRowColTup() WARNING > index {0} with ncols={1}, nrowmax={2} will return a row of {3}, exceeding the limit!".format(index, ncols, nrowmax, row))
     return (row, col)
 
 
@@ -161,7 +161,7 @@ class SampleNameManager(object):
             #metadata = f.readline()
             header = f.readline().strip().split('\t')
             # edit: instead of having a list of lists, I change so I have a list of dicts.
-            sampleposdata = [dict(zip(header, line.strip().split('\t'))) for line in f if line.strip()[0] != "#"]
+            sampleposdata = [dict(list(zip(header, line.strip().split('\t')))) for line in f if line.strip()[0] != "#"]
         sampleposmap = dict([(entry["General:Pos"], entry["General:Sample Name"]) for entry in sampleposdata])
         self.SamplePosMap = sampleposmap
         return sampleposmap #, sampleposdata
@@ -226,7 +226,7 @@ class SampleNameManager(object):
          - commentsep: Can be used to specify which sequence is used to mark a comment in the samplelist_resume file. The reason I dont just use '#' is that some people like to use '#' in sample names, e.g. "Mouse#2, time 1".
         Default commenting: '#' at the beginning of line, or '##' at the end of the line marks comments.
         """
-        if isinstance(sampleresume_fn, basestring):
+        if isinstance(sampleresume_fn, str):
             noncommentlines = getnoncommentlines_from_filepath(sampleresume_fn)
             #with open(sampleresume_fn) as f:
             #    strippedlines = (line.strip() for line in f)
@@ -235,9 +235,9 @@ class SampleNameManager(object):
             #    noncommentlines = (line for line in strippedlines if line and line[0] != "#")
             sampleresume = [rsplit_integers(line, fieldsep, 2) for line in noncommentlines]
         else:
-            print "Assuming that sampleresume_fn is actually a sampleresume construct..."
+            print("Assuming that sampleresume_fn is actually a sampleresume construct...")
             sampleresume = sampleresume_fn
-        print "sampleresume is: ", sampleresume
+        print("sampleresume is: ", sampleresume)
         if plateformat is None:
             plateformat = (24, 16) # (ncols, nrows)
         ncols = plateformat[0]
@@ -246,7 +246,7 @@ class SampleNameManager(object):
         si = 0 # index of biological samples
         qpcr_replicate_counts_set = set()
 
-        with open(output_fn,'wb') as f:
+        with open(output_fn, 'wb') as f:
             ## Write header:
             f.write("General:Pos\tGeneral:Sample Name\n")
             ## Write positions and sample names:
@@ -279,7 +279,7 @@ class SampleNameManager(object):
                         f.write("{0}\t{samplename}\n".format(pos, samplename=samplename_full))
                         index += 1
                     si += 1
-        print "completed makesamplelistextended_v2"
+        print("completed makesamplelistextended_v2")
 
 
 
@@ -339,7 +339,7 @@ class SampleNameManager(object):
 
         """
 
-        if isinstance(samplenamesflat, basestring):
+        if isinstance(samplenamesflat, str):
             with open(samplenamesflat) as f:
                 samplenames = [line.strip() for line in f if line.strip()[0] != "#"]
             samplenamesflat = samplenames
