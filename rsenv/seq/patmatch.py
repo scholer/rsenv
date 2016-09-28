@@ -30,15 +30,8 @@ for the pattern "*.py" (including the quotation marks).
 import re
 from itertools import product, chain, zip_longest
 
-from rsseqgen import genparts
-
-
-atgc = "ATGC"
-basemap = dict(list(zip("ATGC", "TACG")))
-def rcompl(seq):
-    """ Returns reversed complement of seq. """
-    return "".join(basemap[n] for n in reversed(seq))
-
+from .seqgen import genparts
+from .sequtil import rcompl
 
 
 def scanForPart(part, dataset):
@@ -73,7 +66,6 @@ def patSeqGen(seqpat):
     return ("".join(comb) for comb in product(*gens))
 
 
-
 def scanForPattern(pattern, dataset, hitcondition=None, sumcondition=None):
     """
     dataset: list of rows, where first field is name and second is sequence.
@@ -87,6 +79,8 @@ def scanForPattern(pattern, dataset, hitcondition=None, sumcondition=None):
     The use of hitcondition and sumcondition makes this function quite flexible.
     However, if either of these are excessively expensive, you should use a function
     more specialized/optimized for your use-case.
+    #rep = scanForRepeats(analyse_ds)
+
     """
     if hitcondition is None:
         hitcondition = lambda part, full: part in full
@@ -109,7 +103,6 @@ def scanForPattern(pattern, dataset, hitcondition=None, sumcondition=None):
             print("Part '%s' did not pass sumcondition '%s', matches '%s'" % (part, sumcondition, matches))
     return return_parts
 
-#rep = scanForRepeats(analyse_ds)
 
 def noMatchNotPalindrome(part, matches):
     """ Convenience: Evaluates whether part is palindromic or matches is True. """
@@ -119,11 +112,13 @@ def noMatchNotPalindrome(part, matches):
         return False
     return True
 
+
 def partNotPalindrome(part, dummy):
     """ Convenience: Evaluates whether part is palindromic. """
     if rcompl(part) == part: # Palindromic part
         return False
     return True
+
 
 def noMatchNotPalindromeHighGC(part, matches):
     """ Convenience: Evaluates whether part has matches or is palindromic or has high GC content. """
@@ -136,6 +131,7 @@ def noMatchNotPalindromeHighGC(part, matches):
     if float(sum(1 for N in part if N in "GC"))/len(part) < 0.6: # Low GC content
         return False
     return True
+
 
 def no3repeats(part, matches):
     """ Return true if part has 3 of same nucleotide in a row, e.g. AGGGC."""

@@ -25,11 +25,11 @@ Created on Tue Mar  8 16:01:40 2011
 ## MOST IMPORTS HAVE BEEN MOVED TO FUNCTIONS OR CLASS INIT METHODS 
 ## to decrease the time it takes to load this module initially.
 
-#import csv
-#import datetime
+import csv
+import datetime
 #import numpy, scipy
 #from pylab import plotfile, show, gca
-#from matplotlib import pyplot, font_manager
+from matplotlib import pyplot, font_manager
 
 
 class DataPlotter(object):
@@ -116,7 +116,7 @@ class DataPlotter(object):
                     linecolor = costumlines[i][0]
             print("linecolor is: " + linecolor)
             print("linestyle is: " + linestyle)
-            plotfile(path, cols=(0, 1), names=("Wavelength (nm)", caption),
+            self.plotfile(path, cols=(0, 1), names=("Wavelength (nm)", caption),
                      delimiter=delimiter, checkrows=0, newfig=newfig, subplots=False,
                      label=caption, 
                      #ls='r--')
@@ -145,7 +145,7 @@ class DataPlotter(object):
         else:
             print("plotFiles(): export is False.")
         if showplot:
-            show()
+            pyplot.show()
         
 
 
@@ -163,6 +163,7 @@ if __name__ == "__main__":
     showplot = None # Be careful not to override show() callable
     delimiter = '\t'
     for arg in sys.argv[1:]:
+        # Uh, use argparse, maybe?
         print(arg)
         if arg.lower() == '--listfile':
             plotlist = True

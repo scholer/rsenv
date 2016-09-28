@@ -25,6 +25,13 @@ Includes various python code that I use frequently for manipulating DNA sequence
 
 import string
 
+atgc = "ATGC"
+basemap = dict(list(zip("ATGC", "TACG")))
+def rcompl(seq):
+    """ Returns reversed complement of seq. """
+    return "".join(basemap[n] for n in reversed(seq))
+
+
 
 def dnastrip(a):
     """ Easy stripping of all characters except ATGC. """
@@ -43,6 +50,7 @@ def dnaformat(a):
     """ Add space for every 8th base:"""
     b = dnastrip(a)
     return ''.join([(letter+' ' if i % 8 == 7 else letter) for i, letter in enumerate(b)]).strip()
+
 
 def reverse(a):
     """ Reverse sequence """
@@ -87,6 +95,8 @@ I have only changed notations and added space etc to the map.
 (requires string to be imported.)
 """
 dnacomplementmap = string.maketrans('ACGTacgt ', 'TGCATGCA ')
+
+
 def dnarcomp(seqStr):
     """Returns the reverse complement of the sequence in seqStr.
     if seqStr is not a basestring, it will return a list of the
@@ -97,6 +107,8 @@ def dnarcomp(seqStr):
     else:
         # Assume list of strings:
         return [seq.translate(dnacomplementmap)[::-1] for seq in seqStr]
+
+
 def dnacomp(seqStr):
     """Returns the complement of the sequence in seqStr."""
     return seqStr.translate(dnacomplementmap)
@@ -110,8 +122,8 @@ def dnacomp(seqStr):
 if __name__ == "__main__":
     """ Testing """
 
-#    testSeqPermuts()
-#    testcheckCandidates()
+#    test_seq_permuts()
+#    test_check_candidates()
 
     test_generateRandomSeqs()
 

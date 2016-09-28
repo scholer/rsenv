@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##    Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
-##
+## 
 ##    This program is free software: you can redistribute it and/or modify
 ##    it under the terms of the GNU General Public License as published by
 ##    the Free Software Foundation, either version 3 of the License, or
@@ -20,16 +20,4 @@ Created on Fri Feb 8 2013
 
 @author: scholer
 
-Includes various python code that I use frequently for manipulating DNA sequences.
-
-2014/09/25: All code was moved to sequtil.py, so starting from blank.
 """
-
-
-
-
-
-
-if __name__ == "__main__":
-    """ Testing """
-

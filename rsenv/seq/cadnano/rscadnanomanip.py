@@ -38,7 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 #import rsseq
-from rsenv.seq.rsseq import dnacomplement
+from rsenv.seq.sequtil import dnacomplement
 
 
 def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, desc=None, writeToFile=True,

@@ -161,6 +161,6 @@ if __name__ == "__main__":
     print(get_metadata(data))
     #print get_measurements(data)
     print(get_samplelist(data))
-    get_data_for_xvals(data, range(250, 280), sample='RS126h1', doprint=True)
+    get_data_for_xvals(data, list(range(250, 280)), sample='RS126h1', doprint=True)
 
     print("Finished test of module rsnanodrop.py ^^^^ ")

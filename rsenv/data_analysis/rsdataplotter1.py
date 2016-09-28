@@ -19,29 +19,30 @@
 Created on Tue Mar  8 16:01:40 2011
 
 @author: scholer
+
+General data plotting module, containing DataPlotter and RsDataReader base classes.
+
+
+MOST IMPORTS HAVE BEEN MOVED TO FUNCTIONS OR CLASS INIT METHODS
+to decrease the time it takes to load this module initially.
+Edit: No, it is perfectly fine to have imports at the top, just make sure
+this module is NOT automatically imported when importing rsenv or rsenv.dataanalysis.
+
 """
 
 
-## MOST IMPORTS HAVE BEEN MOVED TO FUNCTIONS OR CLASS INIT METHODS 
-## to decrease the time it takes to load this module initially.
 
 import os
 import sys
-
-# Additional required modules: numpy, scipy, pylab, csv, datetime.
+import csv
+from datetime import datetime
+from matplotlib import pyplot, font_manager
 
 
 class RsDataPlotter(object):
     
     def __init__(self, files=None, scheme=None, individualbatchexportmode=False):
     
-        ## IMPORTS:
-        import numpy, scipy
-        #from pylab import plotfile, show, gca
-        import pylab
-        from matplotlib import pyplot, font_manager
-        import csv
-        import datetime
         self.Filelistfile = None
         self.Files = files
         #csv.register_dialect('fluoromax', delimiter='\t', quoting=csv.QUOTE_NONE)
@@ -128,7 +129,7 @@ class RsDataPlotter(object):
             I decided to merge this with the 'pvc' plotter to get a multi-potent plotting script.
         """
         if exportBaseName is None:
-            exportBaseName = "Plot_"+str(datetime.datetime.now().strftime("%Y%m%d-%H%M"))
+            exportBaseName = "Plot_"+str(datetime.now().strftime("%Y%m%d-%H%M"))
         newfig = not samePlot
         colors = "bgrcmy"
         linestyles = ('-', '--', ':')
@@ -183,8 +184,8 @@ class RsDataPlotter(object):
         else:
             print("plotFiles(): export is False.")
         if showplot:
-            # I should probably use "pylab" namespace for these...
-            pylab.show()
+            # I should probably use "pyplot" namespace for these...
+            pyplot.show()
 
 
     def plotfiles(self, filepaths, legend=None, **kwargs):
@@ -243,9 +244,7 @@ class RsDataPlotter(object):
             print("Saving plot as: "+ exportname)
             pyplot.savefig(exportname, dpi=300)
         if self.Showplot:
-            pylab.show()
-
-
+            pyplot.show()
 
     def getLegendFromFilepaths(self, filepaths):
         legend = list()
@@ -278,17 +277,17 @@ class RsDataPlotter(object):
     def plotDataset(self, dataset, axes=None, showplot=False):
         """ Plot a RsDatasetObject, using the axes given (else the default).
         """
-##        print "len(dataset.Data[0]): " + str(len(dataset.Data[0]))
-##        print "len(dataset.Data[1]): " + str(len(dataset.Data[1]))
+        # print "len(dataset.Data[0]): " + str(len(dataset.Data[0]))
+        # print "len(dataset.Data[1]): " + str(len(dataset.Data[1]))
         pyplot.plot(dataset.Data[0], dataset.Data[1])
         if showplot:
-            pylab.show()
+            pyplot.show()
 
 
     def getTimebasedFilename(self):
         """ Get a filename with the current time in it.
         """
-        return "Plot_"+str(datetime.datetime.now().strftime("%Y%m%d-%H%M"))
+        return "Plot_"+str(datetime.now().strftime("%Y%m%d-%H%M"))
         
 
 class RsDataReader(object):
@@ -399,6 +398,7 @@ class RsDataReader(object):
         ds = RsDatasetObject(data)
         ds.Headers = ('Wavelength (nm)', 'Absorbance (AU/cm)')
         return ds
+
 
 class RsDatasetObject(object):
     

@@ -22,23 +22,19 @@ Created on Fri Feb 8 2013
 
 Includes various python code that I use frequently for parsing nanodrop files (.ndj).
 """
-
-from rsenv.rsnanodrop_utils import *
-from rsenv.rsexceptions import *
-import rsenv.rsnanodrop_utils as nd_utils
-from rsenv.rsfs_util import *
+from __future__ import print_function, absolute_import
 import os
 import glob
+# from .nanodrop_utils import *
+from . import nanodrop_utils as nd_utils
+from rsenv.exceptions import *
+# from .fs_util import *
 # Other imports used in this file (will only be imported when functions are called to minimize
 # initiation time of this module:
-# import pylab
-# from matplotlib import pyplot, font_manager
-
+from matplotlib import pyplot
 
 
 def plot_measurement(datafile=None, selection=None, interval=None, showplot=True):
-    import pylab
-    from matplotlib import pyplot, font_manager
 
     if datafile is None:
         try:
@@ -49,11 +45,11 @@ def plot_measurement(datafile=None, selection=None, interval=None, showplot=True
         except KeyboardInterrupt:
             print("KeyboardInterrupt; plotting cancelled completely.\n")
             return
-#    print "Nanodrop files in directory: {0}  (using last one)".format(len(ndjfiles))
+    # print "Nanodrop files in directory: {0}  (using last one)".format(len(ndjfiles))
     print("Using nanodrop datafile: {0}".format(datafile))
-    data = get_data(datafile)
-    metadata = get_metadata(data)
-    samplenames = get_samplelist(data)
+    data = nd_utils.get_data(datafile)
+    metadata = nd_utils.get_metadata(data)
+    samplenames = nd_utils.get_samplelist(data)
     def select_ndj_samples(datafile, samplenames):
         print("=== SAMPLES in file '{}': ===".format(datafile))
         print("\n".join(["[{0}] : {1}".format(i, samplename) for i, samplename in enumerate(samplenames)]))
@@ -77,35 +73,35 @@ def plot_measurement(datafile=None, selection=None, interval=None, showplot=True
     linestyles = ('-', '--', ':')
     colorstyles = [(colors[i % len(colors)], linestyles[i / len(colors) % len(linestyles)]) for i in range(len(selection))]
     for i, sample in enumerate([sample.strip() for sample in selection]):
-        sampleindex = get_sampleindex(sample, data)
-        ydata = get_data_for_xvals(data, interval, sample, doprint=False)
+        sampleindex = nd_utils.get_sampleindex(sample, data)
+        ydata = nd_utils.get_data_for_xvals(data, interval, sample, doprint=False)
         ymin = min(ymin, min(ydata))
         ymax = max(ymax, max(ydata))
-        #ydata.append(get_data_for_xvals(data, interval, sample, False))
+        # ydata.append(get_data_for_xvals(data, interval, sample, False))
         # Plot using pyplot:
         label = samplenames[sampleindex]
         pyplot.plot(xdata, ydata, label=label, color=colorstyles[i][0], linestyle=colorstyles[i][1])
-        #print "Label: {0}".format(label)
+        # print "Label: {0}".format(label)
         legend.append(label)
 
     legend = tuple(legend)
-    #print "Legend: {0}".format(legend)
+    # print "Legend: {0}".format(legend)
     pyplot.xlabel("Wavelength (nm)")
     pyplot.ylabel("Absorbance (AU/{0})".format(metadata["lightpath"]))
     pyplot.title(datafile)
     pyplot.xlim(min(xdata), max(xdata))
     pyplot.ylim(ymin, ymax)
-    #pyplot.legend(legend, prop={'size':'smaller'}, loc=0)
+    # pyplot.legend(legend, prop={'size':'smaller'}, loc=0)
     if legend:
         # If I add labels during plot, I dont need to pass the legend labels; 
         # http://matplotlib.org/api/pyplot_api.html#matplotlib.pyplot.legend
         pyplot.legend(prop={'size':12}, loc=0)
         # For some reason, my pyplot.legend does not understand a "fontsize" keyword, 
         # (nor "size" for that matter) despite what the documentation says.
-#        pyplot.legend(shadow=True, size='small')
+        # pyplot.legend(shadow=True, size='small')
 
     if showplot:
-        pylab.show()
+        pyplot.show()
 
     plot_again=input("Do another plot?\n  Press 'y' or enter to plot with same datafile;\n  press 'f' to select a new file;\n  press 'n' or any other key to exit.\n")
     if len(plot_again)==0 or plot_again[0].lower() == 'y':
@@ -115,28 +111,20 @@ def plot_measurement(datafile=None, selection=None, interval=None, showplot=True
         return
 
 
-
-def plot_postprocessing(self, legend=None, title=None, export=False, showplot=False):
-    import pylab
-    from matplotlib import pyplot, font_manager
+def plot_postprocessing(self, legend=None, title=None, export=False, showplot=False, params=None):
+    if params is None:
+        params = {}
     pyplot.xlabel = "Wavelength (nm)"
     pyplot.ylabel = "Absorbance (AU/mm)"
     if legend:
         pyplot.legend(legend, prop={'size':'smaller'}, loc=0)
     if title:
         pyplot.title(title)
-    
-    
-    if legend is None:
-        legend = self.Legend
-    scheme = self.Scheme
-    title = self.Plottitle
-    
-    if self.Xlim:
-        pyplot.xlim(self.Xlim[0], self.Xlim[1])
-    
-    if self.Ylim:
-        pyplot.ylim(self.Ylim[0], self.Ylim[1])
+
+    if params.get('xlim'):
+        pyplot.xlim(params.get('xlim'))
+    if params.get('ylim'):
+        pyplot.ylim(params.get('ylim'))
 
     # For some reason, I have to save (export) BEFORE I show the plot, 
     # otherwise the saved png file is all empty.
@@ -147,35 +135,34 @@ def plot_postprocessing(self, legend=None, title=None, export=False, showplot=Fa
             exportname = self.getTimebasedFilename()
         print("Saving plot as: "+ exportname)
         pyplot.savefig(exportname, dpi=300)
-    if self.Showplot:
-        pylab.show()
+    if params.get('showplot'):
+        pyplot.show()
 
 
-
-
-""" Testing """
-
-if __name__ == "__main__":
-    """
-    Note: To invoke this from command line, use the driver in rsenv/examples/nanodrop_plotsamples.py
-    """
+def test():
     print("Starting test of module rsnanodrop.py ----")
-    
+
     start_dir = None
     test_dir = "/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/"
     if len(glob.glob("*.ndj")) < 1:
         # No nanodrop data in current folder; probably just testing.
         start_dir = os.getcwd()
         os.chdir(test_dir)
-#    datafile="/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/today.ndj"
-#    data = get_data(datafile)
-#    print get_metadata(data)
-    #print get_measurements(data)
-#    print get_samplelist(data)
-#    get_data_for_xvals(data,range(250,280),sample='RS126h1',doprint=True)
+    # datafile="/home/scholer/Documents/Dropbox/_experiment_data/equipment_data_sync/Nanodrop/Nucleic Acid/Default/today.ndj"
+    # data = get_data(datafile)
+    # print get_metadata(data)
+    # print get_measurements(data)
+    # print get_samplelist(data)
+    # nd_utils.get_data_for_xvals(data,range(250,280),sample='RS126h1',doprint=True)
 
     plot_measurement()
     if start_dir:
         os.chdir(start_dir)
     print("Finished test of module rsnanodrop.py ^^^^ ")
 
+
+if __name__ == "__main__":
+    """
+    Note: To invoke this from command line, use the driver in rsenv/examples/nanodrop_plotsamples.py
+    """
+    test()

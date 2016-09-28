@@ -9,11 +9,7 @@ See also:
 
 """
 
-
-
-from . import nanodropplotter                   # This is fairly light-weight.
-
-# BEFORE I CAN INCLUDE THESE AUTOMATICALLY, THEY SHOULD BE RE-CODED SO THEY DO NOT LOAD 
+# BEFORE I CAN INCLUDE THESE AUTOMATICALLY, THEY SHOULD BE RE-CODED SO THEY DO NOT LOAD
 # A LOT OF HEAVY MODULE UPON INITIAL IMPORT, BUT ONLY WHEN THEY ARE ACTUALLY USED.
 # AS OF WRITING, THESE MODULES TAKE ABOUT 20 SECS TO IMPORT WHICH IS TOO MUCH.
 # Edit: All heavy imports (numpy, matplotlib, etc) have been moved to __init__ methods.
@@ -30,6 +26,7 @@ of any method still causes the import to occur when the module is initialized.
 """
 
 from . import rscomponentanalyser          # Imports YAML, numpy, scipy, matplotlib, etc.
-from . import rsfluoromaxdataplotter       # This also imports a lot of the same heavy modules.
 from . import rsdataplotter1               # Also imports numpy, scipy, pyplot, etc.
+from . import rsfluoromaxdataplotter       # This also imports a lot of the same heavy modules.
+
 

@@ -20,6 +20,7 @@
 ## Common ids:
 ## - projects spaceid: 589826
 
+from .utils.clipboard import get_clipboard
 
 def getFilepathFromIds(spaceid, pageid=None, attachmentid=None):
     folders = list()
@@ -42,7 +43,7 @@ def getFilepathFromIds(spaceid, pageid=None, attachmentid=None):
 
 def wikipagenamefromurl(source=None):
     if source is None:
-        source = gtk.clipboard_get().wait_for_text()
+        source = get_clipboard()
     print(("wikipagenamefromurl(): source is : '" + source + "'"))
     print('source.strip().rsplit("/",1)[1].replace("+"," ")')
     try:

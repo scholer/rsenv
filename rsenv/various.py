@@ -40,6 +40,7 @@ else:
 
 
 def clipboard():
+    """Obsolete: Use utils.clipboard module instead."""
     if not gkt_available:
         print("GTK not available...")
         return
@@ -62,52 +63,44 @@ def cbset(txt):
     gtk.clipboard_get().set_text(txt)
 
 
-"""
--------------
--- Various --
--------------
-
-RGBconv
-
-Converting from hex to dec: int('number-as-string', <base>), e.g. int('33', 16)
-"""
 def hextodec(num):
+    """Converting from hex to dec: int('number-as-string', <base>), e.g. int('33', 16)."""
     return int(num, 16)
 
-"""
-Converting from dec to hex: hex(<decimal number'), e.g. hex(55)
- - or alternatively using string formatting (returns a string): "%x" % <dec number>, e.g. "%x" % 254
- - This is well-suited for caDNAno, e.g. color = "#%02X%02X%02X" % (10, 16, 253)
- - For more info see http://docs.python.org/library/string.html#format-specification-mini-language
-Just for reference, this is what is should be: """
 def dectohex(num):
+    """
+    Converting from dec to hex: hex(<decimal number'), e.g. hex(55)
+     - or alternatively using string formatting (returns a string): "%x" % <dec number>, e.g. "%x" % 254
+     - This is well-suited for caDNAno, e.g. color = "#%02X%02X%02X" % (10, 16, 253)
+     - For more info see http://docs.python.org/library/string.html#format-specification-mini-language
+    Just for reference, this is what is should be: """
     return hex(num)
 
 
 def rgbconv(color):
-  """ Convert rgb tuple to color string """
-  if isinstance(color, tuple):
-    # Certainly a RGB colorÉ
-    return rgbdectohex(color)
-  if isinstance(color, str):
-    if color[0] == "#":
-      return rgbhextodec(color)
+    """ Convert rgb tuple to color string """
+    if isinstance(color, tuple):
+        # Certainly a RGB colorÉ
+        return rgbdectohex(color)
+    if isinstance(color, str):
+        if color[0] == "#":
+            return rgbhextodec(color)
 
 
-""" Convert a *decimal* color tuple to hex-based color string"""
 def rgbdectohex(*color):
-  # color inpus as single argument, as tuple
-  if len(color) == 1:
-    color=color[0]
-  return "#{0:02x}{1:02x}{2:02x}".format(*color)
-  #return "#"+''.join([str(hex(color[0])), str(hex(color[1])), str(hex(color[2]))]).replace("0x","")
+    """ Convert a *decimal* color tuple to hex-based color string"""
+    # color inpus as single argument, as tuple
+    if len(color) == 1:
+        color = color[0]
+    return "#{0:02x}{1:02x}{2:02x}".format(*color)
+    # return "#"+''.join([str(hex(color[0])), str(hex(color[1])), str(hex(color[2]))]).replace("0x","")
 
-""" Convert a hex-based color string to decimal color tuple """
 def rgbhextodec(color):
-  # color as string
-  if color[0] == '#':
-    color = color[1:]
-  return (int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16))
+    """ Convert a hex-based color string to decimal color tuple """
+    # color as string
+    if color[0] == '#':
+        color = color[1:]
+    return (int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16))
 
 
 def combinationsexclude(elems, r=2, excludepairs=set(), doprint=True, returnstr=False, rsdebug=True):
@@ -147,13 +140,13 @@ def combinationsexclude(elems, r=2, excludepairs=set(), doprint=True, returnstr=
     return H
 
 
+# ====================
+# -- Email related ---
+# ====================
 
-"""
-====================
--- Email related ---
-====================
-
-Given string: a = “””
+def getEmailAddFromString(a, returntype="string"):
+    """
+    Given string: a = “””
 Steffen Sparvath <steffensparvath@gmail.com>,
  Denis Selnihhin <deonyz@hotmail.com>,
  Rasmus Schøler Sørensen <scholer@inano.au.dk>,
@@ -163,10 +156,18 @@ Steffen Sparvath <steffensparvath@gmail.com>,
 
 ", ".join([b.split("<")[1][0:-1] for b in a.split(",")])       produces
 'steffensparvath@gmail.com, deonyz@hotmail.com, scholer@inano.au.dk, andersokholm@me.com, hchoeiberg@gmail.com, Mvinther@gmail.com'
-"""
-def getEmailAddFromString(a, returntype="string"):
-    if returntype == "string":
-        return ", ".join([b.split("<")[1][0:-1] for b in a.split(",")])
+
+    :param a:
+    :param returntype:
+    :return:
+    """
+    addrs = [b.split("<")[1][0:-1] for b in a.split(",")]
+    if returntype == 'list':
+        return addrs
+    else:
+        # if returntype == "string":
+        return ", ".join(addrs)
+
 
 if __name__ == "__main__":
   print("Input single tuple argument:")

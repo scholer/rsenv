@@ -1,29 +1,28 @@
-"""
-See also:
- - https://docs.google.com/document/d/10bSiPwq4DrLGoB8zaCJBG3nrtK5-nC21Yhx-cCEyCO4/edit
- - Dropbox/Dev/Projects/OligoManager2/oligomanager
- - Dropbox/Dev/Projects/OligoManager2/oligomanager/tools
- - Dropbox/Dev/Projects/OligoManager2/python_scripts  (obsolete)
- - Dropbox/NATlab shared/DesignBlueprints/caDNAno/A-few-hints-for-using-python.txt
- - Dropbox/Dev/Python/Python-copy-paste-examples.txt
+# """
+# See also:
+#  - https://docs.google.com/document/d/10bSiPwq4DrLGoB8zaCJBG3nrtK5-nC21Yhx-cCEyCO4/edit
+#  - Dropbox/Dev/Projects/OligoManager2/oligomanager
+#  - Dropbox/Dev/Projects/OligoManager2/oligomanager/tools
+#  - Dropbox/Dev/Projects/OligoManager2/python_scripts  (obsolete)
+#  - Dropbox/NATlab shared/DesignBlueprints/caDNAno/A-few-hints-for-using-python.txt
+#  - Dropbox/Dev/Python/Python-copy-paste-examples.txt
+#
+# Other tips for a better interpreter:
+#  - See env/__init__.py
+#  - http://rc98.net/pystartup
+#
+# Also consider:
+#  - Using the ipython interpreter as your default interactive interpreter.
+# """
 
-Other tips for a better interpreter:
- - See env/__init__.py
- - http://rc98.net/pystartup
+#__all__ = ['confluence.py', 'exceptions.py', 'fs_util.py', 'help.py', 'nanodrop_utils.py', 'phys', 'data_analysis', 'protein.py', 'qpcr', 'rsfavmodules.py', 'seq', 'utils', 'various.py', '__init__.py
 
-Also consider:
- - Using the ipython interpreter as your default interactive interpreter.
-"""
-
-#__all__ = ['confluence.py', 'exceptions.py', 'fs_util.py', 'help.py', 'nanodrop_utils.py', 'phys', 'plotting', 'protein.py', 'qpcr', 'rsfavmodules.py', 'seq', 'utils', 'various.py', '__init__.py
-
-#__all__ = ['confluence', 'exceptions', 'fs_util', 'help', 'nanodrop_utils', 'phys', 'plotting', 'protein', 'qpcr', 'rsfavmodules', 'seq', 'utils', 'various']
+#__all__ = ['confluence', 'exceptions', 'fs_util', 'help', 'nanodrop_utils', 'phys', 'data_analysis', 'protein', 'qpcr', 'rsfavmodules', 'seq', 'utils', 'various']
 
 # from . import rsfavmodules as fav
-from . import seq
+# from . import seq
 
-
-#import plotting
+#import data_analysis
 #import qpcr
 ##from rsconfluence import *
 #import confluence

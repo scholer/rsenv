@@ -26,14 +26,15 @@
 import os
 #import csv, datetime
 #import numpy as np, scipy as sp
-#import matplotlib as mpl
-#from matplotlib import pyplot as plt, font_manager # Easier shortcuts than mpl.pyplot
+import matplotlib as mpl
+# from matplotlib import pyplot as plt, font_manager # Easier shortcuts than mpl.pyplot
 #import pylab # Pylab provides a matlab-like stateful model, e.g. "show", etc.
 ## Optionally: #from pylab import plotfile, show, gca
 #import yaml        # Is loaded in YamlLoader:__init__()
 
 
-def is_numeric(s):
+
+def is_numeric(value):
     try:
         float(value)
         return True
@@ -41,6 +42,7 @@ def is_numeric(s):
         return False
 
 def getDefaultParams():
+    params = {}
     params['Xdataline'] = 5 # If 5, file reading effectively just skips the first four lines.
     params['PcDataLines'] = [10]#,19] # 7 is HEPES-KCl, 10 is STV 10 uM, 19 is ddUTP-DBCO. 
     #Note: Having 7 there gives a lot of noise. It might be nice to maximize a likelihood function rather than simple least-square. However, can be solved by adjusting the xrange used for analysis.
