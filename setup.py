@@ -60,10 +60,10 @@ setup(
         'scipy',
         'biopython',
         'matplotlib',
-        'svgwrite',
-        'cffi',      # Cairo is only required to convert SVG files to PNG
-        'cairocffi',
-        'cairosvg',
+        # 'svgwrite',
+        # 'cffi',      # Cairo is only required to convert SVG files to PNG
+        # 'cairocffi',
+        # 'cairosvg',
     ],
     classifiers=[
         # How mature is this project? Common values are
