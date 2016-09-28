@@ -23,7 +23,7 @@ Created on Sun May 19 2013
 Includes code for manupilation of cadnano files and derived files, including staple lists, etc.
 
 See also:
- - Dropbox/Dev/Projects/OligoManager2/oligomanager/tools/file_transformation
+ - OligoManager2 module: oligomanager.tools.file_transformation
 
 
 """
@@ -38,7 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 #import rsseq
-from .rsseq import dnacomplement
+from rsenv.seq.rsseq import dnacomplement
 
 
 def filterfilebycolor(staplesetfilepath, outputfilename=None, filtercolor=None, desc=None, writeToFile=True,
