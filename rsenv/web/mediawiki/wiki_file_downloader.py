@@ -9,6 +9,7 @@ import argparse
 import requests
 import yaml
 import re
+from pprint import pprint
 from urllib.parse import quote_plus  # quote does not quote/encode forward slash '/'
 from urllib.parse import urljoin, urlsplit
 
@@ -27,13 +28,16 @@ def save_response_content(r, fpath):
     return nbytes
 
 
-def find_links(html, link_pat=r'href="([/\w-]+?([\w-]+.xlsx))"'):
+def find_links(html, link_pat=None):
     """
     file link example:
     <a href="/104/images/9/9a/IDT_order.xlsx" class="internal" title="IDT_order.xlsx">Media:IDT_order.xlsx</a>
 
     Default expression captures (link, filename) for all excel files.
     """
+    if link_pat is None:
+        # default: search for excel files.
+        link_pat = r'href="([/\w-]+?([\w-]+.xlsx))"'
     if isinstance(link_pat, str):
         link_pat = re.compile(link_pat)
     # findall returns the capturing groups: (point, orderno) = ('qc/zip?SalesOrderNbr=11285499', '11285499')
@@ -63,7 +67,7 @@ def download_links(link_groups, session, baseurl, dl_directory=".", redownload_e
         return
 
     # Set to True to re-download for existing especs csv files that already exists in the folder
-    print("Downloading CoA specs for {} orders".format(len(link_groups)))
+    print("Downloading {} file links...".format(len(link_groups)))
     for i, (href, filename) in enumerate(link_groups, 1):
         print('File link found: %s, href="%s"' % (filename, href))
         # To download, use either the url_endpoint, or reconstitute the end-point using the orderno.
@@ -94,13 +98,9 @@ def download_links(link_groups, session, baseurl, dl_directory=".", redownload_e
 def get_cookies(args):
     # Note: All cookie keys and values must be strings or bytes, not e.g. ints.
     if args.get("open_id_session_id") is not None:
-        cookies = {"open_id_session_id": args.get("open_id_session_id")}
-    elif args.get("cookiefn") is not None:
-        cookies = yaml.load(open(args['cookiefn']))
+        cookies = {"open_id_session_id": args["open_id_session_id"]}
     else:
-        cookies = yaml.load("""
-    open_id_session_id: b5909b05197438fa89d1c409afdaefdb
-    """)
+        cookies = yaml.load(open(args.get("cookiefn", "cookies.yaml")))
     return cookies
 
 
@@ -138,7 +138,7 @@ def get_mainpage_html(args, session=None):
         session = get_session(args)
 
     htmlfile = args.get("htmlfile")
-    mainpage = args.get("mainpage", "https://lab.wyss.harvard.edu/shih/DFCI_Oligo_Plate_Log")
+    mainpage = args.get("mainpage")  #, "https://lab.wyss.harvard.edu/shih/DFCI_Oligo_Plate_Log")
     save_htmlfile = args.get("save_htmlfile")
 
     if mainpage:
@@ -148,10 +148,11 @@ def get_mainpage_html(args, session=None):
         # print(res)
         html = res.text
         if save_htmlfile:
-            if save_htmlfile is True:
-                save_mainpage = urlsplit(mainpage).path.rsplit('/')[-1] + ".html"
-            print("Saving mainpage to file:", save_htmlfile)
-            with open(save_htmlfile, "w") as fd:
+            if htmlfile is None:
+                htmlfile = urlsplit(mainpage).path.rsplit('/')[-1] + ".html"
+            print("Saving mainpage to file:", htmlfile)
+            with open(htmlfile, "w") as fd:
+                # Fun observation: open(True, "w") will write to stdout...
                 fd.write(html)
     else:
         with open(htmlfile) as fd:
@@ -164,10 +165,11 @@ def parse_args(argv=None):
     """ Parse command line args. """
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("htmlfile")
+    parser.add_argument("--htmlfile")
     parser.add_argument("--mainpage", "-l")
-    parser.add_argument("--cookiefile", "-c")
-    parser.add_argument("--config", "-C")
+    parser.add_argument("--cookiefile", "-C")
+    parser.add_argument("--open_id_session_id", "-S")
+    parser.add_argument("--config", "-c")
     parser.add_argument("--overwrite", "-y", action="store_true")
     parser.add_argument("--verbose", "-v", action="count")
     parser.add_argument("--outputdir", "-d")
@@ -177,30 +179,49 @@ def parse_args(argv=None):
 
 
 # Main entry point:
-def main(args):
-    """Download file links as specified by commmand line arguments."""
+def main(args=None):
+    """Download file links as specified by commmand line arguments.
 
-    if args is None:
-        args = vars(parse_args())
+    Args:
+        args: either dict or a list of command line arguments, e.g. "--htmlfile hello.html".split()
+    """
+
+    if args is None or isinstance(args, list):
+        args = vars(parse_args(args))
+
+    if args.get("config") is None and (args.get('cookiefile') is None or args.get('open_id_session_id') is None):
+        # We need some default way to obtain login, let's just use a config file.
+        print(("Neither config nor cookiefile nor open_id_session_id arguments specified. "
+               "Defaulting to look for config.yaml in current directory."))
+        args['config'] = 'config.yaml'
+
     if args.get("config"):
+        print("Loading config from file:", args["config"])
         config = yaml.load(open(args["config"]))
-        config.update(args)
-        args = config
+        # config.update({k: v for k, v in args if v is not None})
+        # args = config
+        # just let config take precedence:
+        args.update(config)
+
+    print("Args/config:")
+    pprint(args)
 
     # Create requests Session and load cookies:
     session = get_session(args)
-    print("Session:")
+    print("\nCreating session and injecting cookies...")
     print(session)
 
-    print("Mainpage html:")
+    print("\nLoading mainpage html...")
     html = get_mainpage_html(args, session)
-    print("\n\n\n")
-    print(type(html))
+    print(" - html downloaded, length: %s\n" % (len(html),))
 
-    link_groups = find_links(html, None)
-    print("link_groups:", link_groups)
+    link_groups = find_links(html)
+    print("\n - link_groups:", link_groups)
 
+    print("Downloading file links...")
     download_links(link_groups, session=session, baseurl=args.get("mainpage") or args["baseurl"])
+
+    print("\n\nDone!\n\n")
 
 
 # Ad-hoc testing:

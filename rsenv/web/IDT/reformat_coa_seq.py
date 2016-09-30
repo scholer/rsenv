@@ -41,6 +41,11 @@ def reformat_bulk(inputfiles, outputdir=None, fnfmt="{fnroot}_stripped{ext}", re
 
     if outputdir:
         outputdir = os.path.expanduser(outputdir)
+        if not os.path.exists(outputdir):
+            print("%s does not exists - trying to create..." % (outputdir, ))
+            os.mkdir(outputdir)
+    elif outputdir is None:
+        outputdir = "."
 
     n_processed = 0
     for inputfn in inputfiles:
@@ -77,7 +82,7 @@ def main(args=None):
 
     # Perform data reformatting:
     n_processed = reformat_bulk(argns.inputfiles, argns.outputdir, argns.fnfmt)
-    print("Done! %s files was processed." % (n_processed,))
+    print("\n\nDone! %s files was processed.\n" % (n_processed,))
 
 
 # run-alone entry point:

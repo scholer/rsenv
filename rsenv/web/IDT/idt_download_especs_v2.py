@@ -57,13 +57,14 @@ TODO: Consolidate with idt_download_especs_v2.py script in RsUtils python packag
 
 
 """
+import sys
 import os
-import argparse
-import requests
-import yaml
 import re
+import argparse
 from urllib.parse import quote_plus  # quote does not quote/encode forward slash '/'
 from urllib.parse import urljoin
+import requests
+import yaml
 
 
 def get_directories(args):
@@ -133,6 +134,7 @@ def download_coa(orderstatus_html, session, dl_directory=None, redownload_existi
     groups = coa_pat.findall(orderstatus_html)
     # Set to True to re-download for existing especs csv files that already exists in the folder
     print("Downloading CoA specs for {} orders".format(len(groups)))
+    n_saved = 0
     for i, (url_endpoint, orderno) in enumerate(groups, 1):
         print("CoA link found: %s (orderno. %s)" % (url_endpoint, orderno))
         # To download, use either the url_endpoint, or reconstitute the end-point using the orderno.
@@ -154,11 +156,12 @@ def download_coa(orderstatus_html, session, dl_directory=None, redownload_existi
         # 11073833 => "7FUU96RvhPAiXv94CD6nMA=="   # Not really sure how that conversion is done...
         if response_is_csv or not require_csv:
             nbytes = save_response_content(r, fpath)
+            n_saved += 1
         if max and i >= max:
             print("Max number of downloads has been reached, breaking...")
             break
         print(" - ")
-    print("Done!")
+    print("\n\nDone! - %s files saved to folder %s\n\n" % (n_saved, dl_directory))
 
 #
 # def download_qc(html, redownload_existing=False, require_zip=True, break_if_html=False):
@@ -300,21 +303,22 @@ def main(args=None):
 
     # Create requests Session and load cookies:
     session = get_session(args)
-    print("Session:")
+    print("\nCreating session...")
     print(session)
 
-    print("Order status html:")
+    print("\nLoading order status html...")
+    htmlfile = args.get("htmlfile") or "orderstatus.html"
     if args.get("retrieve_orderstatus"):
         print("retrieve_orderstatus not yet implemented.")
         orderstatus_html = retrieve_orderstatus_page(args, session)
         print(orderstatus_html)
-        with open(args.get("htmlfile", "orderstatus.html"), 'w') as fd:
+        with open(htmlfile, 'w') as fd:
             fd.write(orderstatus_html)
     else:
-        with open(args.get("htmlfile", "orderstatus.html")) as fd:
+        with open(htmlfile) as fd:
             orderstatus_html = fd.read()
 
-    dl_directory = os.path.abspath(args.get("outputdir", os.path.join(".", "CoA")))
+    dl_directory = os.path.abspath(args.get("outputdir") or os.path.join(".", "CoA"))
     print("Downloading CoA spec files to directory '%s'" % (dl_directory, ))
     download_coa(orderstatus_html, session, dl_directory=dl_directory)
 
@@ -348,4 +352,7 @@ def test(args=None):
 
 
 if __name__ == "__main__":
-    test()
+    if "--test" in sys.argv:
+        test()
+    else:
+        main()

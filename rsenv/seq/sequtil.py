@@ -132,7 +132,7 @@ if __name__ == "__main__":
 #    #useseq =      "GGGCTCATGCGAGGCTGTATGTTT" # with a 2-T linker to minimize strain
 #    useseq = "GTG CAG ACA AC T".replace(' ','')
 #    # Edit: Actual sisi-linker should be on 3' end, sequence is GTGCAGACAAC
-#    #appendSequenceToStaps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
-#    #appendSequenceToStaps('TR.ZS.i-4T.set', useseq,   filtercolor="#1700de", desc="TR:col08-ss",
+#    #append_sequence_to_staps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
+#    #append_sequence_to_staps('TR.ZS.i-4T.set', useseq,   filtercolor="#1700de", desc="TR:col08-ss",
 #    #                        appendToFivePrime=True, appendToFile=True, isComplement=False)
-#    appendSequenceToStaps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
+#    append_sequence_to_staps('TR.ZS.i-4T.set', useseq, filtercolor="#03b6a2", desc="TR:col02-ss", appendToFivePrime=True)
