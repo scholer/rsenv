@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-##    Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
-##
-##    This program is free software: you can redistribute it and/or modify
-##    it under the terms of the GNU General Public License as published by
-##    the Free Software Foundation, either version 3 of the License, or
-##    (at your option) any later version.
-##
-##    This program is distributed in the hope that it will be useful,
-##    but WITHOUT ANY WARRANTY; without even the implied warranty of
-##    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-##    GNU General Public License for more details.
-##
-##    You should have received a copy of the GNU General Public License
-##    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+#    Copyright 2013 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Created on Sun May 19 2013
@@ -99,11 +100,11 @@ class RsFileObject(object):
         self.fileobj.write(data+'\n')
 
 
-
-def appendSequenceToStaps(staplesetfilepath, appendSeq, filtercolor=None, appendToFivePrime=False,
-    isComplement=False, desc="", verbose=0, outsep='\t', writeToFile=True, appendToFile=False,
-    newfilename=None,lnstrformat=None, writeonlyfiltered=True, keepOrgSequence=False,
-    writeheader=True, replacecolor=False, replacemodulename=False):
+def append_sequence_to_staps(
+        staplesetfilepath, appendSeq, filtercolor=None, appendToFivePrime=False,
+        isComplement=False, desc="", verbose=0, outsep='\t', writeToFile=True, appendToFile=False,
+        newfilename=None, lnstrformat=None, writeonlyfiltered=True, keepOrgSequence=False,
+        writeheader=True, replacecolor=False, replacemodulename=False):
     """ A bit similar to /oligomanager/tools/file_transformation/sequencemapper.py
     Function: Will read file given in staplesetfilepath, and to all sequences
     given in filtercolor it will append sequence given by appendSeq.

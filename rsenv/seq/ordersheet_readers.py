@@ -30,7 +30,7 @@ import argparse
 import csv
 from openpyxl import load_workbook
 
-
+from .sequtil import sequence_pure, sequence_wo_mods
 
 
 
@@ -79,24 +79,6 @@ def get_sequences_from_csv_ordersheet(filename, pure=True):
     if pure:
         seqs = [sequence_pure(seq) for seq in seqs]
     return seqs
-
-
-def sequence_wo_mods(seq, format="IDT"):
-    """
-
-    :param seq:
-    Returns:
-        sequence without modifications.
-    """
-    mods_pat = r'\/\w*\/'
-    # replace all instances of pattern with '':
-    return re.sub(mods_pat, '', seq)
-
-
-def sequence_pure(seq):
-    seq = seq.replace(" ", "").replace("-", "").replace("*", "")
-    seq = sequence_wo_mods(seq)
-    return seq
 
 
 def test():

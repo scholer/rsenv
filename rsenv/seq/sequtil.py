@@ -23,14 +23,23 @@ Created on Fri Feb 8 2013
 Includes various python code that I use frequently for manipulating DNA sequences.
 """
 
+import re
 import string
 
 atgc = "ATGC"
 basemap = dict(list(zip("ATGC", "TACG")))
+
+
 def rcompl(seq):
     """ Returns reversed complement of seq. """
     return "".join(basemap[n] for n in reversed(seq))
+    # Alternatively, use map instead of for for loop)
+    # b = "".join(map(lambda x: {"t": "a", "a": "t", "c": "g", "g": "c"}[x], a.lower())[::-1])
 
+
+def compl(seq):
+    """ Returns reversed complement of seq. """
+    return "".join(basemap[n] for n in seq)
 
 
 def dnastrip(a):
@@ -56,8 +65,6 @@ def reverse(a):
     """ Reverse sequence """
     print("return a[::-1]   #([start:end:slice])")
     return a[::-1]   #([start:end:slice])
-    # Alternatively, brug af map function i stedet for for loop)
-    b = "".join(map(lambda x: {"t":"a","a":"t","c":"g","g":"c"}[x], a.lower())[::-1])
 
 
 def dnacomplement_3to5p(a):
@@ -94,24 +101,47 @@ uses string.maketrans and str.translate() to translate one string to another.
 I have only changed notations and added space etc to the map.
 (requires string to be imported.)
 """
-dnacomplementmap = string.maketrans('ACGTacgt ', 'TGCATGCA ')
+try:
+    # Note: This is NOT a direct basepair mapping, but a char-point map,
+    # which must be passed to str.translate()
+    dna_wc_bp_table = str.maketrans('ACGTacgt ', 'TGCATGCA ')
+except AttributeError:
+    dna_wc_bp_table = string.maketrans('ACGTacgt ', 'TGCATGCA ')
 
 
-def dnarcomp(seqStr):
-    """Returns the reverse complement of the sequence in seqStr.
-    if seqStr is not a basestring, it will return a list of the
+def dnarcomp(sequence):
+    """Returns the reverse complement of the sequence in sequence.
+    if sequence is not a basestring, it will return a list of the
     reverse complement of each entry.
     """
-    if isinstance(seqStr, str):
-        return seqStr.translate(dnacomplementmap)[::-1]
+    if isinstance(sequence, str):
+        return sequence.translate(dna_wc_bp_table)[::-1]
     else:
         # Assume list of strings:
-        return [seq.translate(dnacomplementmap)[::-1] for seq in seqStr]
+        return [seq.translate(dna_wc_bp_table)[::-1] for seq in sequence]
 
 
 def dnacomp(seqStr):
     """Returns the complement of the sequence in seqStr."""
-    return seqStr.translate(dnacomplementmap)
+    return seqStr.translate(dna_wc_bp_table)
+
+
+def sequence_wo_mods(seq, format="IDT"):
+    """
+
+    :param seq:
+    Returns:
+        sequence without modifications.
+    """
+    mods_pat = r'\/\w*\/'
+    # replace all instances of pattern with '':
+    return re.sub(mods_pat, '', seq)
+
+
+def sequence_pure(seq):
+    seq = seq.replace(" ", "").replace("-", "").replace("*", "")
+    seq = sequence_wo_mods(seq)
+    return seq
 
 
 
@@ -125,7 +155,7 @@ if __name__ == "__main__":
 #    test_seq_permuts()
 #    test_check_candidates()
 
-    test_generateRandomSeqs()
+    # test_generateRandomSeqs()
 
 #    thomasseq =   "ACATACAGCCTCGCATGAGCCC"
 #    rcomplement = "GGGCTCATGCGAGGCTGTATGT"

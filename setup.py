@@ -43,19 +43,19 @@ setup(
     entry_points={
         'console_scripts': [
             # These should all be lower-case, else you may get an error when uninstalling:
-            'gelannotator=gelutils.gelannotator:main',
-            'annotategel_debug=gelutils.gelannotator_gui:main',  # Run as console script for debugging.
+            'json_redump_fixer=rsenv.seq.cadnano.json_redump_fixer:main',
+            # 'annotategel_debug=gelutils.gelannotator_gui:main',  # Run as console script for debugging.
         ],
-        'gui_scripts': [
-            'AnnotateGel=gelutils.gelannotator_gui:main',
-        ]
+        # 'gui_scripts': [
+        #     'AnnotateGel=gelutils.gelannotator_gui:main',
+        # ]
     },
 
     install_requires=[
         'pyyaml',
         'six',
         'requests',
-        'pillow',
+        # 'pillow',
         'numpy',
         'scipy',
         'biopython',
@@ -91,8 +91,6 @@ setup(
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
