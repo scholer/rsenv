@@ -41,8 +41,7 @@ import numpy as np
 from .sequtil import rcompl
 
 
-
-def generate_fbsplint_seq(seq, domain_sizes=(10, 10, 11, 11), mid=0.5, sep='-', check_lengths=True, debug=False):
+def generate_fbsplint_seq(template, domain_sizes=(10, 10, 11, 11), mid=0.5, sep='-', check_lengths=True, debug=False):
     """Generate a "fb-splint"
     An fb-splint is a splint oligo with domains annealing not
     only to the ends but also to the middle:
@@ -62,20 +61,21 @@ def generate_fbsplint_seq(seq, domain_sizes=(10, 10, 11, 11), mid=0.5, sep='-', 
     must be done at nano-molar concentrations to prevent dimeric side-products.
 
     Args:
-        seq_to_circularize: The sequence of the 5' phosphorylated oligo to circularize.
+        template: The sequence of the 5' phosphorylated oligo to circularize.
         domain_sizes: Sizes of domains in splint's 5'->3' order (C*, A*, F*, D* in the diagram above).
-        sep: Separator between domains
+        sep: Separator between domains when printing the generated splint sequence.
         check_lengths: If True (default), print a warning if the domain lengths looks weird.
-        mid: Where domain 1 and 4 of the fb-splint hybridizes to the input sequence.
-            Specifically, the point on seq where the ends of fb-splint meet and stack.
+        mid: Where domain 1 (C*) and 4 (D*) of the fb-splint hybridize to the template sequence.
+            Specifically, the point on template where the ends of fb-splint meet and stack.
             It may be beneficial to select a point with high stacking energy, e.g. C/G basepair.
-            Default value of 0.5 means "at the middle/halfway". Values can be fractional (<1) or absolute (>1).
+            Values can be fractional (<1) or absolute (>1).
+            Default value of 0.5 means "at the middle/halfway".
     Returns:
-        sequence for fb-splint oligo.
+        Sequence for fb-splint oligo.
 
     Based on: make_fb_splint() in RS398 Notebook.
     """
-    # fp splint domains (on seq): mid-upstream, 5', 3', mid-downstream
+    # fp splint domains (on template): mid-upstream, 5', 3', mid-downstream
     accepted_helix_lengths = {20, 21, 32}
     l1, l2, l3, l4 = domain_sizes
 
@@ -85,9 +85,14 @@ def generate_fbsplint_seq(seq, domain_sizes=(10, 10, 11, 11), mid=0.5, sep='-', 
         if l1+l4 not in accepted_helix_lengths:
             print("WARNING: l1+l4 (%s+%s) not in accepted helix lengths %s" % (l1, l4, accepted_helix_lengths))
     if mid < 1:
-        mid = ceil(mid * len(seq))
-    # splint = sep.join(rcompl(d) for d in [seq[mid:mid+l1], seq[:l2], seq[-l3:], seq[mid-l4:mid]])
-    A, B, C, D, E, F = [seq[:l2], seq[l2:mid-l1], seq[mid-l1:mid], seq[mid:mid+l4], seq[mid+l4:-l3], seq[-l3:]]
+        mid = ceil(mid * len(template))
+    # splint = sep.join(rcompl(d) for d in [template[mid:mid+l1], template[:l2], template[-l3:], template[mid-l4:mid]])
+    # Template domains:
+    A, B, C, D, E, F = [
+        template[:l2], template[l2:mid - l1], template[mid - l1:mid],
+        template[mid:mid + l4], template[mid + l4:-l3], template[-l3:]
+    ]
+    # Splint domains, joined by sep:
     splint = sep.join(rcompl(d) for d in (C, A, F, D))
     if debug:
         print(splint, "\t", "-".join(str(len(part)) for part in splint.split("-")))

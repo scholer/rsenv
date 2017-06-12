@@ -53,6 +53,7 @@ setup(
 
     install_requires=[
         'pyyaml',
+        'yaml',
         'six',
         'requests',
         # 'pillow',
