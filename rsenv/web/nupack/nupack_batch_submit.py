@@ -143,13 +143,16 @@ import time
 from datetime import datetime
 from pprint import pprint  # , pformat
 
+# Local imports:
+from .nupack_job_utils import token_from_url, jobid_from_url
+
 
 # Module-level constants:
 seq_mods_chars = string.digits + string.ascii_letters + string.punctuation
 SEQ_FILE_HEADER = ("name", "contents", "concentration", "scale")
 NUPACK_PARTITION_ANALYSIS_URL = "http://nupack.org/partition/new"     # no https...
 TOKEN_REGEX = re.compile(r"token=(\w+)")
-verbose = 0
+# verbose = 0
 
 default_partition_sequence_params = yaml.load("""
 name: 'strand1'
@@ -220,6 +223,12 @@ def parse_sequence_batch_file(file, sep=None):
                for batch_section in content.strip().split("\n\n")]
 
     return batches
+
+
+def seq_batch_from_design_output_file(file):
+    design_output = yaml.load(open(file))
+    batch = [{'name': strand['Name'], 'contents': strand['Sequence']} for strand in design_output['Strands']]
+    return batch
 
 
 def get_defaults():
@@ -300,13 +309,13 @@ def dispatch(job_param, sequences_params, session=None, url=NUPACK_PARTITION_ANA
         raise ValueError("Missing name or sequence for sequence batch")
     for seq_param in sequences_params:
         if "scale" not in seq_param or seq_param["scale"] is None:
-            if verbose > 0:
+            if verbose and verbose > 0:
                 print("Adjusting seq_param[scale] to -6 (uM)")
             seq_param["scale"] = "-6"
     data = gen_data(job_param, sequences_params)
     if session is None:
         session = requests.Session()
-    if verbose > 1:
+    if verbose and verbose > 1:
         print("\ndata to be POSTed:")
         pprint(data)
         print("\nSession headers, cookies:")
@@ -319,34 +328,26 @@ def dispatch(job_param, sequences_params, session=None, url=NUPACK_PARTITION_ANA
     return r
 
 
-def response_to_dict(response):
-    attrs = ('url', 'status_code', 'reason', 'url')
+def jobinfo_from_url(url):
+    return {
+        'jobid': jobid_from_url(url),
+        'token': token_from_url(url),
+    }
+    # d['token'] = token_from_url(response.url)
+    # d['jobid'] = jobid_from_url(response.url)
+
+
+def response_to_job_dict(response, attrs = ('url', 'status_code', 'reason'), history=True):
     d = {att: getattr(response, att) for att in attrs}
-    d['history'] = [response_to_dict(r) for r in response.history]
-    d['token'] = token_from_url(response.url)
-    d['jobid'] = jobid_from_url(response.url)
+    if history:
+        d['history'] = [response_to_job_dict(r) for r in response.history]
+    d.update(jobinfo_from_url(response.url))
     return d
 
 
 def responses_to_yaml(responses, stream=None):
-    response_dicts = [response_to_dict(res) for res in responses]
+    response_dicts = [response_to_job_dict(res) for res in responses]
     return yaml.dump(response_dicts)
-
-
-def token_from_url(url):
-    match = TOKEN_REGEX.search(url)
-    token = match.group(1) if match else None
-    return token
-
-
-def jobid_from_url(url):
-    from urllib.parse import urlparse
-    url_parts = urlparse(url)
-    job_id = url_parts.path.strip("/").split('/')[-1]
-    try:
-        return int(job_id)
-    except ValueError:
-        return None
 
 
 def get_tokens(responses):
@@ -356,14 +357,32 @@ def get_tokens(responses):
     return tokens
 
 
+def get_jobids(responses):
+    jobids = [jobid_from_url(r.url) for r in responses]
+    return jobids
+
+
 def extract_and_format_tokens(responses, outputfmt="{token}"):
-    """Extract tokens from response urls and output a line with each token formatted with outputfmt."""
+    """Extract tokens from response urls and output a line with each token formatted with outputfmt.
+
+    Args:
+        responses:
+        outputfmt:
+
+    Returns:
+        text (str) with one output line per response
+
+    Examples:
+        >>> extract_and_format_tokens([r], "{r.status_code} \t {r.url} \t {jobid} \t {token}")
+
+    """
     if outputfmt.lower() == 'yaml':
         text = responses_to_yaml(responses)
     else:
         tokens = get_tokens(responses)
-        text = "\n".join(outputfmt.format(token=token, r=response)
-                         for token, response in zip(tokens, responses))
+        jobids = get_jobids(responses)
+        text = "\n".join(outputfmt.format(token=token, r=response, jobid=jobid, url=response.url)
+                         for token, response, jobid in zip(tokens, responses, jobids))
     return text
 
 
@@ -379,6 +398,7 @@ def save_tokens(responses, outputfn, outputfmt="{token}", verbose=0):
 
 def submit_nupack_partition_jobs(
         seq_batches, job_param,
+        seq_batch_is_design_output=False,
         session=None, sleep=2,
         savetokenstofile=None,
         tokenoutputfmt="yaml",
@@ -406,7 +426,11 @@ def submit_nupack_partition_jobs(
 
     if isinstance(seq_batches, str):
         seqs_batchfile = seq_batches
-        seq_batches = parse_sequence_batch_file(seqs_batchfile)
+        if seq_batch_is_design_output:
+            # returns a single batch/list of sequences
+            seq_batches = [seq_batch_from_design_output_file(seqs_batchfile)]
+        else:
+            seq_batches = parse_sequence_batch_file(seqs_batchfile)
     else:
         seqs_batchfile = None
 
@@ -419,7 +443,7 @@ def submit_nupack_partition_jobs(
         print("General job parameters for all batches:")
         print(yaml.dump(job_param, default_flow_style=False))
 
-        if verbose > 1:
+        if verbose and verbose > 1:
             print("\nSequence batches:")
             pprint(seq_batches)
 
@@ -475,8 +499,8 @@ def main(argv=None):
     """
     argns, _ = parse_args(argv)
 
-    global verbose
-    verbose = argns.verbose or 0
+    # global verbose
+    verbose = argns.verbose or 0  # Is None if not provided, not 0.
 
     job_param, def_seq_param = get_defaults()
     if argns.jobparams:
@@ -486,10 +510,13 @@ def main(argv=None):
     responses = submit_nupack_partition_jobs(
         seq_batches=argns.batch,
         job_param=job_param,
+        seq_batch_is_design_output=argns.seq_batch_is_design_output,
         session=session,
         sleep=2,
         savetokenstofile=argns.savetokens,
         tokenoutputfmt=argns.outputfmt,
+        open_webbrowser=argns.browser,
+        print_jobparams=argns.print_jobparams,
         verbose=verbose
     )
 
@@ -521,9 +548,11 @@ def parse_args(argv):
         "`None` will split on all whitespace characters."))
     parser.add_argument('--sleep', metavar="SECONDS", type=int, default=2,
                         help="Wait this number of seconds between each request.")
+    parser.add_argument('--no-browser', action="store_false", dest='browser',
+                        help="Do not open NuPack job page in browser for every batch request.")
     parser.add_argument('--browser', action="store_true",
-                        help="Open job NuPack page in browser for every batch request.")
-    parser.add_argument('--print_jobparams', action="store_true",
+                        help="Open NuPack job page in browser for every batch request.")
+    parser.add_argument('--print-jobparams', action="store_true",
                         help="Print all job parameters (both general and for each sequence batch).")
 
     # OBS: ArgParse uses %-formatting so you need to escape '%' in help strings.
@@ -548,6 +577,11 @@ def parse_args(argv):
         "Full list of job parameters: "
         # Need the '+' to separate, otherwise the strings are concatenated before the .join()
         + ", ".join(sorted(default_partition_job_params.keys()))
+    ))
+
+    parser.add_argument('--seq-batch-is-design-output', action="store_true", help=(
+        "Treat sequence batch file as output from NuPack's `tubedesign` command, "
+        "and analyze the strands found therein."
     ))
     parser.add_argument('batch', metavar="SEQUENCES_BATCHES_FILENAME", help=(
         "Load sequence batches from this file, "

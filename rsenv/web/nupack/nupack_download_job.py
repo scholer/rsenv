@@ -23,9 +23,10 @@ import zipfile
 import yaml
 import requests
 
+from .nupack_job_utils import token_from_url, jobid_from_url
+
 NUPACK_DL_JOB_URL = 'http://nupack.org/partition/download_tar/'
 NUPACK_DL_JOB_URI_FMT = 'http://nupack.org/partition/download_tar/{jobid}?token={token}'
-TOKEN_REGEX = re.compile(r"token=(\w+)")
 
 
 def load_yaml(filepath):
@@ -35,20 +36,23 @@ def load_yaml(filepath):
     return r
 
 
-def token_from_url(url):
-    match = TOKEN_REGEX.search(url)
-    token = match.group(1) if match else None
-    return token
+def download_job(job, session=None, verbose=0):
+    """Download a nupack job.
 
+    Args:
+        job: dict with information about the job. Must contain `jobid` and `token`.
 
-def jobid_from_url(url):
-    from urllib.parse import urlparse
-    url_parts = urlparse(url)
-    job_id = url_parts.path.strip("/").split('/')[-1]
-    try:
-        return int(job_id)
-    except ValueError:
-        return None
+    Returns:
+        Response with result of GET request.
+
+    """
+    if session is None:
+        session = requests.session()
+    dlurl = NUPACK_DL_JOB_URI_FMT.format(**job)
+    if verbose and verbose > 0:
+        print("\nDownloading job file from url: {}".format(dlurl))
+    res = session.get(dlurl)
+    return res
 
 
 def download_jobs_from_file(
@@ -126,9 +130,9 @@ def unzip_all(filenames, directory=".", verbose=0):
     for fn in filenames:
         if verbose and verbose > 0:
             print("\nExtracting file %r (to directory %r):" % (fn, directory))
-        zip_ref = zipfile.ZipFile(fn, 'r')
-        zip_ref.extractall(directory)
-        zip_ref.close()
+        zip_fd = zipfile.ZipFile(fn, 'r')
+        zip_fd.extractall(directory)
+        zip_fd.close()
 
 
 def main(argv=None):
