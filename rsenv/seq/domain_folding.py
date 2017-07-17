@@ -82,6 +82,7 @@ def generate_fbsplint_seq(template, domain_sizes=(10, 10, 11, 11), mid=0.5, sep=
     if check_lengths:
         if l1+l4 != l2+l3:
             print("WARNING: l1+l4 != l2+l3: (%s+%s) != (%s+%s" % (l1, l4, l2, l3))
+            print(" - the two parallel double helices will have different lengths.")
         if l1+l4 not in accepted_helix_lengths:
             print("WARNING: l1+l4 (%s+%s) not in accepted helix lengths %s" % (l1, l4, accepted_helix_lengths))
     if mid < 1:

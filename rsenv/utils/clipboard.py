@@ -21,20 +21,84 @@ Module for interacting with the OS clipboard.
 
 Possible options for working with the clipboard:
 
-* tkinter       cross-platform, starts a brief GUI
-* Qt            cross-platform, starts a brief GUI
-* pygtk         Linux
-* pyperclip     cross-platform  Uses Ctypes. https://github.com/asweigart/pyperclip
-* Xerox         cross-platform  Requires win32 module. https://github.com/kennethreitz/xerox
-* clipboard     cross-platform  https://pypi.python.org/pypi/clipboard  -- exactly the same as pyperclip
-* win32clipboard    windwos
+* tkinter           cross-platform, starts a brief GUI
+* Qt                cross-platform, starts a brief GUI
+* pygtk             Linux
+* Xerox             cross-platform  Requires win32 module. https://github.com/kennethreitz/xerox
+* richxerox         https://pypi.python.org/pypi/richxerox
+* pyperclip         cross-platform  Uses Ctypes (windows) or subprocess. https://github.com/asweigart/pyperclip
+* win32clipboard    windows
+* AppKit            Mac
 
-# from https://www.daniweb.com/software-development/python/threads/422292/getclipboarddata#post1802945
-from PySide.QtGui import QApplication
-app = QApplication([])
-clipboard = app.clipboard()
-text = clipboard.text() # gets clipboard
-app.processEvents() # Is required to avoid hanging...
+
+Qt example:
+    # from https://www.daniweb.com/software-development/python/threads/422292/getclipboarddata#post1802945
+    from PySide.QtGui import QApplication
+    app = QApplication([])
+    clipboard = app.clipboard()
+    text = clipboard.text()  # gets clipboard
+    app.processEvents()  # Is required to avoid hanging...
+
+
+Xerox:
+    On Mac, uses `pbcopy` and `pbpaste` via `subprocess.Popen()` to read/write to/from the clipboard.
+    This would not work for binary inputs.
+    On Windows uses pywin32/win32clipboard.
+    Also has tkinter-based copy/paste which it falls back to on windows if pywin32 is not availble.
+
+richxerox:
+    Extension of Xerox to provide multiple formats other than text (rtf, html).
+    https://bitbucket.org/jeunice/richxerox
+    Uses pyobjc AppKit.NSPasteboard
+
+
+pyperclip:
+    "Currently only handles plaintext."
+    On Windows, uses Ctypes, no additional modules are needed.
+    On Mac, this module makes use of the pbcopy and pbpaste commands, which should come with the os.
+    On Linux, this module makes use of the xclip or xsel commands, which should come with the os.
+    Can also use `qdbus org.kde.klipper` via `subprocess`, or use Qt or gtk.
+    OBS: Is used by Pandas for reading/writing from/to clipboard.
+
+
+AppKit from the pyobjc package (Mac):
+    1. Install pyobjc:
+        pip install pyobjc
+        conda install -c conda-forge pyobjc-core  # core is not enough, you need the full package.
+
+
+    NOT THIS: http://nitipit.github.io/appkit/
+    AppKit.NSPasteboard provides functions for interacting with the macOS pasteboard server.
+    https://developer.apple.com/documentation/appkit/nspasteboard
+    https://stackoverflow.com/questions/7083313/python-get-mac-clipboard-contents
+    https://genbastechthoughts.wordpress.com/2012/05/20/reading-urls-from-os-x-clipboard-with-pyobjc/
+    http://blog.carlsensei.com/post/88897796
+    http://www.macdrifter.com/2011/12/python-and-the-mac-clipboard.html (old)
+
+
+Carbon (Mac):
+    http://blog.carlsensei.com/post/88897796
+    Carbon.Scrap.ClearCurrentScrap()
+    Carbon.Scrap.GetCurrentScrap().PutScrapFlavor('TEXT', 0, arg)
+    Carbon.Scrap.GetCurrentScrap().GetScrapFlavorData('TEXT')
+
+
+Other:
+
+    Pythonista iOS Python IDE has a clipboard module that can read image data:
+    http://omz-software.com/pythonista/docs/ios/clipboard.html
+    https://github.com/Pythonista-Tools has extra scripts but not actually source
+
+    Pillow has an `ImageGrab` module (Mac, Windows) that can be used to grab image data from clipboard.
+    Uses `osascript` (AppleScript) to write clipboard image data to file.
+    https://github.com/python-pillow/Pillow/blob/master/PIL/ImageGrab.py
+
+
+
+Regarding multiple clipboards and data:
+* Most OS'es have multiple clipboards.
+* In many OS'es, the clipboard can also contain different data types, sometimes simultaneously.
+
 
 """
 import os
@@ -45,7 +109,7 @@ try:
 except ImportError:
     from tkinter import Tk
 
-## Clipboard in GTK:
+# Clipboard in GTK:
 try:
     import pygtk
     pygtk.require('2.0')
@@ -56,14 +120,14 @@ except ImportError:
     # Will happen on Windows/Mac:
     pass
 
-## win32clipboard:
+# win32clipboard:
 try:
     import win32clipboard
     print("win32clipboard is available.")
 except ImportError:
     pass
 
-## pyperclip:
+# pyperclip:
 try:
     import pyperclip
     print("pyperclip is available.")
@@ -73,7 +137,7 @@ except ImportError:
     #>>> if 'pyperclip' in sys.modules.keys()
     pass
 
-## xerox:
+# xerox:
 try:
     import xerox
 except ImportError:
@@ -111,6 +175,7 @@ def set_clipboard(text, datatype=None):
         r.mainloop() # the Tk root's mainloop() must be invoked.
         r.destroy()
 
+
 def get_clipboard():
     """
     Get content of OS clipboard.
@@ -133,7 +198,7 @@ def get_clipboard():
         except TypeError as e:
             print(e)
             print("No text in clipboard.")
-        wcb.CloseClipboard() # User cannot use clipboard until it is closed.
+        wcb.CloseClipboard()  # User cannot use clipboard until it is closed.
         return data
     else:
         print("locals.keys() is: ", list(sys.modules.keys()).keys())
@@ -149,6 +214,7 @@ def get_clipboard():
 # Aliases:
 copy = set_clipboard
 paste = get_clipboard
+
 
 def addToClipBoard_windows(text):
     """
