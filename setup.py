@@ -9,6 +9,7 @@ Various tools/utilities and modules for work.
 
 """
 
+# To update entry points, just bump verison number and do `$ pip install -e .`
 
 # update 'version' and 'download_url', as well as qpaint_analysis.__init__.__version__
 setup(
@@ -16,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.1.0dev',  # Update for each new version
+    version='0.1.1dev3',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -44,6 +45,7 @@ setup(
         'console_scripts': [
             # These should all be lower-case, else you may get an error when uninstalling:
             'json_redump_fixer=rsenv.seq.cadnano.json_redump_fixer:main',
+            'nanodrop_cli=rsenv.data_analysis.nanodrop.nanodrop_cli:cli',
             # 'annotategel_debug=gelutils.gelannotator_gui:main',  # Run as console script for debugging.
         ],
         # 'gui_scripts': [
