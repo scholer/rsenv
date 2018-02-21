@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.1.2dev1',  # Update for each new version
+    version='0.1.3dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -44,10 +44,11 @@ setup(
     entry_points={
         'console_scripts': [
             # console_scripts should all be lower-case, else you may get an error when uninstalling:
-            'json_redump_fixer=rsenv.seq.cadnano.json_redump_fixer:main',
-            'nanodrop_cli=rsenv.data_analysis.nanodrop.nanodrop_cli:cli',
+            'nanodrop-cli=rsenv.data_analysis.nanodrop.nanodrop_cli:cli',
             'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',
+            'json-redump-fixer=rsenv.seq.cadnano.json_redump_fixer:main',
             'json-to-yaml=rsenv.fileconverters.jsonyaml:json_files_to_yaml_cli',
+            'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
             # 'annotategel_debug=gelutils.gelannotator_gui:main',  # Run as console script for debugging.
         ],
         # 'gui_scripts': [

@@ -21,10 +21,10 @@ Module for interacting with the OS clipboard.
 
 Possible options for working with the clipboard:
 
-* tkinter           cross-platform, starts a brief GUI
-* Qt                cross-platform, starts a brief GUI
-* pygtk             Linux
-* Xerox             cross-platform  Requires win32 module. https://github.com/kennethreitz/xerox
+* tkinter           cross-platform, starts a brief Tk GUI.
+* Qt                cross-platform, starts a brief Qt GUI.
+* pygtk             Linux, using GTK.
+* Xerox             cross-platform. Requires win32 module. https://github.com/kennethreitz/xerox
 * richxerox         https://pypi.python.org/pypi/richxerox
 * pyperclip         cross-platform  Uses Ctypes (windows) or subprocess. https://github.com/asweigart/pyperclip
 * win32clipboard    windows
@@ -44,7 +44,7 @@ Xerox:
     On Mac, uses `pbcopy` and `pbpaste` via `subprocess.Popen()` to read/write to/from the clipboard.
     This would not work for binary inputs.
     On Windows uses pywin32/win32clipboard.
-    Also has tkinter-based copy/paste which it falls back to on windows if pywin32 is not availble.
+    Also has tkinter-based copy/paste which it falls back to on windows if pywin32 is not available.
 
 richxerox:
     Extension of Xerox to provide multiple formats other than text (rtf, html).
@@ -101,8 +101,12 @@ Regarding multiple clipboards and data:
 
 
 """
+from .fileutils import get_next_unused_filename
+
 import os
 import sys
+import click
+import inspect
 
 try:
     from tkinter import Tk
@@ -243,3 +247,56 @@ def copy_file_to_clipboard(fd):
     if isinstance(fd, str):
         fd = open(fd)
     set_clipboard(fd.read())
+
+
+def clipboard_image_to_file(
+        filename=None, fnpattern="image_{i:03}.png",
+        prefix="image", ext='png',
+        quiet=False, verbose=0
+):
+    """Save clipboard image data to file.
+
+    Args:
+        filename:
+        fnpattern: Instead of specifying a precise filename, it may be desirable to specify a *pattern*,
+            e.g. image_001.png, image_002.png, etc. This may be achieved using patterns which are just
+            python format strings, with variables such as `i` and `date`. See `utils.fileutils` for more info.
+        prefix: Used to generate filename from pattern, see `.fileutils.get_next_unused_filename()`.
+        ext: Used to generate filename from pattern, see `.fileutils.get_next_unused_filename()`.
+
+    Returns:
+        Filename
+
+    """
+    import PIL.ImageGrab
+
+    if filename is None:
+        filename = get_next_unused_filename(fnpattern, prefix=prefix, ext=ext)
+
+    img = PIL.ImageGrab.grabclipboard()
+    if img is None:
+        print("WARNING: No image data in clipboard, aborting.")
+        return
+    # PIL.ImageGrab.grabber only on win32.
+    if not quiet:
+        print(f"Saving image ({img.width} x {img.height} pixels) to file: {filename}")
+    img.save(filename)
+    if not quiet:
+        print(" - done! ({} bytes)".format(os.path.getsize(filename)))
+    return filename
+
+
+clipboard_image_to_file_cli = click.Command(
+    callback=clipboard_image_to_file,
+    name=clipboard_image_to_file.__name__,
+    help=inspect.getdoc(clipboard_image_to_file),
+    params=[
+        click.Option(['--fnpattern', '-f'], default="image_{i:03}.png"),
+        click.Option(['--prefix'], default="image"),  # remember: param_decls is a list, *decls.
+        click.Option(['--ext'], default="png"),
+        click.Option(['--verbose', '-v'], count=True),
+        click.Option(['--quiet/--no-quiet']),
+        click.Argument(['filename'], required=False)
+])
+
+
