@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.1.1dev3',  # Update for each new version
+    version='0.1.2dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -30,8 +30,8 @@ setup(
         #"SDS", "Gel electrophoresis", "Typhoon", "GelDoc",
         "Molecular biology", "Biotechnology", "Bioinformatics",
         "DNA", "DNA sequences", "sequence manipulation",
-        "Data analysis", "Data processing", "plotting",
-        "Image analysis", "AFM", "Microscopy", "TEM",
+        "Data analysis", "Data processing", "plotting", "Data visualization",
+        "Image analysis", "AFM", "Microscopy", "TEM", "HPLC", "Chromatograms",
     ],
 
     # scripts or entry points..
@@ -43,9 +43,11 @@ setup(
     # Note: The entry points are stored in ./gelutils.egg-info/entry_points.txt, which is used by pkg_resources.
     entry_points={
         'console_scripts': [
-            # These should all be lower-case, else you may get an error when uninstalling:
+            # console_scripts should all be lower-case, else you may get an error when uninstalling:
             'json_redump_fixer=rsenv.seq.cadnano.json_redump_fixer:main',
             'nanodrop_cli=rsenv.data_analysis.nanodrop.nanodrop_cli:cli',
+            'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',
+            'json-to-yaml=rsenv.fileconverters.jsonyaml:json_files_to_yaml_cli',
             # 'annotategel_debug=gelutils.gelannotator_gui:main',  # Run as console script for debugging.
         ],
         # 'gui_scripts': [
@@ -54,7 +56,6 @@ setup(
     },
 
     install_requires=[
-        'pyyaml',
         'pyyaml',
         'six',
         'requests',
@@ -67,6 +68,10 @@ setup(
         # 'cffi',      # Cairo is only required to convert SVG files to PNG
         # 'cairocffi',
         # 'cairosvg',
+        'xarray',
+        'pandas',
+        'click',
+        # 'openpyxl',  # Excel files package, required for xlsx-to-csv converter.
     ],
     classifiers=[
         # How mature is this project? Common values are
