@@ -29,11 +29,35 @@ def json_files_to_yaml_cli(
         jsonfiles, outputfnfmt="{inputfn}.yaml", overwrite=False,
         verbose=0, wildcards=None, ignore_errors=False,
 ):
-    """Convert JSON formatted text files to YAML formatted text files.
+    """CLI for converting JSON formatted text files to YAML formatted text files.
 
     Arguments:
 
         jsonfiles: One or more input files to convert.
+
+    """
+    # Rest of parameters documented by click.option help
+    return json_files_to_yaml(
+        jsonfiles=jsonfiles, outputfnfmt=outputfnfmt, overwrite=overwrite,
+        verbose=verbose, wildcards=wildcards, ignore_errors=ignore_errors
+    )
+
+
+def json_files_to_yaml(
+            jsonfiles, outputfnfmt="{inputfn}.yaml", overwrite=False,
+            verbose=0, wildcards=None, ignore_errors=False,
+    ):
+    """Convert JSON formatted text files to YAML formatted text files.
+
+    Args:
+        jsonfiles:
+        outputfnfmt:
+        overwrite:
+        verbose:
+        wildcards:
+        ignore_errors:
+
+    Returns:
 
     """
     if wildcards is True or (sys.platform == 'win32' and wildcards is None):
@@ -44,6 +68,7 @@ def json_files_to_yaml_cli(
             if not (os.path.exists(fn) and os.path.isfile(fn)):
                 print(f"\nERROR: jsonfile argument `{fn}` is not a file, aborting!")
                 return
+    outputfiles = []
     for inputfn in jsonfiles:
         if verbose:
             print(f"\nReading data from json file: {inputfn}")
@@ -74,5 +99,8 @@ def json_files_to_yaml_cli(
             print(f" - writing data to file: {outputfn}")
         with open(outputfn, 'w') as fdout:
             yaml.dump(data, stream=fdout)
+        outputfiles.append(outputfn)
+
+    return outputfiles
 
 

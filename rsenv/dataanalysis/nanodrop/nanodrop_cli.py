@@ -4,7 +4,7 @@ import os
 import yaml
 import click
 
-from rsenv.data_analysis.nanodrop import denovix
+from rsenv.dataanalysis.nanodrop import denovix
 from rsenv.utils.query_parsing import translate_all_requests_to_idxs
 
 """
