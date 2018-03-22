@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.1.5dev1',  # Update for each new version
+    version='0.1.6dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -48,7 +48,11 @@ setup(
             'csv-to-hdf5=rsenv.fileconverters.hdf5csv:csv_to_hdf5_cli',
             'hdf5-to-csv=rsenv.fileconverters.hdf5csv:hdf5_to_csv_cli',
             'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
-            'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli'
+            'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
+            # ELN:
+            'eln-print-started-exps=rsenv.eln.eln_md_pico:print_started_exps_cli',
+            'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',
+            'eln-print-journal-yfm-issues=rsenv.eln.eln_md_pico:print_journal_yfm_issues_cli',
         ],
         # 'gui_scripts': [
         #     'AnnotateGel=gelutils.gelannotator_gui:main',

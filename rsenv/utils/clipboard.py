@@ -101,7 +101,7 @@ Regarding multiple clipboards and data:
 
 
 """
-from .fileutils import get_next_unused_filename
+from rsenv.fileutils.fileutils import get_next_unused_filename
 
 import os
 import sys
@@ -250,22 +250,23 @@ def copy_file_to_clipboard(fd):
 
 
 def clipboard_image_to_file(
-        filename=None, fnpattern="image_{i:03}.png",
+        filename=None, fnpattern="{prefix}_{i:03}.{ext}",
         prefix="image", ext='png',
         quiet=False, verbose=0
 ):
     """Save clipboard image data to file.
 
     Args:
-        filename:
+        filename: An exact filename to export to. Will overwrite exisitng files if they exists.
         fnpattern: Instead of specifying a precise filename, it may be desirable to specify a *pattern*,
-            e.g. image_001.png, image_002.png, etc. This may be achieved using patterns which are just
-            python format strings, with variables such as `i` and `date`. See `utils.fileutils` for more info.
+            e.g. image_001.png, image_002.png, etc. This may be achieved by through this parameter which is just a
+            python format string, with variables such as `i` and `date`, e.g. "image_{i:03}.png".
+            See `utils.fileutils.get_next_unused_filename()` for more info.
         prefix: Used to generate filename from pattern, see `.fileutils.get_next_unused_filename()`.
         ext: Used to generate filename from pattern, see `.fileutils.get_next_unused_filename()`.
 
     Returns:
-        Filename
+        filename of the exported image file.
 
     """
     import PIL.ImageGrab
@@ -291,7 +292,7 @@ clipboard_image_to_file_cli = click.Command(
     name=clipboard_image_to_file.__name__,
     help=inspect.getdoc(clipboard_image_to_file),
     params=[
-        click.Option(['--fnpattern', '-f'], default="image_{i:03}.png"),
+        click.Option(['--fnpattern', '-f'], default="{prefix}_{i:03}.{ext}"),
         click.Option(['--prefix'], default="image"),  # remember: param_decls is a list, *decls.
         click.Option(['--ext'], default="png"),
         click.Option(['--verbose', '-v'], count=True),

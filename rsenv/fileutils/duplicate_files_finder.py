@@ -69,97 +69,70 @@ Non-comprehensive list of prior art (i.e. other "file duplicates finders):
 """
 
 import os
-import io
-import hashlib
-from functools import partial
 import inspect
 import numpy as np
 import pandas as pd
-from fnmatch import fnmatch, fnmatchcase
+from fnmatch import fnmatch
 import yaml
 import click
 import warnings
+from collections import OrderedDict
+
+from rsenv.fileutils.filehashing import calculate_file_hash
+from rsenv.fileutils.fileutils import find_files, fsize_str_to_int, kB, MB
 
 
-kB = 1024
-MB = 2**20
-GB = 2**30
-CHUNK_SIZE = 64*kB
-
-prefixes = {
-    'B': 1,
-    'k': kB, 'kB': kB, 'KB': kB, 'K': kB,
-    'M': MB, 'MB': MB,
-    'G': GB, 'GB': GB,
-}
-
-
-def fsize_str_to_int(fsize, warn=True):
-    if not isinstance(fsize, str):
-        if warn:
-            warnings.warn("fsize %r is not a str: %s" % (fsize, type(fsize)))
-        return fsize
-    assert len(fsize) > 0
-    if len(fsize) == 1:
-        # print("fsize of length 1: %r" % (fsize,))
-        return int(fsize)
-    if fsize[-2:] in prefixes:
-        # 'kB', 'MB', 'GB':
-        # print("%r, %r, %r" % (fsize[:-2], fsize[-2:], prefixes[fsize[-2:]]))
-        return int(float(fsize[:-2]) * prefixes[fsize[-2:]])
-    elif fsize[-1:] in prefixes:
-        # 'B', 'k', 'M', 'G':
-        # print("%r, %r, %r" % (fsize[:-1], fsize[-1:], prefixes[fsize[-1:]]))
-        return int(float(fsize[:-1]) * prefixes[fsize[-1:]])
-
-
-def calculate_file_hash(filepath, hashname='md5', read_limit=0, chunk_size=CHUNK_SIZE, return_type='int'):
-    # hashfactory = getattr(hashlib, hashname)
-    hashfactory = hashlib.md5
-    hashmethod = hashfactory()
-    with open(filepath, "rb") as f:
-        n_bytes_read = 0
-        for chunk in iter(lambda: f.read(chunk_size), b""):
-            hashmethod.update(chunk)
-            n_bytes_read += chunk_size
-            if 0 < read_limit < n_bytes_read:
-                break
-    if return_type == 'hex':
-        return hashmethod.hexdigest()
-    elif return_type == 'int':
-        # Note: Python ints limited to 64bits = 8 bytes, else error: "int too big to convert".
-        return int.from_bytes(hashmethod.digest()[:8], byteorder='little')
-    else:
-        return hashmethod.digest()
-
-
+# While having a generic list of (header, function) tuples was nice and simple,
+# it prevented us from doing slightly more complex things like:
+# "don't calculate 4MB md5 hash if file is only 10kb and you have already calculated 64kb md5 hash."
+# (Although arguably that could have been done with the `read_start` parameter.
 default_grouping_scheme = [
-    ('filesize', os.path.getsize),
-    ('md5-16kB', partial(calculate_file_hash, hashname='md5', read_limit=64*kB)),
-    ('md5-4MB', partial(calculate_file_hash, hashname='md5', read_limit=4*MB)),
-    ('md5-full', partial(calculate_file_hash, hashname='md5', read_limit=0)),
+    {'name': 'filesize', 'func': os.path.getsize, 'args': [], 'kwargs': {}, 'filesizelimit': 0},
+    {'name': 'md5-16kB', 'func': calculate_file_hash, 'args': [], 'kwargs': dict(hashname='md5', read_limit=64 * kB), 'filesizelimit': 64 * kB},
+    {'name': 'md5-04MB', 'func': calculate_file_hash, 'args': [], 'kwargs': dict(hashname='md5', read_limit=4 * MB), 'filesizelimit': 4 * MB},
+    {'name': 'md5-full', 'func': calculate_file_hash, 'args': [], 'kwargs': dict(hashname='md5', read_limit=0), 'filesizelimit': 0},
+    # ('filesize', os.path.getsize),
+    # ('md5-16kB', partial(calculate_file_hash, hashname='md5', read_limit=64*kB)),
+    # ('md5-4MB', partial(calculate_file_hash, hashname='md5', read_limit=4*MB)),
+    # ('md5-full', partial(calculate_file_hash, hashname='md5', read_limit=0)),
 ]
 
 
-def find_files(
-        start_points, exclude_patterns=None, use_realpath=True,
-        realpaths=False, remove_realpath_dups=False, follow_links=False, exclude_links=False,
+def get_file_paths(
+        start_points, exclude_patterns=None, realpaths=True,
+        remove_realpath_dups=False, follow_links=False, exclude_links=False,
         return_type='iter', series_name='path', verbose=0
 ):
-    """"""
+    """ Get a list/array/series of file paths.
 
-    fpaths = (
-        fp
-        for start_point in start_points
-        for dirpath, dirnames, filenames in os.walk(start_point, followlinks=follow_links)
-        for fp in [os.path.join(dirpath, fn) for fn in filenames]
+    This function is mainly driven by the generator returned by `find_files()`.
+    The generator from `find_files()` is converted to list/array/series,
+    and some optional processing is applied (e.g. removing path duplicates
+    arising from symbolic links pointing to the same file node).
+
+    TODO: You may want to use `os.stat()` to get device and inode to make sure apparently identical
+    TODO: files are not just hardlinked to the same inode.
+
+    Args:
+        start_points:
+        exclude_patterns:
+        realpaths:
+        remove_realpath_dups:
+        follow_links:
+        exclude_links:
+        return_type:
+        series_name:
+        verbose:
+
+    Returns:
+
+    """
+
+    fpaths = find_files(
+        start_points=start_points, exclude_patterns=exclude_patterns,
+        realpaths=realpaths, followlinks=follow_links, exclude_links=exclude_links
     )
-    if exclude_patterns:
-        fpaths = (fp for fp in fpaths if not any(fnmatch(fp, pat) for pat in exclude_patterns))
-    if exclude_links:
-        fpaths = (fp for fp in fpaths if not os.path.islink(fp))
-    if realpaths:
-        fpaths = (os.path.realpath(fp) if not os.path.islink(fp) else os.readlink(fp) for fp in fpaths)
+
     if return_type == 'iter':
         # For iterators, we break off here, since we cannot do many of the things below with iterators.
         return fpaths
@@ -178,7 +151,7 @@ def find_files(
         # Convert to numpy array:
         # fpaths = np.fromiter(fpaths, dtype=np.object)  # ValueError: cannot create object arrays from iterator
         fpaths = np.array(list(fpaths), dtype=np.object)
-        fpaths.sort()  # arr.sort() is in-place, while np.sort(arr) returns new
+        fpaths.sort()  # arr.sort() is in-place, while np.sort(arr) returns new array
         # link-dups checking, numpy version:
         if remove_realpath_dups:
             is_dup_mask = np.ndarray(fpaths.shape)
@@ -200,24 +173,46 @@ def find_files(
 
 def get_startpoint_df(
         start_points,
-        use_realpath=True, remove_realpath_dups=False, follow_links=False, exclude_links=True,
+        realpaths=True, remove_realpath_dups=False, follow_links=False, exclude_links=True,
         exclude_patterns=None,
         fsize_min=None,
+        add_inode=True,
+        filelist_source=None,
         verbose=0,
 ):
-    """"""
+    """ Create the basic DataFrame with file paths from which to start finding duplicates from.
+
+    Args:
+        start_points:
+        use_realpath:
+        remove_realpath_dups:
+        follow_links:
+        exclude_links:
+        exclude_patterns:
+        fsize_min:
+        add_inode: Add inode (st_dev and st_ino) columns to the dataframe.
+        filelist_source:
+        verbose:
+
+    Returns:
+
+    """
 
     if len(start_points) == 1 and os.path.isfile(start_points[0]):
         # Pandas IO performance considerations: https://pandas.pydata.org/pandas-docs/stable/io.html#io-perf
         inputfn = start_points[0]
         return pd.read_hdf(inputfn)
 
-    fpaths = find_files(
-        start_points=start_points, exclude_patterns=exclude_patterns,
-        follow_links=follow_links, exclude_links=exclude_links,
-        use_realpath=use_realpath, remove_realpath_dups=remove_realpath_dups,
-        return_type='series',
-    )
+    if filelist_source:
+        with open(filelist_source) as fd:
+            fpaths = [line for line in fd]
+    else:
+        fpaths = get_file_paths(
+            start_points=start_points, exclude_patterns=exclude_patterns,
+            follow_links=follow_links, exclude_links=exclude_links,
+            realpaths=realpaths, remove_realpath_dups=remove_realpath_dups,
+            return_type='series',
+        )
     assert isinstance(fpaths, pd.Series)
     # Let's just always add filesize and filesize_MB for good measure:
     # Series/Dataframe: map is for simple dict-like lookup table mapping,
@@ -236,21 +231,61 @@ def get_startpoint_df(
     df = pd.DataFrame.from_items(zip(
         ['path', 'group_idx', 'filesize'],  #, 'filesize_MB'],
         [fpaths, group_idx, filesize]))  # , filesize // 1]))
+    if add_inode:
+        df['st_dev'], df['st_ino'] = [(st.st_dev, st.st_ino) for st in [os.stat(fp) for fp in fpaths]]
+    # It would be nice to have some metadata, e.g. on what types of checksums and groupings have been performed
+    # df.hash_groups = OrderedDict()
+    # Unfortunately, just using attributes is not a good idea, since operations may return a new dataframe
+    # without those attributes. There is an "unofficial" `DataFrame._metadata` attribute that "should"
+    # survive, but since it is not part of the public API, that may not be a stable solution.
+    # Alternatively, use xarray or one of the other DataFrame packages that DO support metadata annotations.
+    df._metadata['hashes'] = OrderedDict()
     return df
 
 
-def group_and_eliminate(df, grouping_scheme):
+def group_and_eliminate_df(
+        df, grouping_scheme, entry_column='path',
+        eliminate_nonduplicates=True, add_ndups_count=True, add_group_mb_sum=True
+):
+    """ Group entries and eliminate unique entries after each grouping round.
+
+    This function is used to find duplicates by iteratively grouping entries and
+    removing entries in groups with only a single entry.
+
+    Entries in the dataframe are grouped according to the list of grouping specifications/methods.
+    A group spec is a dict with keys 'header', 'func', and optionally 'args', 'kwargs', 'filesizelimit',
+    The grouping key value is calculated as `val = func(df[entry_column], *args, **kwargs)`
+
+    Two entries must be guaranteed to be different if the value returned by any grouping method differ.
+
+    The typical use case is to find duplicate files by
+
+    Args:
+        df: A DataFrame with path entries to group and eliminate unique.
+        grouping_scheme:
+        eliminate_nonduplicates:
+        add_ndups_count:
+        add_group_mb_sum:
+
+    Returns:
+
+    """
     grouping_levels = []
     org_df = df  # Keep a copy of the original DataFrame - we may be able to do everything as a view.
     if 'group_idx' not in df:
         df['group_idx'] = np.zeros(len(df), dtype='uint32')
-    for header, func in grouping_scheme:
+    for group_spec in grouping_scheme:
+        header = group_spec['name']
+        func, args, kwargs = group_spec['func'], group_spec.get('args', []), group_spec.get('kwargs', {})
+        grouping_type, filesizelimit = group_spec.get('type', 'hash'), group_spec.get('filesizelimit', 0)
         print("\n> Grouping by %r ..." % header)
         if header not in df:
-            vals = [func(fp) for fp in df['path']]
+            vals = [func(fp, *args, **kwargs) for fp in df[entry_column]]
             print("> Adding new column %r ..." % header)
-            df[header] = vals  # SettingWithCopyWarning  - because we've generated a view in the selection below!
+            df[header] = vals  # SettingWithCopyWarning, because `df.loc[df[group_ndups_hdr] > 1, :]` generates a view
             # df.loc[:, header] = vals
+            if grouping_type == 'hash':
+                df._metadata['hashes'][header] = group_spec
             print("< column %r added, dtype: %s" % (header, df[header].dtype))
         grouping_levels.append(header)
         print("Sorting %s rows in df by %s" % (len(df), grouping_levels))
@@ -271,17 +306,19 @@ def group_and_eliminate(df, grouping_scheme):
         for group_idx, (combination, group_df) in enumerate(grouped, 1):
             print("Processing group %s = %s (%s elements)" % (grouping_levels, combination, len(group_df)))
             # df[col, row], df.loc[row, col], or df.iloc[rnum, cnum]
-            df.loc[group_df.index, group_ndups_hdr] = len(group_df)
+            if add_ndups_count:
+                df.loc[group_df.index, group_ndups_hdr] = len(group_df)
             df.loc[group_df.index, 'group_idx'] = group_idx
-            if 'filesize' in df:
+            if add_group_mb_sum and 'filesize' in df:
                 df.loc[group_df.index, group_fsize_hdr] = group_df['filesize'].sum() // 1
         print("\nDataFrame before eliminating 1-element groups:")
         print(df)
-        # New dataframe with 1-element groups removed:
-        df = df.loc[df[group_ndups_hdr] > 1, :]  # Note: This may create a view!
-        df = df.copy()  # Avoid SettingWithCopyWarning
-        print("\nDataFrame after eliminating 1-element groups:")
-        print(df)
+        if eliminate_nonduplicates:
+            # New dataframe with 1-element groups removed:
+            df = df.loc[df[group_ndups_hdr] > 1, :]  # Note: This may create a view!
+            df = df.copy()  # Avoid SettingWithCopyWarning
+            print("\nDataFrame after eliminating 1-element groups:")
+            print(df)
     return df
 
 
@@ -289,7 +326,7 @@ def find_duplicate_files(
         start_points,
         fsize_min=0, exclude=None,
         follow_links=False, exclude_links=True,
-        realpaths=True, remove_realpath_dups=False,
+        abspaths=True, realpaths=True, remove_realpath_dups=False,
         grouping_scheme=None,
         save_fnpat=None, save_cols=None, print_cols=None,
         verbose=0, quiet=False,
@@ -310,15 +347,15 @@ def find_duplicate_files(
     df = get_startpoint_df(
         start_points=start_points, exclude_patterns=exclude, fsize_min=fsize_min,
         follow_links=follow_links, exclude_links=exclude_links,
-        use_realpath=realpaths, remove_realpath_dups=remove_realpath_dups,
+        abspaths=abspaths, realpaths=realpaths, remove_realpath_dups=remove_realpath_dups,
         verbose=verbose
     )
     print("< done get_startpoint_df\n")
     print("\nStarting df:")
     print(df)
-    print("\n\n> starting group_and_eliminate")
-    df = group_and_eliminate(df=df, grouping_scheme=grouping_scheme)
-    print("< done group_and_eliminate\n")
+    print("\n\n> starting group_and_eliminate_df")
+    df = group_and_eliminate_df(df=df, grouping_scheme=grouping_scheme)
+    print("< done group_and_eliminate_df\n")
     print("")
     if save_fnpat:
         if isinstance(save_fnpat, str):
@@ -341,6 +378,7 @@ find_duplicate_files_cli = click.Command(
         click.Option(['--exclude'], multiple=True),
         click.Option(['--follow-links/--no-follow-links'], default=False),
         click.Option(['--exclude-links/--no-exclude-links'], default=False),
+        click.Option(['--abspaths/--no-abspaths'], default=False),
         click.Option(['--realpaths/--no-realpaths'], default=False),
         click.Option(['--remove-realpath-dups/--no-remove-realpath-dups'], default=False),
         click.Option(['--save-fnpat']),
