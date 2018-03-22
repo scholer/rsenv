@@ -1,0 +1,12 @@
+pyyaml
+six
+requests
+pillow
+numpy
+scipy
+pandas
+xarray
+NetCDF
+pytables
+biopython
+matplotlib
