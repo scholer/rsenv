@@ -19,3 +19,5 @@
 
 # It is nice to also have this module available from here, even though it is specific to IDT ordersheets:
 from rsenv.web.IDT import convert_idt_xlsx_ordersheet_to_csv
+
+import pptx_downsizer

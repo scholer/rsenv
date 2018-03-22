@@ -18,7 +18,8 @@ See RS359i
 ------------------
 
 1. Get the order history html:
-    Go to IDT "order history" page, select 500 under "records per page",
+    Go to IDT "order history" page (https://www.idtdna.com/site/OrderStatus/orderstatus),
+    select 500 under "records per page",
     right-click somewhere in the table and select "Inspect element" (Chrome),
     right-click the <table> tag (or any parent) and select copy,
     paste the html content into a file and save it in your working directory,
@@ -28,7 +29,7 @@ See RS359i
 2. Get login cookies:
     Open Chrome's advanced settings, go to manage cookies, search for idtdna,
     under the "www.idtdna.com" you will find some cookies,
-    copy the cookies to a yaml file. It should look like the following:
+    copy the cookies to a yaml file. The yaml file should look like the following:
 
         ASP.NET_SessionId: (insert your value here)
         IDTAUTH: (insert your value here)
@@ -37,23 +38,26 @@ See RS359i
     and save the file to e.g. cookies.yaml
 
 
-3. Copy idt_download_especs_v2.py and idt_download_especs.bat to your working directory
-    Or: have them available from a folder in your %PATH% (win) or $PATH (unix)
-    Or: prefix/modify the commands below so you invoke the bat file.
+3. Run this module:
 
-
-4. Run idt_download_especs:
-
-    $> idt_download_especs --cookiefile cookies.yaml orderhistory.html
+    $> python -m rsenv.web.IDT.idt_download_especs_v2 --cookiefile cookies.yaml orderhistory.html
 
     You can take a look at the available command line parameters by calling
-    $> idt_download_especs --help
+    $> python -m rsenv.web.IDT.idt_download_especs_v2 --help
 
 
-See also: espec_grep
+If it doesn't work:
+* Check the regex pattern against the html using http://pythex.org/. (The IDT web pages changes regularly!)
+* See if you can manually download files (using Chrome and Python requests session with cookies.yaml).
 
 
-TODO: Consolidate with idt_download_especs_v2.py script in RsUtils python package!
+See also:
+    espec_grep
+
+
+Successful runs:
+* 20170720 - had to update coa regex.
+
 
 
 """
@@ -83,20 +87,20 @@ def get_directories(args):
     return especs_folder, qc_folder
 
 
-def get_link_patterns():
-    """
-    """
-    ## Specify regex patterns to parse the file.
-    # http://pythex.org/ is gold
-    # The SalesOrdNbr can contain '/', e.g. "/Pj6lkN8o3oiXv94CD6nMA=="
-
-    # COA url example: href="/site/OrderStatus/specs/coa?SalesOrdNbr=11769778"  # These are currently the ones you want
-    return dict(
-        # Note: For qc_pat the keyword is "SalesOrderNbr", but for coa_pat it is "SalesOrdNbr".
-        qc_pat=re.compile(r'href="(qc\/zip\?SalesOrderNbr=([\w=\/]+))"', re.MULTILINE),
-        coa_pat=re.compile(r'href="(specs\/coa\?SalesOrdNbr=([\w=\/]+))"'),
-        invoice_pat=re.compile(r'href="(\/site\/OrderStatus\/OrderStatus\/InvoiceDownloadRaw\?SalesOrdNbr=([\w=\/]+))"')
-    )
+# def get_link_patterns():  # Not maintained, obsolete.
+#     """
+#     """
+#     ## Specify regex patterns to parse the file.
+#     # http://pythex.org/ is gold
+#     # The SalesOrdNbr can contain '/', e.g. "/Pj6lkN8o3oiXv94CD6nMA=="
+#
+#     # COA url example: href="/site/OrderStatus/specs/coa?SalesOrdNbr=11769778"
+#     return dict(
+#         # Note: For qc_pat the keyword is "SalesOrderNbr", but for coa_pat it is "SalesOrdNbr".
+#         qc_pat=re.compile(r'href="(qc\/zip\?SalesOrderNbr=([\w=\/]+))"', re.MULTILINE),
+#         coa_pat=re.compile(r'href="(specs\/coa\?SalesOrdNbr=([\w=\/]+))"'),
+#         invoice_pat=re.compile(r'href="(\/site\/OrderStatus\/OrderStatus\/InvoiceDownloadRaw\?SalesOrdNbr=([\w=\/]+))"')
+#     )
 
 
 def save_response_content(r, fpath):
@@ -124,9 +128,14 @@ def download_coa(orderstatus_html, session, dl_directory=None, redownload_existi
         print("ERROR: %s exists but is not a directory, aborting...")
         return
     # coa_pat = re.compile(r'href="(specs\/coa\?SalesOrdNbr=([\w=\/]+))"') # Notice: SalesOrdNbr, not SalesOrderNbr.
-    # coa_pat = re.compile(r'href="([/\w]*specs\/coa\?SalesOrdNbr=([\w=\/]+))"') # Notice: SalesOrdNbr, not SalesOrderNbr.
-    coa_pat = re.compile(r'href="([/\w-]*specs\/coa\?SalesOrdNbr=([\w=\/]+))"') # Notice: SalesOrdNbr, not SalesOrderNbr.
+    # coa_pat = re.compile(r'href="([/\w]*specs\/coa\?SalesOrdNbr=([\w=\/]+))"')
+    # coa_pat = re.compile(r'href="([/\w-]*specs\/coa\?SalesOrdNbr=([\w=\/]+))"')
+    flags = re.IGNORECASE
+    # Notice: SalesOrdNbr, not SalesOrderNbr.
+    coa_pat = re.compile(r'href="(\/site\/OrderStatus\/specs\/coa\?SalesOrdNbr=([\w=\/]+))"', flags=flags)  # 20170720
 
+    # The location of the `orderhistory.html` page. Is joined using urljoin, so absolute paths are not affected
+    # by the path of `orderstatus_baseurl`.
     orderstatus_baseurl = "https://www.idtdna.com/site/OrderStatus/orderstatus"
     # COA url example: href="/site/OrderStatus/specs/coa?SalesOrdNbr=11769778"  # These are currently the ones you want
 
@@ -143,9 +152,10 @@ def download_coa(orderstatus_html, session, dl_directory=None, redownload_existi
             print("Especs already exists for order:", orderno)
             continue
         print("Downloading CoA especs csv for order", orderno, "({} of {})".format(i, len(groups)))
-        #params = {"SalesOrdNbr": orderno} # # params are sent in the query string; data or json is sent in the body
-        #r = session.get(coa_endpoint, params=params)
-        r = session.get(urljoin(orderstatus_baseurl, url_endpoint)) # Using the url_endpoint, relative to orderstatus_baseurl
+        # params = {"SalesOrdNbr": orderno} # # params are sent in the query string; data or json is sent in the body
+        # r = session.get(coa_endpoint, params=params)
+        # url_endpoint, relative to orderstatus_baseurl (orderstatus path is disregarded for absolute endpoint paths)
+        r = session.get(urljoin(orderstatus_baseurl, url_endpoint))
         content_type = r.headers["content-type"].lower()
         response_is_text = "text" in content_type
         response_is_csv = "csv" in content_type
@@ -228,8 +238,12 @@ def get_cookies(args):
 
 def get_session(args):
     """Create session object.
-    :param args:
-    :return: session object with cookies from args if available.
+
+    Args:
+        args: Configuration dict.
+
+    Returns:
+        session object with cookies from args if available.
     """
 
     print("Creating new session object...")
@@ -278,10 +292,11 @@ def parse_args(argv=None):
 
     parser = argparse.ArgumentParser()
     parser.add_argument("htmlfile")
-    parser.add_argument("--cookiefile", "-c")
-    parser.add_argument("--overwrite", "-y", action="store_true")
-    parser.add_argument("--verbose", "-v", action="count")
-    parser.add_argument("--outputdir", "-d")
+    parser.add_argument("--cookiefile", "-c", help="Filename of yaml-formatted cookies required for IDT auth.")
+    parser.add_argument("--overwrite", "-y", action="store_true", help="Overwrite existing files.")
+    parser.add_argument("--verbose", "-v", action="count", help=(
+        "The verbosity level for printing information during execution."))
+    parser.add_argument("--outputdir", "-d", help="The directory to save downloaded files to.")
     return parser.parse_args(argv)
 
 
@@ -347,8 +362,6 @@ def test(args=None):
 
     dl_directory = os.path.abspath(os.path.join(".", "CoA"))
     download_coa(orderstatus_html, session, dl_directory=dl_directory)
-
-
 
 
 if __name__ == "__main__":

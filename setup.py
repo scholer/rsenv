@@ -61,6 +61,7 @@ setup(
         'scipy',
         'biopython',
         'matplotlib',
+        'pptx-downsizer',
         # 'svgwrite',
         # 'cffi',      # Cairo is only required to convert SVG files to PNG
         # 'cairocffi',

@@ -2,6 +2,14 @@
 
 """
 
+
+
+    OBS! OLD MODULE - USE DEDICATED `pptx-downsizer` package instead!
+
+
+
+
+
 Module for downsizing Microsoft PowerPoint presentations (pptx) files.
 
 https://github.com/scholer/pptx_downsizer
