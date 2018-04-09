@@ -5,6 +5,7 @@ import pathlib
 import numpy as np
 import yaml
 from matplotlib import pyplot
+import PIL.ImageOps
 import logging
 logger = logging.getLogger(__name__)
 try:
@@ -24,7 +25,7 @@ from .chromviz import plot_chromatograms_df
 @click.option('--runname-fmt', default='{i:02} {ds.sample_name}')
 @click.option('--selection-query', '-q', multiple=True)
 @click.option('--selection-method', default='glob')
-@click.option('--crop-range', '-c', default=None, nargs=2, type=float)  # Doesn't seem to default to None
+@click.option('--crop-range', '-r', default=None, nargs=2, type=float)  # Defaults to empty tuple, not None.
 @click.option('--convert-to-actual-time/--no-convert-to-actual-time', default=True)
 @click.option('--convert-seconds-to-minutes/--no-convert-seconds-to-minutes', default=True)
 @click.option('--nan-correction', default='dropna')
@@ -32,6 +33,10 @@ from .chromviz import plot_chromatograms_df
 @click.option('--nan-interpolation-method', default='linear')
 @click.option('--baseline-correction', default='minimum')
 @click.option('--gel-blur', default=None, type=float)
+@click.option('--flip-v/--no-flip-v', default=False, help="Flip image, so the earliest peaks are at the bottom.")
+@click.option('--invert-image/--no-invert-image', default=True, help="Use inverted image (black bands on white).")
+@click.option('--contrast-percentiles', default=None, nargs=2, type=float,
+              help="Contrast range, values in 0.0--1.0. Default is (0.0, 1.0). Upper limit of 0.995 is usually good.")
 @click.option('--fnprefix', default=None)  # A common prefix to use when creating filenames.
 @click.option('--outputfn', default="{fnprefix}-ds{downsampling}.png")  # The plain pseudogel png image.
 @click.option('--pyplot-show/--no-pyplot-show', default=True)  # Show and annotate gel with pyplot.
@@ -56,6 +61,8 @@ def hplc_to_pseudogel_cli(
         baseline_correction='minimum',
         gel_blur=None,
         flip_v=False,
+        invert_image=True,
+        contrast_percentiles=None,
         fnprefix='',
         outputfn="{fnprefix}-ds{downsampling}.{ext}",  # Filename for plain pseudogel PNG image.
         pyplot_gel_fn="{fnprefix}-ds{downsampling}_pyplot.png",  # Pseudogel, annotated with pyplot.
@@ -92,6 +99,7 @@ def hplc_to_pseudogel_cli(
         baseline_correction: Perform this baseline correction to the signal before creating a lane from it.
         gel_blur:
         flip_v:
+        invert_image:
         fnprefix:
         outputfn:
         pyplot_gel_fn:
@@ -108,6 +116,7 @@ def hplc_to_pseudogel_cli(
         None
 
     """
+    # TODO: Implement plotting downsampled signals using `out_signals`.
     if len(cdf_files_or_dir) == 0:
         print("No CDF files or AIA directories given, aborting pseudogel creation...")
         return
@@ -170,10 +179,7 @@ def hplc_to_pseudogel_cli(
         print_samplenames=print_samplenames,
         verbose=verbose,
     )
-    if flip_v:
-        raise NotImplementedError("Vertical gel image flipping not implemented yet.")
     if plot_chromatograms and signal_downsampling not in (None, 0, 1):
-        # TODO: Implement plotting downsampled signals using `out_signals`.
         # ax = plot_chromatograms_df(df)
         # if chromatograms_outputfn:
         #     chromatograms_outputfn = chromatograms_outputfn.format(
@@ -193,9 +199,22 @@ def hplc_to_pseudogel_cli(
         )
     if verbose:
         print("Converting numpy array to Pillow image...")
-    # pil_img = npimg_to_pil(gel_array, output_dtype=np.float64, invert=False, mode='F')
-    # pil_img = npimg_to_pil(gel_array, output_dtype=np.uint8, invert=False, mode='L')
-    pil_img = npimg_to_pil(gel_array, output_dtype=np.uint8, invert=True, mode='L', verbose=verbose)
+    # pil_img = npimg_to_pil(gel_array, output_dtype=np.float64, invert=False, mode='F')  # didn't work.
+    # pil_img = npimg_to_pil(gel_array, output_dtype=np.uint8, invert=False, mode='L')  # didn't work.
+    if contrast_percentiles:
+        if isinstance(contrast_percentiles, (int, float)):
+            dr_low, dr_high = 0, contrast_percentiles
+        elif len(contrast_percentiles) == 1:
+            dr_low, dr_high = 0, contrast_percentiles[0]
+        else:
+            dr_low, dr_high = contrast_percentiles
+    pil_img = npimg_to_pil(
+        gel_array, mode='L', output_dtype=np.uint8,
+        dr_low=dr_low, dr_high=dr_high, invert=invert_image,
+        verbose=verbose
+    )
+    if flip_v:
+        pil_img = PIL.ImageOps.flip(pil_img)  # Not to be confused with 'mirror', which is flip-h.
 
     # DEBUG:
     print("pil_img.dtype:", np.array(pil_img).dtype)

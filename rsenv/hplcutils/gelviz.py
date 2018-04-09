@@ -127,6 +127,7 @@ def make_gel_from_datasets(
         signal_downsampling=None,
         lane_width=20, lane_spacing=10, margin_width=30,
         gaussian=1,
+        # contrast_percentiles=None,  # Edit, is done in npimg_to_pil
         pyplot_show=True,
         add_lane_annotations=True,
         print_samplenames=False,
@@ -269,9 +270,9 @@ def make_gel_from_datasets(
     return gel_array
 
 
-def npimg_to_pil(npimg, mode='L', dr_high=1.0, verbose=0, **kwargs):
+def npimg_to_pil(npimg, mode='L', dr_low=0, dr_high=1.0, verbose=0, **kwargs):
     pilimg = PIL.Image.fromarray(
-        adjust_contrast_range(npimg, dr_high=dr_high, verbose=verbose, **kwargs),
+        adjust_contrast_range(npimg, dr_low=dr_low, dr_high=dr_high, verbose=verbose, **kwargs),
         mode=mode
     )
     return pilimg
