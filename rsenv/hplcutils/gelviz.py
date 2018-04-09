@@ -130,7 +130,7 @@ def make_gel_from_datasets(
         pyplot_show=True,
         add_lane_annotations=True,
         print_samplenames=False,
-        out_params=None,
+        out_params=None, out_signals=None,
         verbose=0,
 ):
     """
@@ -200,7 +200,10 @@ def make_gel_from_datasets(
         print(f"\nPerforming '{baseline_correction}' baseline correction...")
         signals = [s - baseline_method(s) for s in signals]
 
-    if signal_downsampling:
+    # TODO: Automatically detect a suitable signal_downsampling factor if 'auto' (or -1).
+
+    if signal_downsampling and signal_downsampling != 1:
+        # A downsampling of factor 1 is a no-op.
         downsampling_remainder = lane_height % signal_downsampling
         try:
             assert downsampling_remainder == 0
@@ -260,6 +263,8 @@ def make_gel_from_datasets(
         'margin_width': margin_width,
         'samplenames': list(samplenames),  # In case we have a pd.Index, convert to list
     })
+    if isinstance(out_signals, list):
+        out_signals.extend(signals)  # Optionally capture the signals used to create the pseudogel.
 
     return gel_array
 

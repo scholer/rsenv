@@ -15,37 +15,84 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
+"""
+
+This module is for various functions for parsing queries.
+
+For example, get_cand_idxs_matching_expr() is used to get the indices of candidates matching
+a given expression or, if the expression is an integer, assume the integer is itself an index.
+
+This can be used for command line tools where you wish to specify e.g. what samples to plot,
+e.g. plot all measurements with titles starting with 'RS511' except those containing 'B4':
+
+    $ $ nanodrop_cli plot datafile.csv "RS511*" "-*B4*"
+
+Alternatives:
+-------------
+
+pandas.DataFrame.query - you could just use DataFrame query directly,
+    e.g. "Index > 2" - but I'm not sure how well this works for matching strings.
+    Pandas query has at least three modes:
+        engine='numexpr' (default) - uses [numexpr](https://numexpr.readthedocs.io/en/latest/)
+        engine='python' - execute expression with python as backend.
+        parser='python' - evaluation in python space. Not sure about the difference, though.
+    Refs: https://pandas.pydata.org/pandas-docs/stable/generated/pandas.eval.html
+
+Packages/projects:
+
+* Note: "lexx + yacc" is just shorthand for "lexing and parsing".
+    The lexer splits the input stream into the interesting bits (tokens),
+    and the parser re-assembles it into the big picture.
+
+* pyparsing, seems to be a generic human-language like parser.
+
+* Woosh (a search engine) also has a Lucene-like query language,
+    http://whoosh.readthedocs.io/en/latest/parsing.html.
+
+
+
+
+"""
+
+
 import fnmatch
 import re
 
 
 def get_cand_idxs_matching_expr(expr, candidates, match_method=None, flags='', range_char="-", debug=False):
-    """ Return a list of candidate indices matching a given value or expression.
+    """ Return a list of candidate indices for candidate strings matching a given value or expression.
 
-    This function has two modes: "string matching" and "index matching".
+    Is used to perform query selection of a certain subset of values from a list of strings.
 
-    1a. If `expr` is an integer, or can be cast to an integer with `int(expr)`, it is assumed to be a single index,
-    and is returned as a list: `[int(expr)]`.
+    This function has two modes: "string matching" and "index matching" (or index range selection):
 
-    1b. If the integer cast fails, but the first character in `expr` is a number (0-9),
-    then we check if `expr` specifies a numeric range, e.g. `1-5` or `1:5` or `1..5`. If it does, we return
-    the explicit range, i.e. `[1, 2, 3, 4, 5]`  (last-inclusive, Julia/Matlab style).
+        1a. If `expr` is an integer, or can be cast to an integer with `int(expr)`, it is assumed to be a single index,
+        and is returned as a list: `[int(expr)]`.
 
-    2: If `expr` is not an integer or numeric range, then each candidate is match against `expr`,
-       using the given method.
+        1b. If the integer cast fails, but the first character in `expr` is a number (0-9),
+        then we check if `expr` specifies a numeric range, e.g. `1-5` or `1:5` or `1..5`. If it does, we return
+        the explicit range, i.e. `[1, 2, 3, 4, 5]`  (last-inclusive, Julia/Matlab style).
+
+        2: If `expr` is not an integer or numeric range, then each candidate is match against `expr`,
+           using the given method.
 
     For instance, let's say you have a list of ['red', 'blue', 'light blue', 'dark blue', 'purple']
     and you want to know the index for all elements ending "blue",
-    then use `match_method="glob"` and `expr="*blue"`.
+    then use `match_method="glob"` and `expr="*blue"`:
+        >>> candidates = ['red', 'blue', 'light blue', 'dark blue', 'purple']
+        >>> get_cand_idxs_matching_expr(expr, candidates, match_method=None)
+        [1, 2, 3]  # ['blue', 'light blue', 'dark blue']
 
     This method (and the whole module, really) is mostly targeted parsing of command line inputs,
     where we have no built-in way to specify whether parameters are strings or integers.
 
     Args:
-        expr:
-        candidates:
-        match_method: How to determine if
-        flags:
+        expr: The query selection expression/value used to select which candidates (indices) to include.
+        candidates: A list of candidates, typically strings.
+        match_method: How to determine if a candidate value matches `expr`.
+            Options include: 'exact', 'substring'
+            TODO: If `match_method` is 'numeric' or 'int', then don't assume that integers are indices.
+        flags: flags
         range_char:
 
     Returns:
@@ -53,10 +100,28 @@ def get_cand_idxs_matching_expr(expr, candidates, match_method=None, flags='', r
             either (a) parsed from `expr` if `expr` is an integer or integer range,
             or (b) indices of candidates matching `expr`.
 
+    Discussion: Order of arguments.
+        The current order, `expr, candidates` was selected because it imitates the signature of `regex.match(pat, str)`,
+        and also somewhat `filter(func, values)`.
+        However, there is an argument to be made that the usual order is:
+            As query: <data_field_or_value(s)>  <operator> <selection_value> - e.g. "priority gt 2" .
+            As function: query(candidates, value, comparison_method) - e.g. query('priority', 2, operator.gt).
+
+        For now I'll keep the current `(expr, candidates)` order, but it may be subject to change.
+
+    Similar efforts:
+        rstodo has a very general task filtering mechanism, which takes the form `-filter key comp value`
+        where comp is the name of a binary operator, e.g. 'eq' or 'iglob'.
+
     """
     if match_method is None:
         match_method = 'glob'  # changed from 'exact'
-    if 'i' in flags:
+    if match_method == 'iglob':
+        # Case-insensitive matching; equivalent to passing `flags='i'`.
+        match_method = 'glob'
+        # Add 'i' to flags, if needed:
+        flags = 'i' if flags is None else (flags + 'i' if 'i' not in flags else flags)
+    if flags and 'i' in flags:
         expr = expr.lower() if isinstance(expr, str) else expr
         candidates = [cand.lower() for cand in candidates]
     try:
@@ -76,11 +141,21 @@ def get_cand_idxs_matching_expr(expr, candidates, match_method=None, flags='', r
                     if range_char in ('–', '-', '..'):
                         stop += 1  # Julia-style range, last-inclusive  - 1-4 is 1, 2, 3, 4 (including 4!)
                     return list(range(start, stop))
-    if match_method == 'exact':
+    if match_method in ('exact', 'eq', 'equals'):
+        # Exact comparison; cand is included if cand value equals expr.
         idxs = [idx for idx, cand in enumerate(candidates) if expr == cand]
-    elif match_method == 'substring':
+    elif match_method in ('substring', 'contains'):
+        # Cand value contains the given substring.
         idxs = [idx for idx, cand in enumerate(candidates) if expr in cand]
+    elif match_method in ('startswith', ):
+        # Cand value startswith the given substring.
+        idxs = [idx for idx, cand in enumerate(candidates) if cand.startswith(expr)]
+    elif match_method == 'in':
+        # Cand value is contained in the given substring. E.g. use "RS123 RS124 RS125" to include those three cands.
+        # Although typically you would use translate_all_requests_to_idxs to select multiple candidates.
+        idxs = [idx for idx, cand in enumerate(candidates) if cand in expr]
     else:
+        # Regex comparisons: 'full-word', 'glob'/'fnmatch', 'regex',
         if match_method == 'full-word':
             # Use negative look-behind/ahead to ensure we have a full word:
             expr = ""  # TODO: REGEX FOR FULL-WORD MATCH NOT IMPLEMENTED.
@@ -106,7 +181,7 @@ def translate_all_requests_to_idxs(
     """Used to select a number of candidates based on a list of query requests.
     
     Requests are parsed sequentially. So, you can say the equivalent of 
-        "Select all candidates, except those named "John", although do include "John Hancock"
+        "Select all candidates, except those named 'John', although do include 'John Hancock'."
     which would be:
         all -John "John Hancock"        # with match_method='substring'
     or:
@@ -126,7 +201,8 @@ def translate_all_requests_to_idxs(
     However, you can use 
     
     Args:
-        requests: 
+        requests: A list of selection requests, each request being either a keyword or selection `expr` passed
+            to
         candidates: 
         match_method: 
         include_method: 
@@ -170,3 +246,10 @@ def translate_all_requests_to_idxs(
             opstring = "-" if request[0] == '-' else "+"
             print(f" + {request:14s} = {opstring}{r_idxs} --> {idxs}")
     return idxs
+
+
+
+def data_query_filter(data, filters):
+    pass
+
+
