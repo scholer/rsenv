@@ -1,4 +1,17 @@
+# Copyright 2018 Rasmus Scholer Sorensen
 
+"""
+
+Module for visualizing HPLC chromatograms as a synthesized 'pseudo' gel image.
+
+This makes it easier to visualize many chromatograms side by side, as an alternative
+to the usual overlayed chromatograms visualization mode.
+
+This is basically the reverse process of creating lane profiles from gel images.
+
+
+
+"""
 import numpy
 import numpy as np
 import pandas

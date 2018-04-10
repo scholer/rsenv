@@ -188,8 +188,9 @@ hdf5_to_csv_cli = click.Command(
     help=inspect.getdoc(hdf5_to_csv),
     params=[
         click.Option(['--outputfnfmt', '-f'], default="{inputfn}_{key}.csv"),
-        click.Option(['--keys'], nargs=-1),
-        click.Option(['--sep'], default=","),
+        # Options cannot have undefined number of args (nargs=-1), use multiple=True and `-k key1 -k key2 -k key3`.
+        click.Option(['--keys', '-k'], multiple=True, help="The datasets to include in the CSV export (by keyname)."),
+        click.Option(['--sep'], default=",", help="CSV separator."),
         click.Option(['--quiet/--no-quiet']),
         # click.Option(['--verbose', '-v'], count=True),
         click.Argument(['hdffiles'])

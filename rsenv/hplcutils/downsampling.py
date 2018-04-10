@@ -1,4 +1,8 @@
 """
+Module for resampling signals.
+It turns out that just doing a "every Nth value" downsampling is by far the easiest and
+generally produces the nicest result.
+
 NOTE: This is all pretty nice, yes, you can find an optimal scaling factor for a given signal.
 But that doesn't mean that that same scaling factor works for other signals!
 
@@ -12,6 +16,10 @@ IrfanView uses the following filters for resampling:
 * Hermite (fastest)
 
 Irfanview has an option to "Use fast resample filter for image shrinking"
+
+TODO: Make a better function that for each sampling point finds the "best/nearest" value.
+I think this may just be equivalent to be doing some gaussian/median filtering, but not sure.
+
 
 """
 

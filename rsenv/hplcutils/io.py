@@ -1,4 +1,5 @@
 import os
+import pathlib
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -22,6 +23,27 @@ you should convert `point_number` axis to proper time:
 and then use the time as index.
 
 """
+
+
+def load_cdf_data(filename):
+    with xr.open_dataset(filename) as ds:
+        ds.load()  # So we can access data after closing the file.
+    return ds
+
+
+def get_cdf_files(cdf_files_or_aia_dir, dir_glob='*.cdf'):
+    """ Utility function to get cdf files from a mixed list of file paths and/or AIA directories. """
+    if isinstance(cdf_files_or_aia_dir, (str, pathlib.Path)):
+        cdf_files_or_aia_dir = [cdf_files_or_aia_dir]
+    cdf_files = []
+    for path in cdf_files_or_aia_dir:
+        # If a path argument is a directory, e.g. a .AIA export, load all contained cdf files:
+        if os.path.isdir(path):
+            # print(glob.glob(os.path.join(path, dir_glob)))
+            cdf_files += glob.glob(os.path.join(path, dir_glob))
+        else:
+            cdf_files.append(path)
+    return cdf_files
 
 
 def load_hplc_aia_xr_dict(
@@ -96,12 +118,13 @@ def load_hplc_aia_xr_datasets(aia_dir, concat=True, use_dask=False):
 
 
 def load_hplc_aia_xr_dataframe(
-        cdf_files_or_aia_dir, convert_to_actual_time=False, convert_seconds_to_minutes=True, verbose=0,
-        nan_correction='dropna', nan_fill_value=0, nan_interpolation_method='linear',
+        cdf_files_or_aia_dir,
         runname_fmt="{i:02} {ds.sample_name}",
+        selection_query=None, selection_method="glob", sort_columns=False,
+        convert_to_actual_time=False, convert_seconds_to_minutes=True,
+        nan_correction='dropna', nan_fill_value=0, nan_interpolation_method='linear',
         signal_range_crop=None,
-        selection_query=None,
-        selection_method="glob"
+        verbose=0,
 ):
     """ Load ChemStation HPLC .AIA (.CDF) exported data files into a Pandas DataFrame.
 
@@ -127,6 +150,8 @@ def load_hplc_aia_xr_dataframe(
             each selection query can be e.g. a search string "RS123", an index (e.g. 3), or a range (e.g. '2-5').
         selection_method: How to match column names against the selection queries. E.g. 'glob', 'contains', or 'eq'.
             See also: `rsenv.utils.query_parsing.get_cand_idxs_matching_expr()`.
+        sort_columns:
+
 
     Returns:
         df: Pandas DataFrame with one column for each cdf file in the AIA directory.
@@ -143,14 +168,7 @@ def load_hplc_aia_xr_dataframe(
     # TODO: Implement signal cropping.
     # TODO: Filter signals by query (using the `query_parsing` module).
     series = OrderedDict()
-    cdf_files = []
-    for path in cdf_files_or_aia_dir:
-        # If a path argument is a directory, e.g. a .AIA export, load all contained cdf files:
-        if os.path.isdir(path):
-            print(glob.glob(os.path.join(path, '*.cdf')))
-            cdf_files += glob.glob(os.path.join(path, '*.cdf'))
-        else:
-            cdf_files.append(path)
+    cdf_files = get_cdf_files(cdf_files_or_aia_dir)
 
     # Load all CDF files and create Pandas Series for each dataset.
     # (Each ChemStation exported CDF file contain only a single chromatogram.)
@@ -207,5 +225,15 @@ def load_hplc_aia_xr_dataframe(
             df = df.interpolate(method=nan_interpolation_method, axis=0).bfill()
         elif nan_correction == 'fill':
             df = df.fillna(nan_fill_value)
+
+    if sort_columns:
+        if sort_columns is True:
+            df = df.sort_index(axis=1)  # axis 1 is columns.
+        elif hasattr(sort_columns, '__call__'):
+            # Assume sort_columns is a sorting function:
+            df = df.reindex(sort_columns(df.columns), axis=1)  # disable error checking?
+        else:
+            # Assume sort_columns is a list of column labels in the desired order:
+            df = df.reindex_axis(sort_columns, axis=1)
 
     return df

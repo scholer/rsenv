@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.1.7dev1',  # Update for each new version
+    version='0.1.8dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -44,6 +44,7 @@ setup(
             'nanodrop-cli=rsenv.dataanalysis.nanodrop.nanodrop_cli:cli',
             'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',
             'hplc-cdf-to-csv=rsenv.hplcutils.cdf_csv:cdf_csv_cli',
+            'hplc-rename-cdf-files=rsenv.hplcutils.rename_cdf_files:rename_cdf_files_cli',
             'json-redump-fixer=rsenv.seq.cadnano.json_redump_fixer:main',
             'json-to-yaml=rsenv.fileconverters.jsonyaml:json_files_to_yaml_cli',
             'csv-to-hdf5=rsenv.fileconverters.hdf5csv:csv_to_hdf5_cli',

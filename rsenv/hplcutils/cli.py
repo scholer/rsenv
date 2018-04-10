@@ -25,9 +25,10 @@ from .chromviz import plot_chromatograms_df
 @click.option('--runname-fmt', default='{i:02} {ds.sample_name}')
 @click.option('--selection-query', '-q', multiple=True)
 @click.option('--selection-method', default='glob')
-@click.option('--crop-range', '-r', default=None, nargs=2, type=float)  # Defaults to empty tuple, not None.
+@click.option('--sort-columns/--no-sort-columns')
 @click.option('--convert-to-actual-time/--no-convert-to-actual-time', default=True)
 @click.option('--convert-seconds-to-minutes/--no-convert-seconds-to-minutes', default=True)
+@click.option('--crop-range', '-r', default=None, nargs=2, type=float)  # Defaults to empty tuple, not None.
 @click.option('--nan-correction', default='dropna')
 @click.option('--nan-fill-value', default=0)
 @click.option('--nan-interpolation-method', default='linear')
@@ -53,6 +54,7 @@ def hplc_to_pseudogel_cli(
         runname_fmt="{i:02} {ds.sample_name}",
         selection_query=None,
         selection_method='glob',
+        sort_columns=False,
         signal_downsampling=20,
         crop_range=None,
         convert_to_actual_time=True,
@@ -87,6 +89,7 @@ def hplc_to_pseudogel_cli(
             where ds has all the dataset attributes available from ChemStation AIA export.
         selection_query:
         selection_method:
+        sort_columns: Whether to sort columns (lexicographically, using column names produced by `runname_fmt`).
         signal_downsampling: Downsample the signal by this factor.
             The time resolution of HPLC chromatograms is often very high, typically tens of Hz.
             Without downsampling or cropping, the gel image would be very big, e.g. 18000 x 10000 pixels.
@@ -149,10 +152,10 @@ def hplc_to_pseudogel_cli(
     df = load_hplc_aia_xr_dataframe(
         cdf_files_or_dir,
         runname_fmt=runname_fmt,
-        selection_query=selection_query, selection_method=selection_method,
-        signal_range_crop=crop_range,
+        selection_query=selection_query, selection_method=selection_method, sort_columns=sort_columns,
         convert_to_actual_time=convert_to_actual_time, convert_seconds_to_minutes=convert_seconds_to_minutes,
         nan_correction=nan_correction, nan_fill_value=nan_fill_value, nan_interpolation_method=nan_interpolation_method,
+        signal_range_crop=crop_range,
         verbose=verbose,
     )
     if plot_chromatograms:
@@ -256,3 +259,5 @@ def hplc_to_pseudogel_cli(
         print("Saving GelAnnotator GAML configuration to file:", gaml_fn)
         with open(gaml_fn, 'w') as fd:
             yaml.dump(gaml, fd)
+
+
