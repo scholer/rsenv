@@ -93,47 +93,6 @@ def make_gel_from_lane_signals(
     return gel_image
 
 
-def show_gel(
-        gel_image, ax=None, cmap="Greys",
-        lane_annotations=None,
-        lane_width=None, lane_spacing=0, margin_width=0, fontsize='medium',
-        outputfn=None,
-        verbose=0,
-        fig_kwargs=None,
-        **kwargs
-):
-    from matplotlib import pyplot
-    print("Showing pyplot image (%s x %s pixels)..." % gel_image.shape)
-    if fig_kwargs is None:
-        # TODO: Scale figsize according to gel_image size.
-        fig_kwargs = {'figsize': (12, 14)}  # w, h
-    if ax is None:
-        fig, ax = pyplot.subplots(1, 1, **fig_kwargs)
-    else:
-        fig = ax.figure
-    imaxes = ax.imshow(gel_image, cmap=cmap)
-    assert fig == imaxes.figure
-    fig.subplots_adjust(top=0.8)  # absolute coordinates in relative coordinates (0..1)
-    if lane_annotations:
-        if verbose:
-            print("Adding lane annotations to plot...")
-        if lane_width is None:
-            print("ERROR: `lane_annotations` provided without providing `lane_width`, cannot add lane annotations.")
-        else:
-            offset_x = margin_width
-            for samplename in lane_annotations:
-                text = pyplot.text(
-                    x=offset_x + int(0.5 * lane_width), y=-10, s=samplename,
-                    fontsize=fontsize, rotation=60, rotation_mode='anchor'
-                )
-                offset_x += lane_width + lane_spacing
-    if outputfn:
-        if verbose:
-            print("\nSaving pyplot figure to file:", outputfn)
-        fig.savefig(outputfn)
-    return imaxes
-
-
 def make_gel_from_datasets(
         data,
         baseline_correction='minimum',
@@ -362,3 +321,126 @@ def adjust_contrast_range_vec(npimg, dr_low=0, dr_high=None, minval=0, maxval=25
     npimg = adjust_vec(npimg)
 
     return npimg
+
+
+def show_gel(
+        gel_image,
+        outputfn=None,
+        verbose=0,
+        # Figure, axis and gel image params:
+        ax=None,
+        figsize_scale=1.0,
+        gel_scale=0.5,
+        cmap="Greys",
+        y_ticks_and_labels=None,  # tuple of (pixel-values, labels)
+        x_ticks_and_labels=False,
+        # These are generally not recommended, only use for spacial cases:
+        tight_layout=False,  # Using tight_layout may interfere with auto-sizing.
+        fig_kwargs=None,
+        # Lane annotations params:
+        annotations_height=200,
+        lane_annotations=None,
+        lane_width=None, lane_spacing=0, margin_width=0, fontsize='medium',
+        **kwargs  # Is just used to capture remaining gel params from make_gel_from_datasets() e.g. lane_height.
+):
+    """ Show, and optionally annotate and save, pseudogel image with PyPlot.
+
+    Args:
+        gel_image: The gel image to show, as 2D numpy array.
+        outputfn: Figure output filename.
+        verbose: Higher = be more verbose when printing informational messages.
+        ax: The axis to plot on. A new figure and axis is created if not provided.
+        figsize_scale: Scale the figure, making it smaller or larger. Default is 1.0.
+        gel_scale: Scale the gel image. Default is 0.5 meaning a 2x downsampling of original input.
+        cmap: The colormap to use when displaying gel image values. Default is grayscale.
+        y_ticks_and_labels: Ticks (in pixel units) and labels (strings) for the y-axis.
+        x_ticks_and_labels: Ticks (in pixel units) and labels (strings) for the x-axis.
+        tight_layout: Invoke tight_layout before returning (not recommended, may interfere with autosizing!)
+        fig_kwargs: Custom figure parameters.
+        annotations_height: The amount of space to add above the gel for lane annotations, in pixel units.
+        lane_annotations: A list of lane annotations.
+        lane_width: The width (in pixels) of each lane.
+        lane_spacing: Distance between each lane (in pixles).
+        margin_width: The distance from the right- and leftmost lanes to the edge of the gel.
+        fontsize: Font size for lane annotations.
+        **kwargs:
+
+    Returns:
+        Pyplot image axis on which the image was plotted/shown.
+
+    """
+    # Importing here for now; no reason to import earlier if we don't need matplotlib.
+    import matplotlib
+    from matplotlib import pyplot
+    print("\n\nShowing pyplot image (%s x %s pixels)..." % gel_image.shape)
+    if ax is None:
+        # fig, ax = pyplot.subplots(1, 1, **fig_kwargs)
+        if fig_kwargs is None:
+            fig_kwargs = {}
+        figsize = fig_kwargs.get('figsize')
+        dpi = fig_kwargs.get('dpi', matplotlib.rcParams.get('figure.dpi', 100))
+        if not figsize:
+            # TODO: Scale figsize according to gel_image size.
+            # Remember to add some room for the lane annotations.
+            # TODO: Gel image axes is currently placed in the middle. Vertical alignment should be bottom.
+            print("gel_image.shape", gel_image.shape)
+            annotations_height = annotations_height * bool(lane_annotations)
+            figsize = (gel_scale * gel_image.shape[1] + 50*2,  # leave 50 px on each side
+                       gel_scale * gel_image.shape[0] + annotations_height + 20)
+            image_height_ratio = gel_scale * gel_image.shape[0] / figsize[1]  # ratio of image height to total figure height.
+            annotations_height_ratio = annotations_height / figsize[1]
+            image_width_ratio = gel_scale * gel_image.shape[1] / figsize[0]
+            # Reduce by dpi to get figsize in inches:
+            figsize = tuple(val * figsize_scale / dpi for val in figsize)  # dpi = 100.
+            print("figsize:", figsize)
+            fig_kwargs['figsize'] = figsize  # w, h - e.g. (12, 14)
+            fig = pyplot.figure(**fig_kwargs)
+            print("image_height_ratio:", image_height_ratio)
+            print("image_widht_ratio:", image_width_ratio)
+            # [0.05, 0.05, 0.90, image_height_ratio]  # [left, bottom, width, height], in relative figure coordinates.
+            # 1-(1-image_width_ratio)/2 == (image_width_ratio + 1)/2
+            # width, height: size of the axes, NOT positions. left+width <= 1, bottom+height <= 1
+            # ax_pos = [(1-image_width_ratio)/2, 0.05, image_width_ratio, image_height_ratio]
+            ax_pos = [(1-image_width_ratio)/2, 1.-image_height_ratio-annotations_height_ratio, image_width_ratio, image_height_ratio]
+            print("ax_pos:", ax_pos)
+            ax = fig.add_axes(ax_pos)
+            print("ax.get_position():", ax.get_position())
+        else:
+            # Adjust gel image to figure:
+            fig, ax = pyplot.subplots(1, 1, **fig_kwargs)
+    else:
+        fig = ax.figure
+    # Pyplot has two built-in ways to plot images: `imshow` and `matshow`.
+    imaxes = ax.imshow(gel_image, cmap=cmap)
+    assert fig == imaxes.figure
+    # fig.subplots_adjust(top=0.8)  # absolute coordinates in relative coordinates (0..1)
+    if lane_annotations:
+        if verbose:
+            print("Adding lane annotations to plot...")
+        if lane_width is None:
+            print("ERROR: `lane_annotations` provided without providing `lane_width`, cannot add lane annotations.")
+        else:
+            offset_x = margin_width
+            for samplename in lane_annotations:
+                text = pyplot.text(
+                    x=offset_x + int(0.5 * lane_width), y=-10, s=samplename,
+                    fontsize=fontsize, rotation=60, rotation_mode='anchor'
+                )
+                offset_x += lane_width + lane_spacing
+    if y_ticks_and_labels:
+        y_ticks, y_labels = y_ticks_and_labels
+        print("y_ticks:", y_ticks)
+        print("y_labels:", y_labels)
+        ax.set_yticks(y_ticks)
+        ax.set_yticklabels(y_labels)
+    if x_ticks_and_labels is False:
+        ax.set_xticks([])
+        ax.set_xticklabels([])
+    if tight_layout:
+        fig.tight_layout()  # kwargs: pad=0.4, w_pad=0.5, h_pad=1.0, rect,
+    if outputfn:
+        if verbose:
+            print("\nSaving pyplot figure to file:", outputfn)
+        fig.savefig(outputfn)
+    return imaxes
+

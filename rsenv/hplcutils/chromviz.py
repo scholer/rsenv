@@ -7,7 +7,7 @@ Module for plotting and visualizing HPLC chromatograms.
 """
 
 
-def plot_chromatograms_df(df, ax=None, figsize=(14, 10), **kwargs):
+def plot_chromatograms_df(df, ax=None, figsize=(14, 10), tight_layout=True, **kwargs):
     """ Plot chromatograms from a DataFrame. Simple, reference function.
 
     Args:
@@ -29,6 +29,8 @@ def plot_chromatograms_df(df, ax=None, figsize=(14, 10), **kwargs):
     if ax is None:
         fig, ax = pyplot.subplots(1, 1, figsize=figsize, **kwargs)
     df.plot(ax=ax)
+    if tight_layout:
+        ax.figure.tight_layout()
     return ax
 
 

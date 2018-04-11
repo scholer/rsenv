@@ -158,6 +158,7 @@ def hplc_to_pseudogel_cli(
         signal_range_crop=crop_range,
         verbose=verbose,
     )
+    # print("df.index[0], df.index[-1]:", df.index[0], df.index[-1])  # Yes, is in minutes.
     if plot_chromatograms:
         ax = plot_chromatograms_df(df)
         if chromatograms_outputfn:
@@ -182,7 +183,9 @@ def hplc_to_pseudogel_cli(
         print_samplenames=print_samplenames,
         verbose=verbose,
     )
+    assert gel_array.shape[0] * signal_downsampling == len(df)  # len(df) is number of rows.
     if plot_chromatograms and signal_downsampling not in (None, 0, 1):
+        # Plot downsampled chromatograms, QA ensuring downsampled signals capture essence of original chromatograms.
         # ax = plot_chromatograms_df(df)
         # if chromatograms_outputfn:
         #     chromatograms_outputfn = chromatograms_outputfn.format(
@@ -191,12 +194,16 @@ def hplc_to_pseudogel_cli(
         # else:
         #     pyplot.show()
         pass
-    print("\nParams:")
-    print(params)
+    # print("\nAnnotated gel visualization params:")
+    # print(params)
 
     if pyplot_show:
+        # y-axis ticks (in pixel units) and corresponding labels (in minutes):
+        y_ticks = np.linspace(0, gel_array.shape[0], 9)  # in gel pixel units
+        y_labels = [f"{lbl:0.01f}" for lbl in np.linspace(df.index[0], df.index[-1], 9)]
         show_gel(
             gel_image=gel_array, outputfn=pyplot_gel_fn, verbose=verbose,
+            y_ticks_and_labels=(y_ticks, y_labels),
             lane_annotations=params.get('samplenames'), fontsize=pyplot_fontsize,
             **params
         )
@@ -211,6 +218,8 @@ def hplc_to_pseudogel_cli(
             dr_low, dr_high = 0, contrast_percentiles[0]
         else:
             dr_low, dr_high = contrast_percentiles
+    else:
+        dr_low, dr_high = 0, 1
     pil_img = npimg_to_pil(
         gel_array, mode='L', output_dtype=np.uint8,
         dr_low=dr_low, dr_high=dr_high, invert=invert_image,
