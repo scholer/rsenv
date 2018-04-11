@@ -15,7 +15,7 @@ except ImportError:
     logging.basicConfig()
 
 from .io import load_hplc_aia_xr_dataframe
-from .gelviz import make_gel_from_datasets, npimg_to_pil, show_gel, adjust_contrast_range
+from .gelviz import make_gel_from_datasets, show_gel, adjust_contrast_range  # npimg_to_pil,
 from .chromviz import plot_chromatograms_df
 
 
@@ -38,12 +38,14 @@ from .chromviz import plot_chromatograms_df
 @click.option('--invert-image/--no-invert-image', default=True, help="Use inverted image (black bands on white).")
 @click.option('--contrast-percentiles', default=None, nargs=2, type=float,
               help="Contrast range, values in 0.0--1.0. Default is (0.0, 1.0). Upper limit of 0.995 is usually good.")
-@click.option('--fnprefix', default=None)  # A common prefix to use when creating filenames.
-@click.option('--outputfn', default="{fnprefix}-ds{downsampling}.png")  # The plain pseudogel png image.
-@click.option('--pyplot-show/--no-pyplot-show', default=True)  # Show and annotate gel with pyplot.
-@click.option('--pyplot-show-adjusted/--no-pyplot-show-adjusted', default=True)  # Pyplot show contrast-adjusted image.
+@click.option('--fnprefix', default=None, help="A common prefix to use when creating filenames.")
+@click.option('--outputfn', default="{fnprefix}-ds{downsampling}.png", help="The plain pseudogel png image.")
+@click.option('--pyplot-show/--no-pyplot-show', default=True, help="Show and annotate gel with pyplot.")
+@click.option('--pyplot-show-adjusted/--no-pyplot-show-adjusted', default=True, help="Pyplot show contrast-adjusted image.")
+@click.option('--pyplot-show-colorbar/--no-pyplot-show-colorbar', default=False, help="Add colorbar to the pyplot figure.")
+@click.option('--pyplot-show-colormap', default=None, help="The colormap to use for the pyplot figure.")
 @click.option('--pyplot-gel-fn', default="{fnprefix}-ds{downsampling}_pyplot.png")
-@click.option('--pyplot-fontsize', default="medium")  # For annotated psuedogel, made with pyplot.
+@click.option('--pyplot-fontsize', default="medium", help="Font size for annotated psuedogel made with pyplot.")
 @click.option('--plot-chromatograms/--no-plot-chromatograms', default=True)
 @click.option('--chromatograms-outputfn', default="{fnprefix}-ds{downsampling}_chromatograms.png")
 @click.option('--print-samplenames/--no-print-samplenames', default=True)
@@ -70,6 +72,8 @@ def hplc_to_pseudogel_cli(
         outputfn="{fnprefix}-ds{downsampling}.{ext}",  # Filename for plain pseudogel PNG image.
         pyplot_show=True,  # TODO: This actually toggles whether to create the annotated gel plot, now just show it.
         pyplot_show_adjusted=True,
+        pyplot_show_colormap=None,
+        pyplot_show_colorbar=False,
         pyplot_gel_fn="{fnprefix}-ds{downsampling}_pyplot.png",  # Pseudogel, annotated with pyplot.
         pyplot_fontsize='medium',  # Annotation font size.
         plot_chromatograms=True,
@@ -209,7 +213,6 @@ def hplc_to_pseudogel_cli(
             dr_low, dr_high = 0, contrast_percentiles[0]
         else:
             dr_low, dr_high = contrast_percentiles
-        gel_array = adjust_contrast_range(gel_array, dr_low=dr_low, dr_high=dr_high, verbose=verbose)
     else:
         dr_low, dr_high = 0, 1
 
@@ -223,17 +226,21 @@ def hplc_to_pseudogel_cli(
         # y-axis ticks (in pixel units) and corresponding labels (in minutes):
         y_ticks = np.linspace(0, gel_array.shape[0], 9)  # in gel pixel units
         y_labels = [f"{lbl:0.01f}" for lbl in np.linspace(df.index[0], df.index[-1], 9)]
+        if pyplot_show_colormap is None:
+            pyplot_show_colormap = 'Greys_r' if (invert_image and pyplot_show_adjusted) else 'Greys'
         show_gel(
             gel_image=(gel_array_adj if pyplot_show_adjusted else gel_array),
             outputfn=pyplot_gel_fn, verbose=verbose,
             y_ticks_and_labels=(y_ticks, y_labels),
             lane_annotations=params.get('samplenames'), fontsize=pyplot_fontsize,
+            cmap=pyplot_show_colormap, colorbar=pyplot_show_colorbar,
             **params
         )
 
     if verbose:
         print("Converting numpy array to Pillow image...")
-    pil_img = PIL.Image.fromarray(gel_array_adj, mode='L',)  # # Did not work: mode='F' with output_dtype=np.float64
+    pil_img = PIL.Image.fromarray(gel_array_adj, mode='L')  # # Did not work: mode='F' with output_dtype=np.float64
+
     if flip_v:
         pil_img = PIL.ImageOps.flip(pil_img)  # Not to be confused with 'mirror', which is flip-h.
 

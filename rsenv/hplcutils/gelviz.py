@@ -281,7 +281,7 @@ def npimg_to_pil(npimg, mode='L', **kwargs):
 def adjust_contrast_range(
         npimg,
         dr_low=0, dr_high=None, percentiles=True,
-        minval=0, maxval=255, invert=True,
+        minval=0, maxval=255, invert=False,
         out=None, output_dtype=np.uint8, output_mode=None,
         verbose=0,
 ):
@@ -394,6 +394,7 @@ def show_gel(
         annotations_height=200,
         lane_annotations=None,
         lane_width=None, lane_spacing=0, margin_width=0, fontsize='medium',
+        colorbar=False,
         **kwargs  # Is just used to capture remaining gel params from make_gel_from_datasets() e.g. lane_height.
 ):
     """ Show, and optionally annotate and save, pseudogel image with PyPlot.
@@ -426,6 +427,8 @@ def show_gel(
     import matplotlib
     from matplotlib import pyplot
     print("\n\nShowing pyplot image (%s x %s pixels)..." % gel_image.shape)
+    print(f" - cmap={cmap}")
+    print(f" - median, average:", np.median(gel_image), np.mean(gel_image))
     if ax is None:
         # fig, ax = pyplot.subplots(1, 1, **fig_kwargs)
         if fig_kwargs is None:
@@ -489,6 +492,8 @@ def show_gel(
     if x_ticks_and_labels is False:
         ax.set_xticks([])
         ax.set_xticklabels([])
+    if colorbar:
+        fig.colorbar(imaxes)
     if tight_layout:
         fig.tight_layout()  # kwargs: pad=0.4, w_pad=0.5, h_pad=1.0, rect,
     if outputfn:
