@@ -140,6 +140,7 @@ def make_gel_from_datasets(
     Which is conceptually like having a "rolling ball" on top of the chromatogram.
     Which I had also considered in the context of capturing the "nearest point" for each downsampled window.
 
+    TODO: Improve signal downsampling and/or prefiltering.
     """
     logger = logging.getLogger(__name__)
     if out_params is None:
@@ -259,11 +260,21 @@ def make_gel_from_datasets(
     return gel_array
 
 
-def npimg_to_pil(npimg, mode='L', dr_low=0, dr_high=1.0, verbose=0, **kwargs):
-    pilimg = PIL.Image.fromarray(
-        adjust_contrast_range(npimg, dr_low=dr_low, dr_high=dr_high, verbose=verbose, **kwargs),
-        mode=mode
-    )
+def npimg_to_pil(npimg, mode='L', **kwargs):
+    """ Convert 2d numpy array to PIL/Pillow image.
+    Basically just a wrapper around adjust_contrast_range() followed by PIL.Image.fromarray().
+    Typically, the pixel values *must* be adjusted to the given mode.
+    We use adjust_contrast_range for that.
+
+    Args:
+        npimg: 2D numpy array containing pixel values.
+        mode: Image mode, passed to PIL.Image.fromarray().
+        **kwargs: All keyword arguments are passed to `adjust_contrast_range()`.
+
+    Returns:
+        PIL image.
+    """
+    pilimg = PIL.Image.fromarray(adjust_contrast_range(npimg, **kwargs), mode=mode)
     return pilimg
 
 
@@ -274,6 +285,28 @@ def adjust_contrast_range(
         out=None, output_dtype=np.uint8, output_mode=None,
         verbose=0,
 ):
+    """ Adjust contrast range of array.
+    Typically this is used to produce a proper image from numpy array
+    with values within a correct range, and with "good" contrast.
+
+    Args:
+        npimg:
+        dr_low:
+        dr_high:
+        percentiles:
+        minval:
+        maxval:
+        invert:
+        out:
+        output_dtype:
+        output_mode:
+        verbose:
+
+    Returns:
+        Numpy array, of proper type,
+            adjusted to the given minval/maxval according to the given contrast range
+
+    """
     logger = logging.getLogger(__name__)
     logger.debug("Output minval, maxval: %s, %s", minval, maxval)
     logger.debug("Dynamic range (dr_low, dr_high): %s, %s", dr_low, dr_high)
@@ -282,6 +315,9 @@ def adjust_contrast_range(
         percentiles = True
     elif percentiles is None:
         percentiles = (0 <= dr_low <= 1) and (0 <= dr_high <= 1)
+    if dr_high > 1.01:
+        # Percentile values given as percentages (0–100) not (0.0–1.0).
+        dr_low, dr_high = dr_low/100, dr_high/100
     if percentiles:
         print(f"\nDynamic range percentiles: {dr_low} - {dr_high}")
         if np.any(np.isnan(npimg)):
