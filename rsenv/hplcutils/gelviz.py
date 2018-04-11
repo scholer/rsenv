@@ -39,15 +39,6 @@ def make_gel_from_lane_signals(
 ):
     """ Re-create a 2D pseudo gel from 1D lane signals ("profiles").
 
-    A note about data size and down-sampling:
-        HPLC data often have much sharper peaks than gel electrophoresis.
-        It is not uncommon for HPLC chromatograms to have very fast sampling frequency,
-        and often tens of thousands of time points.
-        Visualizing an image more than 10k pixels in height is neither convenient nor necessary.
-        It is thus recommended to down-sample the chromatogram (as much
-        as possible without degrading signal details), before creating a gel image with it.
-        After downs-sampling, bands/peaks are typically only 1-2 pixels high.
-
     Args:
         lane_signals: The lane signals/profiles used to create each lane in the gel.
         lane_width: How wide to make the lanes, in pixels.
@@ -97,8 +88,9 @@ def make_gel_from_datasets(
         data,
         baseline_correction='minimum',
         signal_downsampling=None,
+        sig_gaussian=1,
+        img_gaussian=1,
         lane_width=20, lane_spacing=10, margin_width=30,
-        gaussian=1,
         # contrast_percentiles=None,  # Edit, is done in npimg_to_pil
         pyplot_show=True,
         add_lane_annotations=True,
@@ -106,22 +98,47 @@ def make_gel_from_datasets(
         out_params=None, out_signals=None,
         verbose=0,
 ):
-    """
+    """ Make a 2D 'pseudogel' image from a list of 1D chromatogram signals.
 
     Args:
-        data:
-        baseline_correction:
-        signal_downsampling:
-        lane_width:
-        lane_spacing:
-        margin_width:
-        gaussian:
-        pyplot_show:
-        add_lane_annotations:
-        out_params:
+        data: The data to use to create a gel from. Must be either a dict(samplename=(t, y)) or DataFrame.
+        baseline_correction: Perform baseline correction using this method (name).
+        signal_downsampling: Signal downsampling factor to apply to each signal before creating the gel.
+        sig_gaussian: Apply a gaussian blur to the input signals before using them to generate the gel.
+        img_gaussian: Apply a gaussian to the final image. This can be used to make the bands appear more natural.
+        lane_width: The desired width (in pixels) of each generated lane.
+        lane_spacing: The desired space (in pixels) between each generated lane.
+        margin_width: The margin (in width) from the right- and leftmost lane to the edge of the gel image.
+        pyplot_show: Show the generated gel using pyplot.
+        add_lane_annotations: Add lane annotations to the figure shown with pyplot.
+        out_params: If you want to capture psuedogel generation parameters, provide a dict and they will be saved here.
 
     Returns:
         gel_array, 2D numpy array.
+
+    A note about data size and down-sampling:
+        HPLC data often have much sharper peaks than gel electrophoresis.
+        It is not uncommon for HPLC chromatograms to have very fast sampling frequency,
+        and often tens of thousands of time points.
+        Visualizing an image more than 10k pixels in height is neither convenient nor necessary.
+        It is thus recommended to down-sample the chromatogram (as much
+        as possible without degrading signal details), before creating a gel image with it.
+        After downs-sampling, bands/peaks are typically only 1-2 pixels high.
+
+    There is a serious risk that naive downsampling (e.g. every 10th point) will not be able to capture the peaks.
+    Better ways to downsample should therefore be considered.
+    There are two approaches:
+        (a) Perform complex calculation during downsampling to determine the value at the downsampled point.
+        (b) Perform a filtering of the original image such that naive downsampling "works".
+    With most methods, these should be completely equivalent.
+    Due to the nature of HPLC chromatograms, where we have a flat but uninportant baseline,
+    with important, thin and sharp peaks.
+    It may be appropriate to do e.g. a max or percentile90 filter with a window size similar to the downsampling factor,
+    to make sure each of the "potentially used" pixel values capture the presence of a peak in the downsampled window.
+    Or perhaps `max(val, percentile(window))`?
+    This may be somewhat similar to be doing a morphological opening.
+    Which is conceptually like having a "rolling ball" on top of the chromatogram.
+    Which I had also considered in the context of capturing the "nearest point" for each downsampled window.
 
     """
     logger = logging.getLogger(__name__)

@@ -176,7 +176,7 @@ def hplc_to_pseudogel_cli(
         signal_downsampling=signal_downsampling,
         baseline_correction=baseline_correction,
         lane_width=0.10, lane_spacing=0.04, margin_width=0.12,
-        gaussian=gel_blur,
+        img_gaussian=gel_blur,
         out_params=params,  # Store information about pseudogel parameters, for e.g. GelAnnotator .gaml file.
         out_signals=out_signals,  # Capture downsampled signals for QA/debugging.
         pyplot_show=False,
