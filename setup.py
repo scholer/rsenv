@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.1.8dev1',  # Update for each new version
+    version='0.2.1dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -41,6 +41,7 @@ setup(
     entry_points={
         'console_scripts': [
             # console_scripts should all be lower-case, else you may get an error when uninstalling:
+            # Remember to copy changes to `rsenv.rsenv_cli.py` to keep `rsenv-help` command up to date.
             'nanodrop-cli=rsenv.dataanalysis.nanodrop.nanodrop_cli:cli',
             'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',
             'hplc-cdf-to-csv=rsenv.hplcutils.cdf_csv:cdf_csv_cli',
@@ -55,6 +56,9 @@ setup(
             'eln-print-started-exps=rsenv.eln.eln_md_pico:print_started_exps_cli',
             'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',
             'eln-print-journal-yfm-issues=rsenv.eln.eln_md_pico:print_journal_yfm_issues_cli',
+            # RsEnv utils:
+            'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
+            'rsenv=rsenv.rsenv_cli:rsenv_cli',
         ],
         # 'gui_scripts': [
         #     'AnnotateGel=gelutils.gelannotator_gui:main',

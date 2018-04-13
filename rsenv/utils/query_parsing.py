@@ -90,7 +90,7 @@ def get_cand_idxs_matching_expr(expr, candidates, match_method=None, flags='', r
         expr: The query selection expression/value used to select which candidates (indices) to include.
         candidates: A list of candidates, typically strings.
         match_method: How to determine if a candidate value matches `expr`.
-            Options include: 'exact', 'substring'
+            Options include: 'exact', 'substring', 'startswith', 'glob', 'iglob', 'regex'.
             TODO: If `match_method` is 'numeric' or 'int', then don't assume that integers are indices.
         flags: flags
         range_char:
@@ -177,7 +177,9 @@ def get_cand_idxs_matching_expr(expr, candidates, match_method=None, flags='', r
 
 def translate_all_requests_to_idxs(
         requests, candidates, match_method='glob',
-        include_method='list-extend', exclude_method='list-remove', strict=False, debug=False):
+        include_method='list-extend', exclude_method='list-remove',
+        strict=False, min_query_selection=0, debug=False
+):
     """Used to select a number of candidates based on a list of query requests.
     
     Requests are parsed sequentially. So, you can say the equivalent of 
@@ -205,9 +207,15 @@ def translate_all_requests_to_idxs(
             to
         candidates: 
         match_method: 
-        include_method: 
-        exclude_method: 
-        strict: 
+        include_method: How to merge idxs with previously-selected idxs. Options are:
+            'set-sorted': Set-merge new idxs with previous, followed by sort.
+            'list-extend': Just add the list of new idxs to the existing idxs list. May cause duplicates.
+            'extend-unique': Add new unique idxs to existing idxs list, ignoring idxs already selected (avoid dups).
+        exclude_method: How to remove idxs for negative selections (queries starting with a hyphen-minus).
+        strict: If True, will raise an exception if negative selections contains idxs not already selected.
+            (Default is False, which will just ignore negative selection idxs not selected by previous queries.)
+        min_query_selection: The minimum number of candidates that must be selected for each query.
+            Is usually just set to 1 to make sure all queries are successful.
 
     Returns:
 
@@ -215,8 +223,15 @@ def translate_all_requests_to_idxs(
     """
     idxs = []
     for request in requests:
-        if request[0] == '-':
-            r_idxs = get_cand_idxs_matching_expr(request[1:], candidates, match_method=match_method, debug=debug)
+        exclude = request[0] == '-'
+        request = request[1:] if request[0] in ('-', '+') else request  # trim plus or minus prefixes.
+        if request == 'all':
+            r_idxs = list(range(len(candidates)))
+        else:
+            r_idxs = get_cand_idxs_matching_expr(request, candidates, match_method=match_method, debug=debug)
+        if len(r_idxs) < min_query_selection:
+            raise ValueError(f"Only {len(r_idxs)} candidates selected from query {request!r}.")
+        if exclude:
             if exclude_method in ('greedy', 'list-comprehension'):
                 idxs = [idx for idx in idxs if idx not in r_idxs]
             elif exclude_method == 'list-remove':
@@ -232,14 +247,12 @@ def translate_all_requests_to_idxs(
             else:
                 raise ValueError(f"`exclude_method` {exclude_method} not recognized.")
         else:
-            if request == 'all':
-                r_idxs = list(range(len(candidates)))
-            else:
-                r_idxs = get_cand_idxs_matching_expr(request, candidates, match_method=match_method, debug=debug)
             if include_method == 'set-sorted':
                 idxs = sorted(set(idxs) | set(r_idxs))
             elif include_method == 'list-extend':
                 idxs.extend(r_idxs)
+            elif include_method == 'extend-unique':
+                idxs.extend([idx for idx in r_idxs if idx not in idxs])
             else:
                 raise ValueError(f"`include_method` {include_method} not recognized.")
         if debug:

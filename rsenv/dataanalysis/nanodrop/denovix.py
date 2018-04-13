@@ -1,4 +1,13 @@
+# Copyright 2017-2018 Rasmus Scholer Sorensen
 
+"""
+
+Denovix vs Nanodrop data:
+
+* Denovix exports in
+
+
+"""
 
 import csv
 import numpy as np
@@ -26,13 +35,14 @@ def str_is_int(s):
 
 
 def csv_to_dataframe(filename, header_fmt="{Sample Name}-{Sample Number}",
-                     values_start_idx=24, include_only=None, verbose=0):
+                     values_start_idx=None, include_only=None, verbose=0):
     """Create a Pandas DataFrame from Denovix csv export file.
     
     Args:
         filename: The filename to read into a dataframe.
         header_fmt: Valid placeholder names are all meta data headers, plus "lineidx" (the row from the input file).
-        values_start_idx: Which column the measurement values begin at. For current Denovix software, this is 24.
+        values_start_idx: Which column the measurement values begin at.
+            For current Denovix software, this is 24. (Edit: No? Maybe depends on the number of reported wavelength?)
         include_only: Can be used to filter which rows to import from the data file.
 
     Returns:
@@ -53,6 +63,7 @@ def csv_to_dataframe(filename, header_fmt="{Sample Name}-{Sample Number}",
         # datetime_hdr_idx = header.index('Sample Name')
         if values_start_idx is None:
             values_start_idx = next(idx for idx, fieldname in enumerate(header) if str_is_int(fieldname))
+            print(f"Wavelength values detected starting at column idx {values_start_idx}")
         x_vals = str_arr_to_int(header[values_start_idx:])
         # measurements = [{
         #     'metadata': dict(*zip(header[:values_start_idx], row[:values_start_idx])),
@@ -131,6 +142,8 @@ def plot_nanodrop_df(
         selected_columnnames = slice(None)
     if nm_range is None:
         nm_range = slice(None)
+    elif not isinstance(nm_range, slice):
+        nm_range = slice(*nm_range)
     if plot_kwargs is None:
         plot_kwargs = {}
 
