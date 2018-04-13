@@ -296,7 +296,7 @@ def ls(
         print(f"print_fmt:\n{print_fmt!r}")
         print("\n\n")
     if verbose > -1:
-        print(f"\nThe following samples / datasets were found in {filepath} :\n")
+        print(f"\n\nThe following samples / datasets were found in {filepath!r}:\n")
     # print("Sample Number:\tSample Name:           \tHeader/Legend: (generated with `header-fmt`)")
     # print("--------------\t------------           \t--------------------------------------------")
     if report_header_fmt is None and print_fmt == 'default1':
