@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.1dev1',  # Update for each new version
+    version='0.2.2dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -56,6 +56,7 @@ setup(
             'eln-print-started-exps=rsenv.eln.eln_md_pico:print_started_exps_cli',
             'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',
             'eln-print-journal-yfm-issues=rsenv.eln.eln_md_pico:print_journal_yfm_issues_cli',
+            'eln-md-to-html=rsenv.eln.eln_md_to_html:convert_md_file_to_html_cli',
             # RsEnv utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
             'rsenv=rsenv.rsenv_cli:rsenv_cli',

@@ -111,6 +111,7 @@ import yaml.scanner
 import pandas as pd
 import click
 import inspect
+from collections import defaultdict
 
 from rsenv.fileutils.fileutils import find_files
 from rsenv.eln.eln_yfm_utils import parse_yfm
@@ -215,17 +216,21 @@ def get_attrs_string_value(dct, attrs, default=NODEFAULT):
         return val
 
 
-def pico_variable_substitution(content, vars, errors='pass'):
+def pico_variable_substitution(content, template_vars, errors='pass', varfmt="{sub}"):
     """ Perform Pico-style %variable% substitution. """
     # variable members are available as %variable.attribute%
     # Two approaches:
-    #   a. Extract variables from document and substitute them.
+    #   a. Extract variables from document and substitute them. [we use this one]
     #   b. Generate all possible variable placeholder strings and do str.replace(placeholder, value).
     placeholders = pico_find_variable_placeholders(content)
+    if isinstance(varfmt, str):
+        _varfmt = varfmt
+        varfmt = defaultdict(lambda: _varfmt)
     for placeholder in placeholders:
         # Note: We probably shouldn't do replacements inside comments, but whatever.
+        varname = placeholder.strip('%')
         try:
-            sub = get_attrs_string_value(vars, placeholder.strip('%'))
+            sub = get_attrs_string_value(template_vars, varname)
         except KeyError as exc:
             # E.g. if you have a comment explaining %meta.variable%:
             if errors == 'raise':
@@ -238,7 +243,8 @@ def pico_variable_substitution(content, vars, errors='pass'):
                 raise ValueError(f"Value {errors!r} for parameter `errors` not recognized.")
         else:
             print(f"Replacing {placeholder!r} -> {sub!r}")
-            content = content.replace(placeholder, repr(sub))  # sub can be e.g. lists or dicts.
+            # sub can be e.g. lists or dicts; the format string can be customized for each variable.
+            content = content.replace(placeholder, varfmt[varname].format(sub, var=sub, sub=sub))
     return content
 
 
@@ -367,7 +373,8 @@ print_started_exps_cli = click.Command(
     name=print_started_exps.__name__,
     help=inspect.getdoc(print_started_exps),
     params=[
-        click.Option(['--rowfmt'], default='{status:^10}: {expid:<10} {titledesc}'),  # remember: param_decls is a list, *decls.
+        # remember: param_decls is a list, *decls.
+        click.Option(['--rowfmt'], default='{status:^10}: {expid:<10} {titledesc}'),
         click.Argument(
             ['basedir'], default='.', nargs=1, type=click.Path(dir_okay=True, file_okay=False, exists=True))
 ])
