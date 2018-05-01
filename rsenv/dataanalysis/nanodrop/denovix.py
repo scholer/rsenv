@@ -113,7 +113,7 @@ def csv_to_dataframe(filename, header_fmt="{Sample Name}-{Sample Number}",
 
 
 def plot_nanodrop_df(
-        df, selected_columnnames=None, nm_range=None,
+        df, selected_columnnames=None, nm_range=None, normalize=False,
         plot_kwargs=None, tight_layout=True,
         savetofile=None, showplot=False, verbose=0
 ):
@@ -125,10 +125,13 @@ def plot_nanodrop_df(
         df:
         selected_columnnames:
         nm_range:
+        normalize: If set to True, normalize each column against the column maximum value.
         plot_kwargs: Dict with figsize, xlim, ylim, etc. Can also pass `ax` to use an existing axes.
             Passed directly as df.plot(**plot_kwargs).
         tight_layout: Adjust figure to use tight layout.
         savetofile: A filename (or list of filenames). If given, will save figure to this/these files.
+        showplot: If True, will invoke pyplot.show() before continuing.
+        verbose: The verbosity with which informational messages are printed during function execution.
 
     Returns:
         ax: Matplotlib Axes object. Use `ax.figure` to get the corresponding figure.
@@ -150,13 +153,16 @@ def plot_nanodrop_df(
     # We use the dataframe axes index to specify rows and columns.
     # For rows, the index corresponds to the wavelengths, i.e. from 190 nm to 500 nm.
     # For columns, the index corresponds to column headers, e.g. sample names (formatted with header_fmt).
+    if normalize:
+        df = df / df.max()
     ax = df.loc[nm_range, selected_columnnames].plot(**plot_kwargs)
 
     if tight_layout:
         ax.figure.tight_layout()
 
     if showplot:
-        print("\nYou can now customize your plot before it is saved...")
+        if verbose > -1:
+            print("\nYou can now customize your plot before it is saved...")
         from matplotlib import pyplot
         # In interactive mode, widgets are shown in non-blocking mode, enabling
         # interaction with the figure from the python code.
