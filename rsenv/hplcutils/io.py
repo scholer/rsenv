@@ -1,5 +1,26 @@
+# Copyright 2017-2018 Rasmus Scholer Sorensen
+
+
+"""
+
+# Note: If all data have the same point_number and same actual_sampling_interval,
+# then we can just collect all data in a single dataframe with the same index.
+# We can even convert the row index to an actual time.
+
+NOTE: If you want to merge HPLC data with different sampling intervals,
+you should convert `point_number` axis to proper time:
+    `time = ds['actual_sampling_interval'] * ds['point_number']`
+and then use the time as index.
+
+"""
+
+# TODO: Separate io from data conversion.
+# TODO: Most of these functions (except `load_cdf_data`) are only a minor part io and a major part data conversion.
+
+
 import os
 import pathlib
+from fnmatch import fnmatch, fnmatchcase
 from collections import OrderedDict
 import numpy as np
 import pandas as pd
@@ -12,38 +33,150 @@ import glob
 from rsenv.utils.query_parsing import get_cand_idxs_matching_expr, translate_all_requests_to_idxs
 
 
-"""
-# Note: If all data have the same point_number and same actual_sampling_interval,
-# then we can just collect all data in a single dataframe with the same index.
-# We can even convert the row index to an actual time.
+def load_cdf_data(filename, verbose=0):
+    """ Load CDF data from file.
+    Reference function, to show how to load CDF data using xarray.
+    Is really just doing:
+        >>> ds = xr.open_dataset(filename)
+        >>> ds.load()  # Make data available after closing the file.
+        >>> ds.close()
 
-NOTE: If you want to merge HPLC data with different sampling intervals, 
-you should convert `point_number` axis to proper time:  
-    `time = ds['actual_sampling_interval'] * ds['point_number']`
-and then use the time as index.
+    Examples:
+        >>> ds = load_cdf_data(filename)
 
-"""
+    Args:
+        filename: The CDF file to load.
 
+    Returns:
+        xarray dataset
 
-def load_cdf_data(filename):
+    The CDF/xarray dataset has:
+    * Dimensions: `ds.dims`.
+    * Point values: The index of each measurement. Multiply with ds.actual_sampling_interval to get time in seconds.
+    * Variables: `ds.data_vars`
+        These are values that are measured and will generally vary depending on the sample
+        and stochastic run-time conditions.
+        Important variables include:
+            Ordinate values: The measured signal values.
+    * Attributes: `ds.attrs`
+        These are values that are given, i.e. they aren't measured and they shouldn't be sample dependent.
+
+    For more info in xarray/cdf datasets:
+        >>> ds.info()
+        >>> print(ds)
+    Refs:
+        * http://xarray.pydata.org/en/stable/reshaping.html
+        * https://github.com/pydata/xarray/issues/1295
+    """
+    if verbose:
+        print("Loading CDF data using xarray from file:", filename)
     with xr.open_dataset(filename) as ds:
         ds.load()  # So we can access data after closing the file.
     return ds
 
 
-def get_cdf_files(cdf_files_or_aia_dir, dir_glob='*.cdf'):
+def get_cdf_files(cdf_files_or_aia_dir, dir_glob='*.cdf', verbose=0):
     """ Utility function to get cdf files from a mixed list of file paths and/or AIA directories. """
     if isinstance(cdf_files_or_aia_dir, (str, pathlib.Path)):
         cdf_files_or_aia_dir = [cdf_files_or_aia_dir]
     cdf_files = []
     for path in cdf_files_or_aia_dir:
         # If a path argument is a directory, e.g. a .AIA export, load all contained cdf files:
+        if verbose:
+            print(f"    {path}")
         if os.path.isdir(path):
             # print(glob.glob(os.path.join(path, dir_glob)))
-            cdf_files += glob.glob(os.path.join(path, dir_glob))
+            path_files = sorted(glob.glob(os.path.join(path, dir_glob)))
+        elif '*' in path:
+            # We have a glob spec:
+            path_files = sorted(glob.glob(path))  # TODO: Consider lexicographical sorting of files.
         else:
-            cdf_files.append(path)
+            path_files = [path]
+        if verbose:
+            print("\n".join(f"    - {cdf_file}" for cdf_file in cdf_files))
+        cdf_files.extend(path_files)
     return cdf_files
+
+
+def find_nearest_file(startpath, filepatterns):
+    """ Find a file matching one of the given filepatterns, in startpath or any of `startpath`'s parent directories.
+
+    For example, you want to find a file matching "bar.txt" near the file /path/to/foo.csv:
+        >>> find_nearest_file('/path/to/foo.csv', ['bar.txt'])
+    If /path/to/bar.txt exists, that file is returned:
+        '/path/to/bar.txt'
+    Else, if /path/bar.txt exists, that file is returned:
+        'path/bar.txt'
+    Else, if /bar.txt exists, that file is returned:
+        /bar.txt
+    If no file matching 'bar.txt' is found, a FileNotFoundError is raised.
+    If paths are given as relative paths, e.g. 'hello/../../goodbye/friend/' they stop when they reach the 'top',
+    i.e. 'hello/' <- 'hello/../' <- 'hello/../../' <- 'hello/../../goodbye/' <- 'hello/../../goodbye/friend/'.
+    Note here that there is a difference between
+         'hello/../../goodbye/friend/'  and   './hello/../../goodbye/friend/'
+     In the former, we stop at 'hello/', while in the latter we stop at '.' (i.e. the current directory).
+
+    Args:
+        startpath: A path to starts searching for a file matching filepatterns.
+        filepatterns: A list of glob-style filepatterns matching the file you with to find.
+
+    Returns:
+        path (str) matching any of the given filepatterns.
+
+    Raises:
+        FileNotFoundError, if no file matching the filepatterns were found in `startpath` or any of its parent directories.
+    """
+    # print("Searching for nearest file in:", startpath)
+    if isinstance(filepatterns, str):
+        filepatterns = [filepatterns]
+    if not os.path.isdir(startpath):
+        return find_nearest_file(startpath=os.path.dirname(startpath), filepatterns=filepatterns)
+    for filename in os.listdir(startpath):
+        filepath = os.path.join(startpath, filename)
+        if not os.path.isfile(filepath):
+            continue
+        for pat in filepatterns:
+            if fnmatch(filename, pat):
+                return filepath
+    # print(" - Nothing found, trying parent directory...")
+    if os.path.dirname(startpath) == startpath or not os.path.dirname(startpath):
+        # os.path.dirname('.') gives ''
+        # print("Reached top of file hierarchy! Raising FileNotFoundError...")
+        raise FileNotFoundError(f"Did not find any files matching filepatterns {filepatterns}.")
+    try:
+        return find_nearest_file(startpath=os.path.dirname(startpath), filepatterns=filepatterns)
+    except FileNotFoundError:
+        # print("Caught FileNotFoundError; re-raising...")
+        raise FileNotFoundError(
+            f"Did not find any files matching filepatterns {filepatterns} "
+            f"in {startpath!r} or any of its parent directories.")
+
+
+def load_cdf_files(cdf_files_or_aia_dir, dir_glob='*.cdf', verbose=0):
+    """ Load multiple cdf files, or complete AIA directories. """
+    cdf_files = get_cdf_files(
+        cdf_files_or_aia_dir=cdf_files_or_aia_dir, dir_glob=dir_glob, verbose=verbose
+    )
+    return [load_cdf_data(fn) for fn in cdf_files]
+
+
+def load_fractions_csv_file(filename, verbose=0):
+    """ Load Agilent ChemStation fraction collection file, e.g. `RepAFC01.CSV`.
+
+    Args:
+        filename: fraction collection csv file to read.
+        verbose: The verbosity with which to print information during function execution.
+
+    Returns:
+        Pandas DataFrame, with columns 'well', 'volume', 'start', 'end', 'trigger', and 'unknown'.
+    """
+    # column_names = "fraction	split	well	volume	start	end	trigger".split()  # All columns
+    column_names = "well	volume	start	end	trigger unknown".split()  # Use 'fraction' and 'split' as row labels
+    index_cols = [0, 1]
+    if verbose:
+        print("Loading fraction collection file:", filename)
+    fc_df = pd.read_csv(filename, header=None, names=column_names, encoding="utf-16le", index_col=index_cols)
+    return fc_df
 
 
 def load_hplc_aia_xr_dict(
@@ -102,14 +235,17 @@ load_hplc_aia_data = load_hplc_aia_xr_dict
 
 
 def load_hplc_aia_xr_datasets(aia_dir, concat=True, use_dask=False):
-    """ Return a list of xarray datasets, one dataset for each file in the aia dir. """
+    """ Return a list of xarray datasets, one dataset for each file in the aia dir.
+    Actually, this returns a single unified xarray dataset,
+    with cdf datasets combined along the 'sample-runs' dimension.
+    """
     datasets = []
     if use_dask:
         datasets = xr.open_mfdataset([os.path.join(aia_dir, fn) for fn in os.listdir(aia_dir)])
         return datasets
-    for fn in os.listdir(aia_dir):
+    for i, fn in enumerate(fn for fn in os.listdir(aia_dir) if fn.lower().endswith(".cdf")):
         fpath = os.path.join(aia_dir, fn)
-        print(f"\n{fn}:")
+        print(f"\n{i:>3} {fn}:")
         with xr.open_dataset(fpath) as ds:
             ds.load()  # Load data into memory, so we can access data after closing the file.
             datasets.append(ds)
@@ -174,7 +310,11 @@ def load_hplc_aia_xr_dataframe(
     # (Each ChemStation exported CDF file contain only a single chromatogram.)
     for i, fpath in enumerate(cdf_files):
         # fpath = os.path.join(cdf_files_or_aia_dir, fn)
-        fn = os.path.basename(fpath)
+        fn = filename = os.path.basename(fpath)
+        dirname = os.path.basename(os.path.dirname(fpath))
+        dirname_noext = os.path.splitext(dirname)[0]
+        dirdirname = os.path.basename(os.path.dirname(os.path.dirname(fpath)))
+        dirdirname_noext = os.path.splitext(dirdirname)[0]
         if verbose:
             print(f"\n{fpath}:")
         with xr.open_dataset(fpath) as ds:
@@ -192,7 +332,13 @@ def load_hplc_aia_xr_dataframe(
                 if convert_seconds_to_minutes:
                     ts.index /= 60
                     ts.index.name = "Time / minutes"
-            series[runname_fmt.format(i=i, fn=fn, ds=ds, samplename=ds.sample_name)] = ts
+            columnname = runname_fmt.format(
+                i=i, samplename=ds.sample_name,
+                fn=fn, filename=filename,  # basename, without directory path
+                dirname=dirname, dirname_noext=dirname_noext, dirdirname=dirdirname, dirdirname_noext=dirdirname_noext,
+                ds=ds,  # In case the user wants to use any of the other dataset attributes e.g. 'ds.operator'.
+            )
+            series[columnname] = ts
     # Create DataFrame:
     df = pd.DataFrame(data=series)
 
@@ -215,7 +361,7 @@ def load_hplc_aia_xr_dataframe(
 
     # Remove/fill/interpolate NaN values:
     if nan_correction and np.any(np.isnan(df.values)):
-        print(f"\nDataFrame contains NaN values, correcting these using '{nan_correction}'...")
+        print(f"\n\nWARNING: DataFrame contains NaN values, correcting these using {nan_correction!r}...\n\n")
         print(np.where(np.isnan(df.values.T)))
         if nan_correction == 'dropna':
             df = df.dropna()

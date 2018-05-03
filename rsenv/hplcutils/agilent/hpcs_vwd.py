@@ -256,12 +256,12 @@ def read_vwd_fh(f, *, reset_xmin_xmax=False):
     print("Signal stepsize:", signal_stepsize)
     print("Signal shift   :", signal_shift)
 
-    # Any way to get n_datapoints before reading the data?
-
-    # https://github.com/scholer/libHPCS/blob/master/src/libHPCS.c#L939
+    # Read integer values from file:
     signal_ints = read_signal_ints(f)
 
+    # Convert integers to float using the file-specified step size:
     signal_values = np.array(signal_ints) * signal_stepsize + signal_shift
+    # Any way to get n_datapoints before reading the data? - Nope, don't think so. :-/
     n_datapoints = len(signal_ints)
     sampling_rate = n_datapoints / (total_time * 60)  # In Hz.
     print("n_datapoints:", n_datapoints)

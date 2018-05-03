@@ -57,8 +57,7 @@ CONTEXT_SETTINGS = dict(
                    "Default: 'extend-unique'. Alternatively: 'set-sorted' (for sorted idxs list).")
 @click.option('--min-query-selection', default=0, type=int,
               help="Raise an error if query-selections return less than this number of candidates. (Query debugging)")
-@click.option('--normalize/--no-normalize', default=False,
-              help="If given, normalize the spectrograms to the highest value before plotting.")
+@click.option('--normalize/--no-normalize', default=False, help="Normalize the spectrograms before plotting.")
 # Plotting options:
 @click.option('--nm-range', '-x', nargs=2, type=int, help="The range of wavelengths (nm) to use.")
 @click.option('--tight-layout/--no-tight-layout', '-t', default=None,
