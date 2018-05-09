@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.2dev1',  # Update for each new version
+    version='0.2.2dev2',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -43,7 +43,7 @@ setup(
             # console_scripts should all be lower-case, else you may get an error when uninstalling:
             # Remember to copy changes to `rsenv.rsenv_cli.py` to keep `rsenv-help` command up to date.
             'nanodrop-cli=rsenv.dataanalysis.nanodrop.nanodrop_cli:cli',
-            'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',
+            'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',  # TODO: Change this to generic HPLC CLI.
             'hplc-cdf-to-csv=rsenv.hplcutils.cdf_csv:cdf_csv_cli',
             'hplc-rename-cdf-files=rsenv.hplcutils.rename_cdf_files:rename_cdf_files_cli',
             'json-redump-fixer=rsenv.seq.cadnano.json_redump_fixer:main',

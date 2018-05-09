@@ -64,6 +64,7 @@ ELN CLIs: Print information about Pico/Markdown pages/files (based on the YAML h
     'eln-print-started-exps=rsenv.eln.eln_md_pico:print_started_exps_cli',
     'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',
     'eln-print-journal-yfm-issues=rsenv.eln.eln_md_pico:print_journal_yfm_issues_cli',
+    'eln-md-to-html=rsenv.eln.eln_md_to_html:convert_md_file_to_html_cli',
 
 RsEnv CLIs:
     'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',

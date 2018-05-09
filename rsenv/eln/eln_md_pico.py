@@ -131,6 +131,25 @@ def find_md_files(basedir='.', pattern=r'*.md', pattern_type='glob'):
 
 
 def read_journal(fn, add_fileinfo_to_meta=True, warn_yaml_scanner_error=None):
+    """ Reads a journal file and extracts the metadata / YAML front matter and the main content.
+
+    Args:
+        fn: The journal file to read.
+        add_fileinfo_to_meta: Whether to add file info directly into the main journal dict.
+            Adding file info like this may clutter/override metadata from the YFM.
+        warn_yaml_scanner_error:
+
+    Returns:
+        journal dict, with keys:
+            filename:
+            fileinfo:
+            raw_content: The whole file content.
+            md_content/content: The markdown part of the file
+                ('md_content' and 'content' are equivalent. I figured I may want to use this also
+                 for filetypes other than markdown text files).
+            meta: The YFM metadata.
+
+    """
     if warn_yaml_scanner_error is None:
         warn_yaml_scanner_error = WARN_YAML_SCANNER_ERROR
     dirname, basename = os.path.split(fn)
