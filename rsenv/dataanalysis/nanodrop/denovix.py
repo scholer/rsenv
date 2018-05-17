@@ -12,7 +12,11 @@ Denovix vs Nanodrop data:
 import csv
 import numpy as np
 import pandas as pd
+from itertools import cycle, product
+from pprint import pprint
 import matplotlib
+import matplotlib.style
+import matplotlib.figure
 
 
 def str_arr_to_int(str_arr):
@@ -113,9 +117,19 @@ def csv_to_dataframe(filename, header_fmt="{Sample Name}-{Sample Number}",
 
 
 def plot_nanodrop_df(
-        df, selected_columnnames=None, nm_range=None, normalize=False,
-        plot_kwargs=None, tight_layout=True,
-        savetofile=None, showplot=False, verbose=0
+        df, selected_columnnames=None,
+        nm_range=None, xlim=None, ylim=None,
+        normalize=False, normalize_to=None, normalize_range=None,
+        linestyles=None, colors=None, markers=None, style_combination_order=('linestyle', 'color', 'marker'),
+        use_seaborn=False, mpl_style=None,
+        fig_kwargs=None,
+        axes_kwargs=None,
+        plot_kwargs=None,
+        tight_layout=True, add_legend=True, ylabel='AU/cm', xlabel='nm',
+        ax=None,
+        showplot=False, savetofile=None, saveformat='png',
+        user_vars=None,
+        verbose=0
 ):
     """ Reference example of how to plot a nanodrop dataframe after reading it with `denovix.csv_to_dataframe()`.
 
@@ -125,12 +139,30 @@ def plot_nanodrop_df(
         df:
         selected_columnnames:
         nm_range:
+        xlim:
+        ylim:
         normalize: If set to True, normalize each column against the column maximum value.
+        normalize_to: Normalize each column the the column's value at this index.
+        normalize_range: Normalize each column the the column's average value in this index range.
+        linestyles:
+        colors:
+        markers:
+        style_combination_order:
+        use_seaborn:
+        mpl_style:
+        fig_kwargs:
+        axes_kwargs:
         plot_kwargs: Dict with figsize, xlim, ylim, etc. Can also pass `ax` to use an existing axes.
             Passed directly as df.plot(**plot_kwargs).
         tight_layout: Adjust figure to use tight layout.
-        savetofile: A filename (or list of filenames). If given, will save figure to this/these files.
+        add_legend:
+        ylabel:
+        xlabel:
+        ax:
         showplot: If True, will invoke pyplot.show() before continuing.
+        savetofile: A filename (or list of filenames). If given, will save figure to this/these files.
+        saveformat:
+        user_vars:
         verbose: The verbosity with which informational messages are printed during function execution.
 
     Returns:
@@ -145,19 +177,104 @@ def plot_nanodrop_df(
         selected_columnnames = slice(None)
     if nm_range is None:
         nm_range = slice(None)
-    elif not isinstance(nm_range, slice):
-        nm_range = slice(*nm_range)
+        user_vars['nm_range_str'] = '_all-nm'
+    else:
+        if not isinstance(nm_range, slice):
+            nm_range = slice(*nm_range)
+        user_vars['nm_range_str'] = f'_{nm_range.start}-{nm_range.stop}nm'
+    if normalize_range and not isinstance(normalize_range, slice):
+        print("Normalize_range:", normalize_range)
+        normalize_range = slice(*normalize_range)
+    if fig_kwargs is None:
+        fig_kwargs = {}
+    if axes_kwargs is None:
+        axes_kwargs = {}
     if plot_kwargs is None:
         plot_kwargs = {}
+    if user_vars is None:
+        user_vars = {}
+
+    df = df.loc[nm_range, selected_columnnames]
+
+    if mpl_style:
+        matplotlib.style.use(mpl_style)
+
+    if use_seaborn:
+        import seaborn
+
+    if linestyles or colors or markers:
+        parts = {
+            'linestyle': linestyles or ('-', ),
+            'color': colors or get_default_colors(),
+            'marker': markers or ('',),
+        }
+        print("style parts:")
+        pprint(parts)
+        print("style_combination_order:", style_combination_order)
+        # Need to create list of [
+        import itertools
+        styles = cycle(product(*[parts[k] for k in style_combination_order]))
+        # TODO: We need to have the style specs in the right order, e.g. '--b.' (line, color, marker). Or is it 'b*-' ?
+        # TODO: Consider manual plotting instead of using df.plot()
+        # styles = [''.join(style) for style, col in zip(styles, df.columns)]
+        # Edit: Using pandas.plot(style=styles) is really in-flexible, so I'll plot manually using keywords:
+        styles = [dict(zip(style_combination_order, style)) for style, col in zip(styles, df.columns)]
+        # raise NotImplementedError("linestyles, colors, and markers have not been implemented!")
+        print(f"Using styles:")
+        pprint(styles)
+    else:
+        styles = None
 
     # We use the dataframe axes index to specify rows and columns.
     # For rows, the index corresponds to the wavelengths, i.e. from 190 nm to 500 nm.
     # For columns, the index corresponds to column headers, e.g. sample names (formatted with header_fmt).
-    if normalize:
+    if normalize_range:
+        df = df / df.loc[normalize_range, :].average()
+        ylabel = f'Normalized to avg in range {normalize_range!r} nm'
+        user_vars['normstr'] = f'_norm{normalize_range.start}-{normalize_range.stop}'
+    elif normalize_to:
+        print(f"Normalizing each spectrogram to its value at {normalize_to!r} nm.")
+        df = df / df.loc[normalize_to, :]
+        ylabel = f'Normalized to value at {normalize_to!r} nm'
+        user_vars['normstr'] = f'_norm{normalize_to}'
+    elif normalize:
         df = df / df.max()
-    ax = df.loc[nm_range, selected_columnnames].plot(**plot_kwargs)
+        ylabel = 'Normalized to max'
+        user_vars['normstr'] = f'_normalized'
+    else:
+        user_vars['normstr'] = f'_absorbance'
+    if styles:
+        if ax is None:
+            # fig = matplotlib.figure.Figure()  # If you do this, you need to hook up the backend manually :-/
+            from matplotlib import pyplot  # Use pyplot API instead..
+            fig = pyplot.figure(**fig_kwargs)
+            print("new figure:", fig)
+            ax = fig.add_subplot(111, **axes_kwargs)
+            print("new axes:", ax)
+        for col, style in zip(df, styles):
+            s = df[col].dropna()
+            style.update(plot_kwargs)
+            ax.plot(s.index, s.values, label=col, **style)  # style: dict with 'linestyle',
+    else:
+        ax = df.plot(style=styles, **plot_kwargs)
 
-    if tight_layout:
+    if ylim:
+        ax.set_ylim(*ylim)
+        user_vars['ylim_str'] = f'_{ylim[0]}-{ylim[1]}'
+    else:
+        user_vars['ylim_str'] = f'_full-y'
+    if xlim:
+        ax.set_xlim(*xlim)
+        user_vars['xlim_str'] = f'_{ylim[0]}-{ylim[1]}'
+    else:
+        user_vars['xlim_str'] = f'_full-y'
+    if ylabel:
+        ax.set_ylabel(ylabel)
+    if xlabel:
+        ax.set_xlabel(xlabel)
+    if add_legend:
+        ax.legend()
+    if tight_layout is not False:  # Apply by default if unspecified/None
         ax.figure.tight_layout()
 
     if showplot:
@@ -175,9 +292,28 @@ def plot_nanodrop_df(
     if savetofile:
         if isinstance(savetofile, str):
             savetofile = (savetofile,)
+        if saveformat is None:
+            saveformat = 'png'
+        if isinstance(saveformat, str):
+            saveformat = (saveformat,)
+        print("\nsavetofile:", savetofile)
+        print("\nsaveformat:", saveformat)
         for plotfn in savetofile:
-            # if verbose:
-            print("Saving plot to file:", plotfn)
-            ax.figure.savefig(plotfn)
+            for ext in saveformat:
+                # if verbose:
+                user_vars['ext'] = ext
+                outputfn = plotfn.format(**user_vars)
+                print("Saving plot to file:", outputfn)
+                ax.figure.savefig(outputfn)
 
     return ax
+
+
+def get_default_colors(default='bgrcmyk'):
+    try:
+        colors = [c['color'] for c in list(matplotlib.rcParams['axes.prop_cycle'])]
+    except KeyError:
+        colors = list(matplotlib.rcParams.get('axes.color_cycle', list(default)))
+    if isinstance(colors, str):
+        colors = list(colors)
+    return colors

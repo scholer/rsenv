@@ -206,7 +206,8 @@ def translate_all_requests_to_idxs(
         requests: A list of selection requests, each request being either a keyword or selection `expr` passed
             to
         candidates: 
-        match_method: 
+        match_method: How each candidate is matched against each of the requested queries.
+            Options: 'glob', 'regex', 'full-word', 'exact', 'contains', 'in', 'startswith', 'endswith'.
         include_method: How to merge idxs with previously-selected idxs. Options are:
             'set-sorted': Set-merge new idxs with previous, followed by sort.
             'list-extend': Just add the list of new idxs to the existing idxs list. May cause duplicates.
