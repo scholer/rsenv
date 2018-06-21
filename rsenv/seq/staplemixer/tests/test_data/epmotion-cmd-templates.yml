@@ -1,0 +1,190 @@
+# Use > if you want to preserve empty lines (also preserves "extra indentation" formatting)
+# edit: line breaks with '>' requires a double newline. Avoid this by using | or even |2 
+# PARAMETERS:
+#BehaelterName=%(sourcerack)s  # Taken from the *.rack.csv filename.
+#EnumMatType=8  # dwp96 as well as tube96 seems to always be of material type 8.
+#EnumSlotNr=%(slotnr)s  # SlotNr; robot specific; assigned by valet object
+#Stapelindex=0  # The rack is not standing on top of anything.
+#RackLevelSensor=0 # Disables liquid detection sensor for all wells.
+#StartVolumenNanoliter_0=100000   - Is used to set volume of all wells to 100 ul.
+#
+# LABWARE:
+# IDT deep-well plates: (also Sigma 96 DWP)
+#MatDatei=./top/dws/plates/dwp96/AB_DWP_1200 
+#MatName=AB_DWP_1200
+# For DNAtech plates, use plates/tubes96/MICR_TP_1300_5 labware. 
+# For AxyGen use plates/dwp96/AXYG_DWP_600
+
+## Changelog:
+# Replaced all %(cmdindex)03d and #(header)03d with %(cmdindex)03d
+# Note: you should move to new format system ASAP.
+
+## Special for this yml-dws template:
+# - Using AB_DWP_1200
+# - SrcSimple=1
+# - MixBeforeFixedHeight=1
+# - MixBeforeFixAb=4000   (remove line if MixBeforeFixedHeight=0)
+# - MixBeforeFixAuf=2000  (remove line if MixBeforeFixedHeight=0)
+
+
+"method-prefix": |2
+  [Properties]
+  Comment=Produced by Staplemixer script
+  DWS-ability=0x0000FF06
+  Name=%(filename)s
+  
+  [Version]
+  Name=%(filedir)s/%(filename)s.dws
+  Struktur=PrgStruc 0.21
+  
+  [001]
+  OpcodeStr=Place it
+  Opcode=115
+  Bezeichner=
+  MatDatei=./top/dws/trth/Rack_1_5ml_SAR
+  MatName=Rack_1_5ml_SAR
+  BehaelterName=%(destin-rackname)s
+  EnumMatType=512
+  EnumSlotNr=160
+  Stapelindex=0
+  RackLevelSensor=0
+  %(dest-pos-names)s
+  
+
+"cmd-placeit-rack": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Place it
+  Opcode=115
+  MatDatei=./top/dws/plates/dwp96/AB_DWP_1200
+  MatName=AB_DWP_1200
+  EnumMatType=8
+  BehaelterName=%(sourcerack)s
+  EnumSlotNr=%(slotnr)s
+  Stapelindex=0
+  RackLevelSensor=0
+  StartVolumenNanoliter_0=100000
+  
+
+"cmd-placeit-tips": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Place it
+  Opcode=115
+  Bezeichner=
+  MatDatei=./top/dws/tips/%(tiptype)s
+  MatName=%(tiptype)s
+  BehaelterName=%(tiptype)s_%(cmdindex)02d
+  EnumMatType=4
+  EnumSlotNr=%(slotnr)s
+  Stapelindex=0
+  
+
+"cmds-after-placeit":
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=PreRun
+  Opcode=116
+  Bezeichner=
+  
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Comment
+  Opcode=113
+  Bezeichner=Starting Staples->Modules pipetting.
+  
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Thermomixer
+  Opcode=123
+  Bezeichner=Place a container with water on the thermomixer. I will heat it, in order to increase the humidity in the hood.
+  WithTemplate=0
+  SpeedOn=0
+  MixSpeed=500
+  MixTimeMinute=1
+  MixTimeSecond=0
+  TempOn=1
+  Temperature=70
+  TempHold=0
+  
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=UserIntervention
+  Opcode=114
+  Bezeichner=Init finished, ready to commit module pipetting. ->->-> 1) PLEASE CHECK THAT ALL RACKS ARE PROPERLY ORIENTED !! <----- 2) Please make sure that all racks are thawed and ready to be pipetted, and that all tips etc are ready to be consumed. 3) You should also PLACE A BEAKER with MilliQ water on the heated THERMOMIXER in order to increase humidity in the robot workspace hood. 
+  Alarm=1
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=NumberOfSamples
+  Opcode=118
+  Fest=1
+  festeProbenzahl=1
+  maxProbenzahl=0
+  
+
+"method-postcmds":
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Thermomixer
+  Opcode=123
+  Bezeichner=Re-set thermomixer, otherwise the temperature will be on even after the method is complete.
+  WithTemplate=0
+  SpeedOn=0
+  MixSpeed=500
+  MixTimeMinute=0
+  MixTimeSecond=20
+  TempOn=1
+  Temperature=70
+  TempHold=0
+  
+- |2
+  
+  [%(cmdindex)03d]
+  Bezeichner=
+  OpcodeStr=PostRun
+  Opcode=117
+
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=End
+  Opcode=129
+
+"cmd-template": |2
+  
+  [%(cmdindex)03d]
+  Opcode=101
+  OpcodeStr=SampleTransfer
+  Source1=%(source-rackname)s
+  Source_Pat_Z1=%(source-row)s
+  Source_Pat_S1=%(source-col)s
+  Source_Pat_T1=1
+  Destination1=%(destin-rackname)s
+  Destination_Pat_Z1=%(destin-row)s
+  Destination_Pat_S1=%(destin-col)s
+  Destination_Pat_T1=1
+  TransferVolumenNanoliter=%(transfer-vol-nl)s
+  Filter=1
+  LiqName=Water
+  Bezeichner=%(cmd-comment)s
+  ToolName=TS_50
+  ToolDatei=./top/dws/tools/TS_50
+  LiqDatei=./top/dws/liquids/Water
+  SrcSimple=1
+  MixBefore=1
+  MixBeforeTumSpeed=10000
+  MixBeforeVolumenNanoliter=25000
+  MixBeforeNoOfCycles=3
+  MixBeforeFixedHeight=1
+  MixBeforeFixAb=4000
+  MixBeforeFixAuf=2000
+  Source_Pat_AnzDup=1
+  Source_Pat_Vorhanden=1
+  Destination_Pat_AnzDup=1
+  Destination_Pat_Vorhanden=1

@@ -17,7 +17,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.2dev2',  # Update for each new version
+    version='0.2.3dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -46,12 +46,20 @@ setup(
             'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',  # TODO: Change this to generic HPLC CLI.
             'hplc-cdf-to-csv=rsenv.hplcutils.cdf_csv:cdf_csv_cli',
             'hplc-rename-cdf-files=rsenv.hplcutils.rename_cdf_files:rename_cdf_files_cli',
+
+            # file converters and clipboard utils:
             'json-redump-fixer=rsenv.seq.cadnano.json_redump_fixer:main',
             'json-to-yaml=rsenv.fileconverters.jsonyaml:json_files_to_yaml_cli',
             'csv-to-hdf5=rsenv.fileconverters.hdf5csv:csv_to_hdf5_cli',
             'hdf5-to-csv=rsenv.fileconverters.hdf5csv:hdf5_to_csv_cli',
             'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
+
+            # sequences and cadnano:
+            'cadnano_maptransformer=rsenv.seq.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
+
+            # File indexing and duplication finder:
             'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
+
             # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
             'eln-print-started-exps=rsenv.eln.eln_md_pico:print_started_exps_cli',
             'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',

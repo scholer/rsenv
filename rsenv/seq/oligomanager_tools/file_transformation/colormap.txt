@@ -1,0 +1,11 @@
+#03b6a2	foldA	Cyan
+#cc0000	foldB	Red
+#57bb00	foldC	Lime green
+#b8056c	foldD	Purple red
+#1700de	foldE	Blue
+#7300de	foldF	Purple-blue
+#f7931e	linkFaces	Orange-yellow
+#007200	unlinkD_AC	Dark green (earlier 005500 was used for unlink and 009900 for lockD_B)
+#aaaa00	lockD_B	Olive green almost yellow
+#888888	linkF_BAC	Light gray
+#333333	linkE_DF	Dark gray

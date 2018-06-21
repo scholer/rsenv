@@ -1,0 +1,60 @@
+
+
+Feb 25th 2013
+Regarding changeset 157:801ad3c10f3fm, got errors in the robot:
+
+Loading error
+Code: 0x 1902
+
+Could not open method!
+ErrorCode 0x00001902
+
+
+
+File check:
+
+Name under version is wrong (includes output folder and .dws.dws twice
+
+Still get error
+
+Deleting all SampleTransfer cmds
+saving as _3
+
+
+Still get error
+
+Uh, all placeit cmds has same header/cmdindex
+and comment and numsamples headers are not properly formatted.
+
+Error is now gone, but I get a new warning instead:
+
+"The position of the following labware is not allowed anymore tips004
+in location: B0
+code 0x 1910.
+
+I get this code multiple times.
+B0 is the parking position, so not sure why I would use that.
+
+This is 
+EnumMatType=4
+
+EnumSlotNr=155
+
+Use EnumSlotNr=152 instead.
+
+So, changes:
+1) change valet
+   -- slots checked valet updated. 155 and 153 was reversed.
+2) change header for placeit
+   - ok, added cmdnum += 1
+3) change header for after-placeit 
+   - trying to only pass cmdindex
+Ok, seems to be fixed.
+
+
+Uh... Another issue...
+It seem the dest and src positions are completely wrong??
+"posToRowColTup(E11) returned (rownum,colnum) = (5,1)"
+This should be 5,
+colnum = int(pos[1:len(pos)-1]) # Should not subtract 1 !!
+ --> colnum = int(pos[1:len(pos)])

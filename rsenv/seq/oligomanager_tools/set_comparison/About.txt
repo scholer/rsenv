@@ -1,0 +1,9 @@
+
+
+Most of these files were initially copied from my old project.
+They can be used to compare different sets of oligos
+like the kind of list produced by caDNAno.
+This includes the files: OmCompareSets.py, OmSetReader.py and OmToolbox.py
+
+
+compare_sets_simple.py is a newer, less advanced version.

@@ -1,0 +1,275 @@
+# Use > if you want to preserve empty lines (also preserves "extra indentation" formatting)
+# edit: line breaks with '>' requires a double newline. Avoid this by using | or even |2 
+# PARAMETERS:
+# For Plate-it cmds:
+#BehaelterName=%(sourcerack)s  # Taken from the *.rack.csv filename.
+#EnumMatType=8  # dwp96 as well as tube96 seems to always be of material type 8.
+#EnumSlotNr=%(slotnr)s  # SlotNr; robot specific; assigned by valet object
+#Stapelindex=0  # The rack is not standing on top of anything.
+#RackLevelSensor=0 # Disables liquid detection sensor for all wells.
+#StartVolumenNanoliter_0=100000   - Is used to set volume of all wells to 100 ul.
+# LABWARE:
+# IDT deep-well plates:
+#MatDatei=./top/dws/plates/dwp96/AB_DWP_1200 
+#MatName=AB_DWP_1200
+# For DNAtech plates, use plates/tubes96/MICR_TP_1300_5 labware. 
+# For AxyGen use plates/dwp96/AXYG_DWP_600
+
+# For SampleTransfer cmds:
+# EnumEjectTips=1  Number corresponds to option in GUI; 1=When command finishes, 2=Before next well, dest, 3=Before next aspiration, 4=Do not change tips,
+#MixAfterVolumenUnit=0 # 0=nl, 1=ul (I think...)
+#EnumMusterTyp=0 # Muster = pattern (mønster)
+# Destination_Pat_Type=0  <-- probably somewhat related to EnumMusterTyp ? :) (There is also a Source_Pat_Type)
+
+## Changelog:
+# Replaced all %(cmdindex)03d and #(header)03d with %(cmdindex)03d
+# Note: you should move to new format system ASAP.
+
+
+"method-prefix": |2
+  [Properties]
+  Comment=Produced by Staplemixer script
+  DWS-ability=0x0000FF06
+  Name=%(filename)s
+  
+  [Version]
+  Name=%(filedir)s/%(filename)s.dws
+  Struktur=PrgStruc 0.21
+  
+  [001]
+  OpcodeStr=Place it
+  Opcode=115
+  Bezeichner=
+  MatDatei=./top/dws/plates/dwp96/AXYG_DWP_600
+  MatName=AXYG_DWP_600
+  BehaelterName=%(destin-rackname)s
+  EnumMatType=8
+  EnumSlotNr=160
+  Stapelindex=0
+  RackLevelSensor=0
+  %(dest-pos-names)s
+  
+
+"cmd-placeit-rack": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Place it
+  Opcode=115
+  Bezeichner=
+  MatDatei=./top/dws/trth/Rack_2ml_biozym
+  MatName=Rack_2ml_biozym
+  BehaelterName=%(sourcerack)s
+  EnumMatType=512
+  EnumSlotNr=%(slotnr)s
+  Stapelindex=0
+  RackLevelSensor=0
+  StartVolumenNanoliter_0=0
+  
+
+"cmd-placeit-tips": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Place it
+  Opcode=115
+  Bezeichner=
+  MatDatei=./top/dws/tips/%(tiptype)s
+  MatName=%(tiptype)s
+  BehaelterName=%(tiptype)s_%(cmdindex)02d
+  EnumMatType=4
+  EnumSlotNr=%(slotnr)s
+  Stapelindex=0
+  
+
+"cmds-after-placeit":
+- |2
+  [%(cmdindex)03d]
+  OpcodeStr=PreRun
+  Opcode=116
+  Bezeichner=
+
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Comment
+  Opcode=113
+  Bezeichner=Starting Staples->Modules pipetting.
+  
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=UserIntervention
+  Opcode=114
+  Alarm=1
+  Bezeichner=Init finished, ready to commit module pipetting. -> 1) Please check that all racks/plates are properly oriented, and that all labware are ready for use by the robot! <-<->-> 2) You should also place a beaker with MilliQ water on the heated THERMOMIXER in order to increase humidity in the robot workspace hood.
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=NumberOfSamples
+  Opcode=118
+  Bezeichner=
+  Fest=1
+  festeProbenzahl=1
+  maxProbenzahl=0
+  
+
+"method-postcmds":
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Thermomixer
+  Opcode=123
+  Bezeichner=Re-set thermomixer, otherwise the temperature will be on even after the method is complete.
+  WithTemplate=0
+  SpeedOn=0
+  MixSpeed=500
+  MixTimeMinute=0
+  MixTimeSecond=20
+  TempOn=1
+  Temperature=70
+  TempHold=0
+- |2
+  
+  [%(cmdindex)03d]
+  Bezeichner=
+  OpcodeStr=PostRun
+  Opcode=117
+
+- |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=End
+  Opcode=129
+
+"cmd-template": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=SampleTransfer
+  Opcode=101
+  Bezeichner=%(cmd-comment)s
+  ToolDatei=./top/dws/tools/TS_50
+  ToolName=TS_50
+  Filter=%(usefiltertips)s
+  Source1=%(source-rackname)s
+  Source_Pat_Z1=%(source-row)s
+  Source_Pat_S1=%(source-col)s
+  Source_Pat_T1=1
+  Destination1=%(destin-rackname)s
+  Destination_Pat_Z1=%(destin-row)s
+  Destination_Pat_S1=%(destin-col)s
+  Destination_Pat_T1=1
+  TransferVolumenNanoliter=%(transfer-vol-nl)s
+  LiqName=Water
+  LiqDatei=./top/dws/liquids/Water
+  SrcSimple=1
+  EnumEjectTips=1
+  MixBefore=0
+  Source_Pat_AnzDup=1
+  Source_Pat_Vorhanden=1
+  Destination_Pat_AnzDup=1
+  Destination_Pat_Vorhanden=1
+
+"cmd-placeit-tub": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=Place it
+  Opcode=115
+  Bezeichner=Tub for resuspending oligos in DWP.
+  MatDatei=./top/dws/th/1x30
+  MatName=1x30
+  BehaelterName=BufferTub
+  EnumMatType=1024
+  EnumSlotNr=154
+  Stapelindex=0
+  RackLevelSensor=2
+  RackTemperatur=22
+
+# Note: For redissolve with TS_300 pipette, use at least 10000 TumSpeed when mixing.
+# For TS_50, TumSpeed of 7500-10000 is better.
+# Searching the internet, I see that some methods even use a NEGATIVE TumSpeed value? I wonder what that means.
+# Note:   EnumEjectTips=4 if you are redissolving-then-pipetting at the same time. Otherwise use 1
+"cmd-redissolve-before-template": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=SampleTransfer
+  Opcode=101
+  ToolDatei=./top/dws/tools/%(tool)s
+  ToolName=%(tool)s
+  Bezeichner=Resuspending oligo > %(cmd-comment)s
+  Filter=%(usefiltertips)s
+  Source1=BufferTub
+  Source_Pat_Z1=1
+  Source_Pat_S1=%(tub_no)s
+  Source_Pat_T1=1
+  Destination1=%(source-rackname)s
+  Destination_Pat_Z1=%(source-row)s
+  Destination_Pat_S1=%(source-col)s
+  Destination_Pat_T1=1
+  TransferVolumenNanoliter=%(resuspend-vol)s
+  LiqName=Water
+  LiqDatei=./top/dws/liquids/Water
+  SrcSimple=0
+  DesSimple=0
+  Elution=0
+  MixAfter=1
+  MixAfterTumSpeed=13000
+  MixAfterVolumenNanoliter=%(resuspend-mix-vol)s
+  MixAfterVolumenUnit=0
+  MixAfterNoOfCycles=10
+  MixAfterFixedHeight=0
+  MixAfterFixAb=0
+  MixAfterFixAuf=0
+  MixBefore=0
+  EnumEjectTips=1
+  IrregularPattern=1
+  IrregularSrcPat=1
+  IrregularDesPat=1
+  StandardPattern=0
+  EnumStdRichtung=9
+  EnumMusterTyp=0
+  Source_Pat_Type=1
+  Source_Pat0_PosX=%(tub_no)s
+  Source_Pat0_PosY=1
+  Source_Pat0_PosZ=1
+  Source_Pat_AnzModule=7
+  Source_Pat0_Modulbreite=1
+  Source_Pat0_AnzGefaesse=1
+  Source_Pat1_Modulbreite=1
+  Source_Pat1_AnzGefaesse=1
+  Source_Pat2_Modulbreite=1
+  Source_Pat2_AnzGefaesse=1
+  Source_Pat_Anz=1
+  Source_Pat_AnzDup=1
+  Source_Pat_AnzSpalten=7
+  Source_Pat_Vorhanden=1
+  Destination_Pat_AnzDup=1
+  Destination_Pat_Vorhanden=1
+
+
+"cmd-aliquot-transfer-after-resuspend-template": |2
+  
+  [%(cmdindex)03d]
+  OpcodeStr=SampleTransfer
+  Opcode=101
+  ToolDatei=./top/dws/tools/%(tool)s
+  ToolName=%(tool)s
+  Bezeichner=%(cmd-comment)s
+  Filter=%(usefiltertips)s
+  Source1=%(source-rackname)s
+  Source_Pat_Z1=%(source-row)s
+  Source_Pat_S1=%(source-col)s
+  Source_Pat_T1=1
+  Destination1=%(destin-rackname)s
+  Destination_Pat_Z1=%(destin-row)s
+  Destination_Pat_S1=%(destin-col)s
+  Destination_Pat_T1=1
+  TransferVolumenNanoliter=%(transfer-vol-nl)s
+  LiqName=Water
+  LiqDatei=./top/dws/liquids/Water
+  SrcSimple=0
+  EnumEjectTips=1
+  MixBefore=0
+  Source_Pat_AnzDup=1
+  Source_Pat_Vorhanden=1
+  Destination_Pat_AnzDup=1
+  Destination_Pat_Vorhanden=1
+
