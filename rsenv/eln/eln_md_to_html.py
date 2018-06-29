@@ -55,7 +55,7 @@ from pprint import pprint
 # import markdown  # https://pypi.org/project/markdown/
 # import frontmatter  # https://pypi.org/project/python-frontmatter/
 
-from .eln_md_pico import read_journal, pico_variable_substitution
+from .eln_md_pico import read_document, pico_variable_substitution
 
 GITHUB_API_URL = 'https://api.github.com'
 
@@ -206,11 +206,11 @@ def markdown_to_html(content, parser='python-markdown', extensions=None, templat
     -------------------
 
     Overview:
-    * Jinja2 - by the Pocoo team (Flask, Sphinx, Pygments).
-    * Django template system (on which Jinja was modelled). Uses `{{` tags and `{%` blocks.
-    * Twig - PHP, uses a {% similar %} {{ syntax }} to Django/Jinja.
+    * Jinja2 (Python) - by the Pocoo team (Flask, Sphinx, Pygments).
+    * Django template system (on which Jinja was modelled). Uses `{{` tags and `{%` blocks. Python.
+    * Twig (PHP) - uses a similar syntax to Django/Jinja, using `{{` tags and `{%` blocks.
         By Fabien Potencier (Symfony author) and Armin Ronacher (Jinja author).
-    * Liquid - Another Django-inspired templating language. For Ruby.
+    * Liquid (Ruby) - Another Django-inspired templating language. For Ruby.
     * Mustache - Also uses {{ curly }} braced syntax, but "Logic-less templating language".
     * Handlebars - extension of Mustache, originally JS.
     * Nunjucks - JS, similar to Jinja2.
@@ -223,6 +223,11 @@ def markdown_to_html(content, parser='python-markdown', extensions=None, templat
     * HAML, JADE, Pug - Alternative "languages" to write the DOM.
     * Python-based templating: %s interpolation, {} formatting, and $ templating.
     *
+
+    Note: Pico has two ways of injecting variables:
+        1. Pico variables, where %metadata_variables% are replaced, at the Markdown level.
+        2. Twig variables, which operates at the HTML level.
+            {{html_content}} is the variables that inserts the markdown-converted html into the page body.
 
     Typical extensions:
     * *.jinja2 (or just *.j2), *.twig, etc.
@@ -328,7 +333,7 @@ def convert_md_file_to_html(
         default_template_name='index',
         config=None, default_config=None
 ):
-    """ Convert ELN markdown journal file to HTML.
+    """ ELN: Convert markdown journal/document file (.md) to HTML (.html).
 
     \b
     Args:
@@ -392,11 +397,12 @@ def convert_md_file_to_html(
             Whereas if we don't inject default values, we can let:
                 command line arguments > run-config > default-config.
     """
-    journal = read_journal(inputfn, add_fileinfo_to_meta=True, warn_yaml_scanner_error='raise')
+    print(f"\nconvert_md_file_to_html started, inputfn {inputfn!r}, outputfn {outputfn!r} ...", file=sys.stderr)
+    document = read_document(inputfn, add_fileinfo_to_meta=True, warn_yaml_scanner_error='raise')
     # returns journal dict with keys 'content', 'meta', 'fileinfo', etc.
     # Pico %variable.attribute% substitution:
-    pico_vars = journal.copy()
-    pico_vars.update(journal['fileinfo'])  # has 'dirname', 'basename', etc.
+    pico_vars = document.copy()
+    pico_vars.update(document['fileinfo'])  # has 'dirname', 'basename', etc.
     pico_vars.update({
         'template_filename': template,
         'template_dir': os.path.dirname(template) if template else None,
@@ -405,17 +411,17 @@ def convert_md_file_to_html(
     })
 
     # Perform %pico_variable% substitution:
-    journal['content'] = pico_variable_substitution(journal['content'], template_vars=pico_vars, errors='print')
+    document['content'] = pico_variable_substitution(document['content'], template_vars=pico_vars, errors='print')
 
     # Markdown to HTML conversion:
-    html_content = markdown_to_html(journal['content'], parser=parser, extensions=extensions)
+    html_content = markdown_to_html(document['content'], parser=parser, extensions=extensions)
     pico_vars['content'] = html_content
 
     if (template is None or not os.path.isfile(template)) and template_dir is not None:
-        print("\n\n(template is None or not os.path.isfile(template)) and template_dir is not None\n\n")
+        print("\n(template is None or not os.path.isfile(template)) and template_dir is not None.\n", file=sys.stderr)
         if template is None:
-            template_name = journal['meta'].get('template', default_template_name)
-            print(f"No template given, using template name from YFM (or default): {template_name!r}.")
+            template_name = document['meta'].get('template', default_template_name)
+            print(f"No template given, using template name from YFM (or default): {template_name!r}.", file=sys.stderr)
         else:
             template_name = template
         template_selection = get_templates_in_dir(template_dir)
@@ -423,12 +429,13 @@ def convert_md_file_to_html(
             template = template_selection[template_name]
         except KeyError:
             print(f"WARNING: Template directory does not contain any templates matching"
-                  f" {template_name!r} (case sensitive).")
+                  f" {template_name!r} (case sensitive).", file=sys.stderr)
         else:
-            print(f"Using template {template_name!r} from template directory {template_dir!r}.")
+            print(f"Using template {template_name!r} from template directory {template_dir!r}.", file=sys.stderr)
 
     # Twig/Jinja template interpolation:
     if template:
+        print("Performing template variable subsubstitution...", file=sys.stderr)
         html = substitute_template_variables(
             template=pathlib.Path(template), template_type=template_type, template_vars=pico_vars
         )
@@ -436,11 +443,27 @@ def convert_md_file_to_html(
         html = html_content
 
     # Write to output filename:
-    # TODO: Support writing to stdout instead of file.
-    outputfn = outputfn.format(inputfn=inputfn, **journal)
-    with open(outputfn, 'w', encoding='utf-8') as fd:
-        print(f"\nWriting {len(html)} characters to file: {outputfn!r}\n", file=sys.stderr)
-        fd.write(html)
+    dirname = os.path.dirname(inputfn)  # e.g. '/path/to/Document.md'
+    filepath_root, fnext = os.path.splitext(inputfn)  # e.g. '/path/to/Document', '.md'
+    filename = os.path.basename(inputfn)  # e.g. 'Document.md'  (using 'basename' was a terrible choice, by the way)
+    filename_noext = filebasename = os.path.basename(filepath_root)  # e.g. 'Document'
+    filename_noext = filename_root = os.path.splitext(filename)[0]  # e.g. 'Document', alternative
+    print("")
+    outputfn = outputfn.format(
+        inputfn=inputfn, dirname=dirname,
+        # filename=filename,  # already included in `journal` dict.
+        filebasename=filename_noext, filename_noext=filename_noext,
+        fnroot=filepath_root, filepath_root=filepath_root,
+        fnext=fnext.split('.'), filename_ext=fnext.split('.'),
+        **document
+    )
+    if outputfn == "-":
+        print(f"\nWriting {len(html)} characters to stdout...\n\n", file=sys.stderr)
+        print(html, file=sys.stdout)
+    else:
+        with open(outputfn, 'w', encoding='utf-8') as fd:
+            print(f"\nWriting {len(html)} characters to file: {outputfn!r}\n", file=sys.stderr)
+            fd.write(html)
 
     # Post processes:
     if open_webbrowser:

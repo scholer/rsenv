@@ -130,17 +130,17 @@ def find_md_files(basedir='.', pattern=r'*.md', pattern_type='glob'):
     return glob.glob(os.path.join(basedir, '**/*.md'))
 
 
-def read_journal(fn, add_fileinfo_to_meta=True, warn_yaml_scanner_error=None):
-    """ Reads a journal file and extracts the metadata / YAML front matter and the main content.
+def read_document(fn, add_fileinfo_to_meta=True, warn_yaml_scanner_error=None):
+    """ Reads a document file and extracts the metadata / YAML front matter and the main content.
 
     Args:
-        fn: The journal file to read.
-        add_fileinfo_to_meta: Whether to add file info directly into the main journal dict.
+        fn: The document file to read.
+        add_fileinfo_to_meta: Whether to add file info directly into the main document dict.
             Adding file info like this may clutter/override metadata from the YFM.
         warn_yaml_scanner_error:
 
     Returns:
-        journal dict, with keys:
+        document dict, with keys:
             filename:
             fileinfo:
             raw_content: The whole file content.
@@ -175,7 +175,7 @@ def read_journal(fn, add_fileinfo_to_meta=True, warn_yaml_scanner_error=None):
 
     if add_fileinfo_to_meta and yfm is not None:
         yfm.update(fileinfo)
-    journal = {
+    document = {
         'filename': fn,
         'fileinfo': fileinfo,
         'raw_content': raw_content,
@@ -184,7 +184,7 @@ def read_journal(fn, add_fileinfo_to_meta=True, warn_yaml_scanner_error=None):
         'content': md_content,
         'meta': yfm,
     }
-    return journal
+    return document
 
 
 def pico_find_variable_placeholders(content, pat=r"%[\w\.]+%"):
@@ -267,29 +267,29 @@ def pico_variable_substitution(content, template_vars, errors='pass', varfmt="{s
     return content
 
 
-def get_journals(basedir='.', add_fileinfo_to_meta=True, exclude_if_missing_yfm=True):
-    """ Find all Markdown journals (recursively) within a given base directory.
+def load_all_documents(basedir='.', add_fileinfo_to_meta=True, exclude_if_missing_yfm=True):
+    """ Find all Markdown documents/journals (recursively) within a given base directory.
 
     Args:
-        basedir: The directory to look for ELN journals in.
-        add_fileinfo_to_meta: Whether to add fileinfo to the journal's metadata (the parsed YFM).
+        basedir: The directory to look for ELN documents/journals in.
+        add_fileinfo_to_meta: Whether to add fileinfo to the document's metadata (the parsed YFM).
         exclude_if_missing_yfm: Exclude pages if they don't have YAML front-matter.
 
     Returns:
-        List of journal dicts.
+        List of documents (dicts).
 
     """
     files = find_md_files(basedir=basedir)
-    journals = []
+    documents = []
     for fn in files:
-        journal = read_journal(fn, add_fileinfo_to_meta=add_fileinfo_to_meta)
-        if journal['meta'] is not None or not exclude_if_missing_yfm:
-            journals.append(journal)
-    return journals
+        document = read_document(fn, add_fileinfo_to_meta=add_fileinfo_to_meta)
+        if document['meta'] is not None or not exclude_if_missing_yfm:
+            documents.append(document)
+    return documents
 
 
-def get_journals_metadata(basedir='.', add_fileinfo_to_meta=True, exclude_if_missing_yfm=True):
-    """ Find journals and extract metadata.
+def load_all_documents_metadata(basedir='.', add_fileinfo_to_meta=True, exclude_if_missing_yfm=True):
+    """ Find and load Markdown documents and extract YFM metadata.
 
     Args:
         basedir: The directory to find journals in.
@@ -297,18 +297,18 @@ def get_journals_metadata(basedir='.', add_fileinfo_to_meta=True, exclude_if_mis
         exclude_if_missing_yfm: Exclude journals/files if they don't have any YAML front-matter.
 
     Returns:
-        List of metadata dicts.
+        List of metadata dicts (as read from the document YFM).
     """
-    journals = get_journals(
+    documents = load_all_documents(
         basedir=basedir, add_fileinfo_to_meta=add_fileinfo_to_meta, exclude_if_missing_yfm=exclude_if_missing_yfm)
     # print("\n".join("{}: {}".format(j['filename'], type(j['meta'])) for j in journals))
-    metadata = [journal['meta'] for journal in journals]
+    metadata = [document['meta'] for document in documents]
     return metadata
 
 
 def get_started_exps(basedir='.', add_fileinfo_to_meta=True):
     """ Get metadata for journals with status='started'. """
-    all_meta = get_journals_metadata(
+    all_meta = load_all_documents_metadata(
         basedir=basedir, add_fileinfo_to_meta=add_fileinfo_to_meta, exclude_if_missing_yfm=True)
     started = [m for m in all_meta if m['status'] == 'started']
     return started
@@ -318,7 +318,7 @@ def get_unfinished_exps(basedir='.', add_fileinfo_to_meta=True):
     """ Journals where either status is not ('completed' or 'cancelled') or 'complete' but enddate is None.
     Edit: This is just where enddate is None and 'status' is not 'cancelled'.
     """
-    all_meta = get_journals_metadata(
+    all_meta = load_all_documents_metadata(
         basedir=basedir, add_fileinfo_to_meta=add_fileinfo_to_meta, exclude_if_missing_yfm=True)
     started = [
         m for m in all_meta
@@ -357,7 +357,7 @@ def print_journal_yfm_issues(
 ):
     """ Print journals that have YFM issues, e.g. missing YFM keys. """
     required_keys = set(required_keys)
-    journals = get_journals_metadata(basedir=basedir, add_fileinfo_to_meta=True)
+    journals = load_all_documents_metadata(basedir=basedir, add_fileinfo_to_meta=True)
     for meta in journals:
         missing = required_keys.difference(meta.keys())
         if missing:
@@ -369,7 +369,7 @@ def print_journal_yfm_issues(
 
 def get_journals_metadata_df(basedir='.', add_fileinfo_to_meta=True):
     """ Get journal metadata as a Pandas DataFrame. """
-    metadata = get_journals_metadata(basedir=basedir, add_fileinfo_to_meta=add_fileinfo_to_meta)
+    metadata = load_all_documents_metadata(basedir=basedir, add_fileinfo_to_meta=add_fileinfo_to_meta)
     df = pd.DataFrame(metadata)
     return df
 
