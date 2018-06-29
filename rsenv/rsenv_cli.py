@@ -23,7 +23,7 @@ import click
 from rsenv.hplcutils.cli import hplc_to_pseudogel_cli
 from rsenv.hplcutils.rename_cdf_files import rename_cdf_files_cli
 from rsenv.eln.eln_md_to_html import convert_md_file_to_html_cli
-from rsenv.eln.eln_md_pico import print_started_exps_cli, print_unfinished_exps_cli, print_journal_yfm_issues_cli
+from rsenv.eln.eln_cli import print_started_exps_cli, print_unfinished_exps_cli, print_journal_yfm_issues_cli
 from rsenv.utils.clipboard import clipboard_image_to_file_cli
 
 # MAKE SURE TO USE THE CLICK COMMAND ("*_cli") VERSIONS OF THE FUNCTIONS
