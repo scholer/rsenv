@@ -36,7 +36,8 @@ logger = logging.getLogger(__name__)
 @click.argument('cdf_files_or_dir', nargs=-1, type=click.Path(exists=True))  # Use nargs=-1 for many / '*'.
 @click.option('--fractions-file', nargs=1)  # , type=click.Path(exists=True, file_okay=True, dir_okay=False))
 # Chromatograms options:
-@click.option('--runname-fmt', default='{i:02} {ds.sample_name}')
+@click.option('--runname-fmt', default='{i:02} {samplename}',
+              help="Can also use dataset attributes, e.g. ds.sample_name")
 @click.option('--selection-query', '-q', multiple=True)
 @click.option('--selection-method', default='glob')
 @click.option('--sort-columns/--no-sort-columns')
@@ -52,7 +53,7 @@ logger = logging.getLogger(__name__)
 @click.option('--fnprefix', default=None, help="A common prefix to use when creating filenames.")
 @click.option('--selection-str', default='', help="An additional specifier to change output filenames.")
 # Pseudogel options:
-@click.option('--make-pseudogel/--no-make-pseudogel', default=True, help="Enable/disable pseudogel visualization.")
+@click.option('--make-pseudogel/--no-make-pseudogel', default=False, help="Enable/disable pseudogel visualization.")
 @click.option('--outputfn', default="{fnprefix}{selection_str}-ds{downsampling}_pseudogel.png",
               help="Output filename for the plain pseudogel png image (format str).")
 @click.option('--gel-blur', default=None, type=float)
@@ -127,11 +128,14 @@ def hplc_to_pseudogel_cli(
         verbose=2,
 ):
     """ Create a "pseudo" gel image from HPLC chromatograms (exported as AIA/CDF format).
+
+    \b
         nan_correction=nan_correction, nan_fill_value=nan_fill_value, nan_interpolation_method=nan_interpolation_method,
         runname_fmt=runname_fmt,
         signal_range_crop=crop_range,
         selection_query=selection_query, selection_method=selection_method
 
+    \b
     Args:
         cdf_files_or_dir: The .AIA directory containing the chromatograms as .CDF files.
         fractions_file:
@@ -231,6 +235,7 @@ def hplc_to_pseudogel_cli(
         fractions_df = None
 
     # Load CDF files in AIA dir as a Pandas DataFrame:
+    # TODO: Enable support for loading raw VWD.ch files.
     df = load_hplc_aia_xr_dataframe(
         cdf_files_or_dir,
         runname_fmt=runname_fmt,

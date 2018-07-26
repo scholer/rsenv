@@ -43,7 +43,7 @@ setup(
             # console_scripts should all be lower-case, else you may get an error when uninstalling:
             # Remember to copy changes to `rsenv.rsenv_cli.py` to keep `rsenv-help` command up to date.
             'nanodrop-cli=rsenv.dataanalysis.nanodrop.nanodrop_cli:cli',
-            'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',  # TODO: Change this to generic HPLC CLI.
+            'hplc-to-pseudogel=rsenv.hplcutils.cli:hplc_to_pseudogel_cli',  # TODO: Change this to a generic HPLC CLI.
             'hplc-cdf-to-csv=rsenv.hplcutils.cdf_csv:cdf_csv_cli',
             'hplc-rename-cdf-files=rsenv.hplcutils.rename_cdf_files:rename_cdf_files_cli',
 
@@ -83,7 +83,6 @@ setup(
         'scipy',
         'biopython',
         'matplotlib',
-        'pptx-downsizer',
         # 'svgwrite',
         # 'cffi',      # Cairo is only required to convert SVG files to PNG
         # 'cairocffi',
@@ -93,6 +92,12 @@ setup(
         'pandas',    # General purpose reading/writing/plotting/manipulation of data.
         'click',     # Easy creation of command line interfaces (CLI).
         # 'openpyxl',  # Excel files package, required for xlsx-to-csv converter.
+        # My own packages:
+        'pptx-downsizer',
+        'gelutils',
+        # 'rstodo',
+        # 'git_status_checker',
+        # 'zepto-eln-server',
     ],
     classifiers=[
         # How mature is this project? Common values are

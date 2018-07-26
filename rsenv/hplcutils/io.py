@@ -308,6 +308,7 @@ def load_hplc_aia_xr_dataframe(
 
     # Load all CDF files and create Pandas Series for each dataset.
     # (Each ChemStation exported CDF file contain only a single chromatogram.)
+    time_unit = 'minutes' if convert_seconds_to_minutes else 'seconds'
     for i, fpath in enumerate(cdf_files):
         # fpath = os.path.join(cdf_files_or_aia_dir, fn)
         fn = filename = os.path.basename(fpath)
@@ -317,28 +318,43 @@ def load_hplc_aia_xr_dataframe(
         dirdirname_noext = os.path.splitext(dirdirname)[0]
         if verbose:
             print(f"\n{fpath}:")
-        with xr.open_dataset(fpath) as ds:
-            ds.load()  # So we can access data after closing the file.
-            if verbose:
-                print("- Sample name, ID  :", ds.sample_name, ", ", ds.sample_id)
-                if verbose > 1:
-                    print("- Sampling interval: {:0.03f} s".format(float(ds['actual_sampling_interval'])))
-                    print("- Run length       : {:0.02f} min".format(float(ds['actual_run_time_length'])/60))
-                    print("- Number of points :", len(ds.point_number))
-            ts = ds['ordinate_values'].to_series()
-            if convert_to_actual_time:
-                ts.index *= float(ds.actual_sampling_interval)
-                ts.index.name = "Time / seconds"
-                if convert_seconds_to_minutes:
-                    ts.index /= 60
-                    ts.index.name = "Time / minutes"
+        if fpath.endswith('.ch'):
+            print(f"Reading {fpath!r} as a raw Agilent HPLC data file...")
+            # Raw Agilent ChemStation VWD .ch hplc data file
+            from .agilent.hpcs_vwd import read_agilent_1200_vwd_ch
+            data = read_agilent_1200_vwd_ch(fpath, time_unit=time_unit)
+            ts = pd.Series(data=data['signal_values'], index=data['timepoints'])
+            ts.index.name = f"Time / {time_unit}"
+            print(f"- Formatting series/column name using runname_fmt {runname_fmt!r}")
             columnname = runname_fmt.format(
-                i=i, samplename=ds.sample_name,
+                i=i, samplename=data['metadata']['samplename'],
                 fn=fn, filename=filename,  # basename, without directory path
                 dirname=dirname, dirname_noext=dirname_noext, dirdirname=dirdirname, dirdirname_noext=dirdirname_noext,
-                ds=ds,  # In case the user wants to use any of the other dataset attributes e.g. 'ds.operator'.
+                ds=data['metadata'],  # OBS! These may differ slightly from reading regular CDF datasets!
             )
-            series[columnname] = ts
+        else:
+            with xr.open_dataset(fpath) as ds:
+                ds.load()  # So we can access data after closing the file.
+                if verbose:
+                    print("- Sample name, ID  :", ds.sample_name, ", ", ds.sample_id)
+                    if verbose > 1:
+                        print("- Sampling interval: {:0.03f} s".format(float(ds['actual_sampling_interval'])))
+                        print("- Run length       : {:0.02f} min".format(float(ds['actual_run_time_length'])/60))
+                        print("- Number of points :", len(ds.point_number))
+                ts = ds['ordinate_values'].to_series()
+                if convert_to_actual_time:
+                    ts.index *= float(ds.actual_sampling_interval)
+                    ts.index.name = "Time / seconds"
+                    if convert_seconds_to_minutes:
+                        ts.index /= 60
+                        ts.index.name = "Time / minutes"
+                columnname = runname_fmt.format(
+                    i=i, samplename=ds.sample_name,
+                    fn=fn, filename=filename,  # basename, without directory path
+                    dirname=dirname, dirname_noext=dirname_noext, dirdirname=dirdirname, dirdirname_noext=dirdirname_noext,
+                    ds=ds,  # In case the user wants to use any of the other dataset attributes e.g. 'ds.operator'.
+                )
+        series[columnname] = ts
     # Create DataFrame:
     df = pd.DataFrame(data=series)
 

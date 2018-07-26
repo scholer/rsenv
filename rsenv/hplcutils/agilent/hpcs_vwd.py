@@ -1,3 +1,4 @@
+# Copyright 2018 Rasmus S. Sorensen
 """
 
 Read HPLC chromatograms from HP/Agilent ChemStation variable-wavelength detector (VWD) data files.
@@ -190,7 +191,7 @@ def read_str_at_address(f, addr):
     # return struct.unpack('>64p', buf[0:1] + buf[1:-1:2])[0].decode('utf-8')
 
 
-def read_agilent_1200_vwd_ch(filename, reset_xmin_xmax=False):
+def read_agilent_1200_vwd_ch(filename, reset_xmin_xmax=False, time_unit='minutes'):
     """ Read HPLC from Agilent 1200 series variable-wavelength detector (VWD).
 
     The data is stored in files typically named `vwd1A.ch` or similar.
@@ -208,6 +209,8 @@ def read_agilent_1200_vwd_ch(filename, reset_xmin_xmax=False):
 
     Args:
         filename:
+        reset_xmin_xmax:
+        time_unit:
 
     Returns:
         dict {
@@ -219,10 +222,10 @@ def read_agilent_1200_vwd_ch(filename, reset_xmin_xmax=False):
     """
 
     with open(filename, 'rb') as f:
-        return read_vwd_fh(f, reset_xmin_xmax=reset_xmin_xmax)
+        return read_vwd_fh(f, reset_xmin_xmax=reset_xmin_xmax, time_unit=time_unit)
 
 
-def read_vwd_fh(f, *, reset_xmin_xmax=False):
+def read_vwd_fh(f, *, reset_xmin_xmax=False, time_unit='minutes'):
     """ Read vwd data from open file or file-like object.
 
     Args:
@@ -230,6 +233,7 @@ def read_vwd_fh(f, *, reset_xmin_xmax=False):
         reset_xmin_xmax: Generate timepoints with linspace(0.0, total_time, n_datapoints),
             instead of linspace(xmin, xmax, n_datapoints), to mitigate minor differences in
             the start time between runs.
+        time_unit: Convert time/index to this unit (minutes or seconds). Passed to `read_xmin_xmax`.
 
     Returns:
         dict {
@@ -240,9 +244,9 @@ def read_vwd_fh(f, *, reset_xmin_xmax=False):
         }
     """
 
-    metadata = read_metadata(f)
+    metadata = read_metadata(f)  # See METADATA_KEYS
 
-    xmin, xmax = read_xmin_xmax(f, unit='minutes')
+    xmin, xmax = read_xmin_xmax(f, unit=time_unit)
     total_time = xmax - xmin
     print("xmin (minutes):", xmin)
     print("xmax (minutes):", xmax)
@@ -293,21 +297,39 @@ def read_vwd_fh(f, *, reset_xmin_xmax=False):
 
 
 def read_xmin_xmax(f, unit='ms'):
+    """ Read time min/max values from file and perform optional conversion.
+    The .ch files store time points in milliseconds.
+    """
     xmin = int.from_bytes(file_read(f, FILE_ADDRS['xmin'], 4), 'big')
     xmax = int.from_bytes(file_read(f, FILE_ADDRS['xmax'], 4), 'big')
     if unit in ('s', 'seconds'):
         xmin, xmax = xmin/1000., xmax/1000.
     elif unit in ('min', 'minute', 'minutes'):
         xmin, xmax = xmin/60000., xmax/60000.
+    elif unit in ('ms', 'milliseconds'):
+        xmin, xmax = xmin, xmax
+    else:
+        raise ValueError("Could not understand unit %r." % unit)
 
     return xmin, xmax
 
 
-def read_signal_ints(f):
+def read_signal_ints(f, verbose=0):
     """ Read signal integer values from file object.
+
+    VWD .ch data is written primarily as a list of deltas,
+    i.e. the difference from one observation to the previous.
+    The data is in integers of a signal_stepsize,
+    16 bit signed integers (2 bytes) to be precise (so ranging from -32768 to +32768).
+    If the delta to the previous value is larger than what can be represented by the 16-bit integer,
+    (i.e. larger than 2^15 * signal_stepsize),
+    a sentinel value of 0x8000 is used to indicate a large JUMP in the data.
+    The next four bytes (64 bits) are then interpreted as a 64-bit int,
+    which is the absolute value of the observed signal (but still in integers of signal_stepsize).
 
     Args:
         f: open file handle or file-like object.
+        verbose:
 
     Returns:
         A list of signal integers for each sample point.
@@ -319,23 +341,36 @@ def read_signal_ints(f):
     idx = 0
     signal_ints = []  # Absolute integer values
     seg_value = 0
+    if verbose:
+        from collections import Counter
+        marker_count = Counter()
+        jump_counts = Counter()
     while True:
         addr = f.tell()
         seg_buf = f.read(2)  # A base data segment is two bytes (16 bits)
         if not seg_buf:
             break
-        # seg_int = int.from_bytes(seg_buf, 'big')  # Note: is signed, not unsigned, so use unpack.
-        seg_int = struct.unpack('>h', seg_buf)[0]  # Note: is signed, not unsigned, so use unpack.
+        seg_int = int.from_bytes(seg_buf, byteorder='big', signed=True)  # OBS: Is signed.
+        # seg_int = struct.unpack('>h', seg_buf)[0]  # Alternative, using struct.unpack.
         if seg_int == -0x8000 or seg_int == 0x8000:
             # 0x8000 is -0x8000 as signed integer (so it reads the same).
             # Special marker value indicating a jump in signal value bigger than what we can express in deltas.
             # (Now we suddenly use 6 bytes in total per data point)
             seg_buf = f.read(4)  # Read a f
-            seg_value = int.from_bytes(seg_buf, 'big')
-            print(f"0x{addr:x}: JUMP to {seg_value} !")
+            seg_value = int.from_bytes(seg_buf, byteorder='big', signed=True)  # Absolute values are signed!
+            if verbose:
+                print(f"0x{addr:x}: JUMP to value {seg_value} ! (seg_int == {seg_int})")
+                jump_counts[seg_value] += 1
         elif seg_buf[0] == 0x10 and seg_buf[1] != 0x00:
-            # There is also something about a marker, at least according to libHPCS:
-            print(f"Marker at idx {idx}, address 0x{addr:x} !")
+            # 0x10 BIN_MARKER_A, 0x00 BIN_MARKER_END, 0x80 BIN_MARKER_JUMP.
+            # There is also something about a marker, at least according to libHPCS,
+            # although I'm not quite sure what this means.
+            # Known marker values:
+            #     102e
+            #     104e
+            if verbose:
+                marker_count[seg_buf] += 1
+                print(f"Marker at idx {idx}, address 0x{addr:x} !")
         else:
             seg_value = seg_value + seg_int
             # if seg_int > 0:
@@ -344,7 +379,13 @@ def read_signal_ints(f):
             # print(f"0x{addr:x}: {seg_int:>4x} -> Incrementing seg_value by {seg_int:>8} to {seg_value:16}")
         signal_ints.append(seg_value)
         idx += 1
-    print("\n - done!")
+    if verbose:
+        print("Markers:")
+        print("\n".join(" - {m:x}: {c}" for m, c in marker_count.items()))
+        if verbose >= 2:
+            print("JUMPS:")
+            print("\n".join(" - {m:x}: {c}" for m, c in jump_counts.items()))
+        print("\n - done!")
     return signal_ints
 
 
