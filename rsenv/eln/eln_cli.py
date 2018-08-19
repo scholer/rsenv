@@ -1,6 +1,7 @@
 import inspect
 
 import click
+# Copyright 2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
 
 from rsenv.eln.eln_md_pico import load_all_documents_metadata, REQUIRED_KEYS
 

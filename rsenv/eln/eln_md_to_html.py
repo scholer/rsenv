@@ -1,3 +1,5 @@
+# Copyright 2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
+
 
 """
 
@@ -55,219 +57,14 @@ from pprint import pprint
 # import markdown  # https://pypi.org/project/markdown/
 # import frontmatter  # https://pypi.org/project/python-frontmatter/
 
-from .eln_md_pico import read_document, pico_variable_substitution
+from zepto_eln.md_utils.document_io import load_document
+from zepto_eln.md_utils.markdown_compilation import compile_markdown_to_html
+
+from .eln_md_pico import substitute_pico_variables
+from .eln_config import get_combined_app_config
 
 GITHUB_API_URL = 'https://api.github.com'
 
-
-DEFAULT_CONFIG = yaml.load(r"""
-outputfn: '{inputfn}.html'
-overwrite: null
-open_webbrowser: null
-# Parser options are: 'github', or 'python-markdown'.
-# See `markdown_to_html()` for more info on `parser` and `extensions` options.
-parser: python-markdown
-extensions:
- - markdown.extensions.fenced_code
- - markdown.extensions.attr_list
- - markdown.extensions.tables
- - markdown.extensions.sane_lists
-# - 'markdown.extensions.toc
-# See `substitute_template_variables()` for more info on template variables and templating systems.
-template_type: jinja2
-# template_dir: A directory with templates; each markdown file can specify its own template.
-template_dir: D:/Dropbox/_experiment_data/templates/
-apply_template: True
-# A config (dict or file) containing options for each run, takes precedence over any given arguments!
-config: null
-default_config: null
-""")
-
-# > "Q: Is there an official extension for YAML files?"
-# > "A: Please use ".yaml" when possible."
-# - c.f. http://yaml.org/faq.html
-# Although this is still somewhat contested in practice,
-# c.f. https://stackoverflow.com/questions/21059124/is-it-yaml-or-yml,
-#      http://markdblackwell.blogspot.dk/2013/07/use-file-extension-yml-for-yaml.html
-# Specifically, Symphony and other larger projects are using .yml, not .yaml.
-# Although even Symphony recommends .yaml for package recipes,
-# - c.f. https://github.com/symfony/recipes/blob/master/README.rst#validation
-# Drupal and Symphony issues:
-# * https://github.com/symfony/symfony-standard/issues/595
-# * https://www.drupal.org/node/2091669
-# A search on my own computer has 429 *.yml files and 1145 *.yaml files.
-# * The majority (392) of the *.yml files comes from myself, especially .labfluence.yml and gelannotator files.
-# * The majority of the *.yaml comes from (a) Anaconda packages, (b) NVIDIA, (c) myself.
-# Googling "filetype:yml" and "filetype:yaml" gives 272'000 vs 85'000 results, with .yaml often not being extension.
-# I feel like I've had this discussion before, and I've still used different standards for different projects...
-# TODO: Decide on a standard YAML file extension across all my dev projects!
-CONFIG_PATHS = OrderedDict()
-CONFIG_PATHS['global'] = [
-    '~/.config/rsenv/eln-config-global.yaml',
-    '~/.config/eln-config-global.yaml',
-    '~/.rsenv/eln-config-global.yaml',
-]
-CONFIG_PATHS['local'] = [
-    './eln-config.yaml',
-    '~/.config/eln-config-global.yaml',
-    '~/.rsenv/eln-config-global.yaml',
-]
-
-# TODO: Move all config-related functions to a shared config module.
-
-
-def get_app_config_filepaths():
-    """ Search the file system for global and local config files.
-
-    Returns:
-        {'global': global_path, 'local': local_path) dict of file paths for the global config and local config.
-
-    Item values can be None, if no config files were found.
-
-    Examples:
-        >>> get_app_config_filepaths()
-        '~/.config/rsenv/eln-config-global.yaml', './eln-config.yaml'
-    """
-    return OrderedDict([
-        (k, next(iter(path for path in paths if os.path.isfile(path)), None))
-        for k, paths in CONFIG_PATHS.items()]
-    )
-
-
-def get_app_configs():
-    config_paths = get_app_config_filepaths()
-    print("Using config files:")
-    pprint(config_paths)
-    configs = {}
-    for k, path in config_paths.items():
-        if path is None:
-            configs[k] = None
-        else:
-            try:
-                configs[k] = yaml.load(open(path, 'r'))
-            except yaml.YAMLError as exc:
-                raise exc
-    return configs
-
-
-def get_combined_app_config():
-    configs = get_app_configs()
-    merged_config = DEFAULT_CONFIG.copy()  # Maybe deepcopy?
-    for k in ('global', 'local'):
-        this_config = configs.get(k)
-        if this_config:
-            merged_config.update(this_config)
-    return merged_config
-
-
-def markdown_to_html(content, parser='python-markdown', extensions=None, template=None, template_type='jinja'):
-    """ Convert markdown to HTML, using the specified parser/generator.
-
-    Args:
-        content: Markdown content (str) to convert HTML.
-        parser: A string specifying which parser to use.
-            Options include: 'github', and 'python-markdown' (default).
-        extensions: A list of extensions to pass to the parser, or None for the default extensions set.
-
-    Returns:
-        HTML (string)
-
-    Examples:
-        >>> markdown_to_html("hello world!", parser='github')
-        '<p>hello world</p>'
-
-    Notes on the different parsers:
-    -------------------------------
-
-    Advantages of 'github' vs 'python-markdown' parser:
-    * Github adds style="max-width:100%;" attribute to all <img> image elements.
-        This can be accomplished globally, using a template,
-        on a page-by-page basis by adding a <style> tag at the top of the page,
-        or on a image-by-image basis by inserting images with <img> tags, or using markdown `{: attribute lists}`.
-
-    These are the same, with the proper extension:
-    * Code blocks (incl inside lists) renders as expected, if "Fenced code" extension is enabled.
-
-    Python-Markdown extensions: https://python-markdown.github.io/extensions/
-    * Extra: markdown.extensions.extra
-        Enable 'extra' features from [PHP Markdown](https://michelf.ca/projects/php-markdown/extra/).
-        * Fenced Code: markdown.extensions.fenced_code
-            Enable support for ```python\n...``` fenced code blocks.
-        * Attribute list: markdown.extensions.attr_list
-            Add HTML attributes to any element (header, link, image, paragraph) using trailing curly brackets:
-            `{: #someid .someclass somekey='some value' }`.
-        * Footnotes: markdown.extensions.footnotes
-        * Tables: markdown.extensions.tables
-    * Sane Lists: markdown.extensions.sane_lists
-    * Table of Contents: markdown.extensions.toc
-
-
-    Templating systems:
-    -------------------
-
-    Overview:
-    * Jinja2 (Python) - by the Pocoo team (Flask, Sphinx, Pygments).
-    * Django template system (on which Jinja was modelled). Uses `{{` tags and `{%` blocks. Python.
-    * Twig (PHP) - uses a similar syntax to Django/Jinja, using `{{` tags and `{%` blocks.
-        By Fabien Potencier (Symfony author) and Armin Ronacher (Jinja author).
-    * Liquid (Ruby) - Another Django-inspired templating language. For Ruby.
-    * Mustache - Also uses {{ curly }} braced syntax, but "Logic-less templating language".
-    * Handlebars - extension of Mustache, originally JS.
-    * Nunjucks - JS, similar to Jinja2.
-    * Velocity - Java originating templating engine. Apache project.
-    * Mako - Another popular Python templating language, using `<%` tags and `%` blocks.
-    * Cheetah - Uses '#' line prefix and '$' variables, like Velocity. Very similar to writing Python code.
-    * Genshi
-    * Hiccup, Sneeze
-    * Template Attribute Language (TAL)
-    * HAML, JADE, Pug - Alternative "languages" to write the DOM.
-    * Python-based templating: %s interpolation, {} formatting, and $ templating.
-    *
-
-    Note: Pico has two ways of injecting variables:
-        1. Pico variables, where %metadata_variables% are replaced, at the Markdown level.
-        2. Twig variables, which operates at the HTML level.
-            {{html_content}} is the variables that inserts the markdown-converted html into the page body.
-
-    Typical extensions:
-    * *.jinja2 (or just *.j2), *.twig, etc.
-    * Can be single, *.jinja2, or *.html.jinja2 - similar to *.tar.gz.
-    *
-
-
-    Refs:
-    * http://vschart.com/list/template-language/
-    * http://jinja.pocoo.org/docs/2.10/switching/
-    * https://en.wikipedia.org/wiki/Comparison_of_web_template_engines
-    * https://www.quora.com/Was-Twigs-syntax-inspired-by-Liquid
-
-
-    """
-    if parser is None:
-        parser = 'python-markdown'
-    if parser == 'python-markdown':
-        if extensions is None:
-            extensions = [
-                'markdown.extensions.fenced_code',
-                'markdown.extensions.attr_list',
-                'markdown.extensions.tables',
-                'markdown.extensions.sane_lists',
-                # 'markdown.extensions.toc',
-            ]
-        print("\nExtensions:", extensions)
-        import markdown
-        html_content = markdown.markdown(content, extensions=extensions)
-    elif parser in ('github', 'ghmarkdown'):
-        try:
-            # Try to use the `ghmarkdown` package, and fall back to a primitive github api call
-            import ghmarkdown
-            return ghmarkdown.html_from_markdown(content)
-        except ImportError:
-            html_content = github_markdown(content)
-    else:
-        raise ValueError(f"parser={parser!r} - value not recognized.")
-
-    return html_content
 
 
 def github_markdown(markdown, verbose=None):
@@ -290,7 +87,7 @@ def substitute_template_variables(template, template_type, template_vars):
         template = jinja2.Template(template)
         html = template.render(**template_vars)
     elif template_type == 'pico':
-        html = pico_variable_substitution(content=template, template_vars=template_vars)
+        html = substitute_pico_variables(content=template, template_vars=template_vars)
     else:
         raise ValueError(f"Value {template_type!r} for `template_type` not recognized.")
     return html
@@ -343,7 +140,7 @@ def convert_md_file_to_html(
         open_webbrowser: Set to True to automatically open the generated HTML file with the default web browser.
         parser: The Markdown parser to use to generate the HTML.
             Options are: 'github', or 'python-markdown'.
-            See `markdown_to_html()` for more info on `parser` and `extensions` options.
+            See `compile_markdown_to_html()` for more info on `parser` and `extensions` options.
         extensions: The markdown extensions to use (parser-dependent).
         template: The template (file) to use for generating the HTML page.
             The html content converted from the .md input file is available as the `content` template variable.
@@ -398,8 +195,9 @@ def convert_md_file_to_html(
                 command line arguments > run-config > default-config.
     """
     print(f"\nconvert_md_file_to_html started, inputfn {inputfn!r}, outputfn {outputfn!r} ...", file=sys.stderr)
-    document = read_document(inputfn, add_fileinfo_to_meta=True, warn_yaml_scanner_error='raise')
+    document = load_document(inputfn, add_fileinfo_to_meta=True, warn_yaml_scanner_error='raise')
     # returns journal dict with keys 'content', 'meta', 'fileinfo', etc.
+
     # Pico %variable.attribute% substitution:
     pico_vars = document.copy()
     pico_vars.update(document['fileinfo'])  # has 'dirname', 'basename', etc.
@@ -409,12 +207,10 @@ def convert_md_file_to_html(
         'assets_url': None,
         'theme_url': None,
     })
-
-    # Perform %pico_variable% substitution:
-    document['content'] = pico_variable_substitution(document['content'], template_vars=pico_vars, errors='print')
+    document['content'] = substitute_pico_variables(document['content'], template_vars=pico_vars, errors='print')
 
     # Markdown to HTML conversion:
-    html_content = markdown_to_html(document['content'], parser=parser, extensions=extensions)
+    html_content = compile_markdown_to_html(document['content'], parser=parser, extensions=extensions)
     pico_vars['content'] = html_content
 
     if (template is None or not os.path.isfile(template)) and template_dir is not None:

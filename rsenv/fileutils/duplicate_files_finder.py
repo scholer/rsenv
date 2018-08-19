@@ -80,7 +80,7 @@ from collections import OrderedDict
 
 from rsenv.fileutils.filehashing import calculate_file_hash
 from rsenv.fileutils.fileutils import find_files, fsize_str_to_int, kB, MB
-
+import datetime
 
 # While having a generic list of (header, function) tuples was nice and simple,
 # it prevented us from doing slightly more complex things like:
@@ -88,6 +88,8 @@ from rsenv.fileutils.fileutils import find_files, fsize_str_to_int, kB, MB
 # (Although arguably that could have been done with the `read_start` parameter.
 default_grouping_scheme = [
     {'name': 'filesize', 'func': os.path.getsize, 'args': [], 'kwargs': {}, 'filesizelimit': 0},
+    # We do *not* by default use file modification time, as it may be unreliable.
+    # Two files can easily be identical but still have different modification time, e.g. from windows copy operations.
     {'name': 'md5-16kB', 'func': calculate_file_hash, 'args': [], 'kwargs': dict(hashname='md5', read_limit=64 * kB), 'filesizelimit': 64 * kB},
     {'name': 'md5-04MB', 'func': calculate_file_hash, 'args': [], 'kwargs': dict(hashname='md5', read_limit=4 * MB), 'filesizelimit': 4 * MB},
     {'name': 'md5-full', 'func': calculate_file_hash, 'args': [], 'kwargs': dict(hashname='md5', read_limit=0), 'filesizelimit': 0},
@@ -99,7 +101,8 @@ default_grouping_scheme = [
 
 
 def get_file_paths(
-        start_points, exclude_patterns=None, realpaths=True,
+        start_points, exclude_patterns=None,
+        abspaths=True, realpaths=True,
         remove_realpath_dups=False, follow_links=False, exclude_links=False,
         return_type='iter', series_name='path', verbose=0
 ):
@@ -116,7 +119,8 @@ def get_file_paths(
     Args:
         start_points:
         exclude_patterns:
-        realpaths:
+        abspaths: Use the absolute file path instead of relative.
+        realpaths: De-reference links.
         remove_realpath_dups:
         follow_links:
         exclude_links:
@@ -130,7 +134,7 @@ def get_file_paths(
 
     fpaths = find_files(
         start_points=start_points, exclude_patterns=exclude_patterns,
-        realpaths=realpaths, followlinks=follow_links, exclude_links=exclude_links
+        abspaths=abspaths, realpaths=realpaths, followlinks=follow_links, exclude_links=exclude_links
     )
 
     if return_type == 'iter':
@@ -171,26 +175,31 @@ def get_file_paths(
     return fpaths
 
 
-def get_startpoint_df(
+def get_basic_fileinfo_df(
         start_points,
-        realpaths=True, remove_realpath_dups=False, follow_links=False, exclude_links=True,
+        abspaths=True, realpaths=True, remove_realpath_dups=False, follow_links=False, exclude_links=True,
         exclude_patterns=None,
         fsize_min=None,
-        add_inode=True,
+        add_filesize=False,
+        add_stat=True,
+        add_mtime=True,
+        add_mtime_str=True, modtime_strfmt="%Y-%m-%d %H:%M:%S.%f+%z",
         filelist_source=None,
         verbose=0,
 ):
     """ Create the basic DataFrame with file paths from which to start finding duplicates from.
 
     Args:
-        start_points:
-        use_realpath:
-        remove_realpath_dups:
+        start_points: One or more paths to start looking for files from.
+        abspaths: Use absolute file paths instead of relative.
+        realpaths: De-reference symbolic links.
+        remove_realpath_dups: If a symbolic link has been de-referenced and now points to a file that is also included,
+            remove the obvious duplicate.
         follow_links:
         exclude_links:
         exclude_patterns:
         fsize_min:
-        add_inode: Add inode (st_dev and st_ino) columns to the dataframe.
+        add_stat: Add file stats (mtime, and st_dev and st_ino inode info) columns to the dataframe.
         filelist_source:
         verbose:
 
@@ -210,7 +219,7 @@ def get_startpoint_df(
         fpaths = get_file_paths(
             start_points=start_points, exclude_patterns=exclude_patterns,
             follow_links=follow_links, exclude_links=exclude_links,
-            realpaths=realpaths, remove_realpath_dups=remove_realpath_dups,
+            abspaths=abspaths, realpaths=realpaths, remove_realpath_dups=remove_realpath_dups,
             return_type='series',
         )
     assert isinstance(fpaths, pd.Series)
@@ -231,8 +240,26 @@ def get_startpoint_df(
     df = pd.DataFrame.from_items(zip(
         ['path', 'group_idx', 'filesize'],  #, 'filesize_MB'],
         [fpaths, group_idx, filesize]))  # , filesize // 1]))
-    if add_inode:
-        df['st_dev'], df['st_ino'] = [(st.st_dev, st.st_ino) for st in [os.stat(fp) for fp in fpaths]]
+    if add_stat:
+        df['dev'], df['ino'], df['ctime'], df['mtime'], df['mtime_ns'], df['filesize'], df['gid'], df['uid'] = [
+            (st.st_dev, st.st_ino, st.st_ctime, st.st_mtime, st.st_mtime_ns, st.st_size, st.st_gid, st.st_uid)
+            for st in [os.stat(fp) for fp in fpaths]
+        ]
+    else:
+        if add_mtime:
+            # os.path.getmtime() uses os.stat().
+            df['mtime'] = [os.path.getmtime(fp) for fp in fpaths]
+        if add_filesize:
+            df['filesize'] = df['path'].map(os.path.getsize)
+
+    if add_stat or add_mtime:
+
+        def timestamp_to_str(ts):
+            return datetime.datetime.fromtimestamp(ts).strftime(modtime_strfmt)
+        # df['mtime_str'] = [timestamp_to_str(ts) for ts in df['mtime']]
+        df['mtime_str'] = df['mtime'].map(timestamp_to_str)
+
+
     # It would be nice to have some metadata, e.g. on what types of checksums and groupings have been performed
     # df.hash_groups = OrderedDict()
     # Unfortunately, just using attributes is not a good idea, since operations may return a new dataframe
@@ -343,14 +370,14 @@ def find_duplicate_files(
         grouping_scheme = default_grouping_scheme
     elif isinstance(grouping_scheme, str):
         grouping_scheme = yaml.load(open(grouping_scheme))
-    print("\n\n> starting get_startpoint_df...")
-    df = get_startpoint_df(
+    print("\n\n> starting get_basic_fileinfo_df...")
+    df = get_basic_fileinfo_df(
         start_points=start_points, exclude_patterns=exclude, fsize_min=fsize_min,
         follow_links=follow_links, exclude_links=exclude_links,
         abspaths=abspaths, realpaths=realpaths, remove_realpath_dups=remove_realpath_dups,
         verbose=verbose
     )
-    print("< done get_startpoint_df\n")
+    print("< done get_basic_fileinfo_df\n")
     print("\nStarting df:")
     print(df)
     print("\n\n> starting group_and_eliminate_df")

@@ -1,3 +1,5 @@
+# Copyright 2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
+
 import pandas as pd
 
 from rsenv.eln.eln_md_pico import load_all_documents_metadata

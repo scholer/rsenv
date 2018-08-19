@@ -110,78 +110,23 @@ import yaml
 import yaml.scanner
 from collections import defaultdict
 
+from zepto_eln.md_utils.document_io import load_document, load_all_documents
+
+
 from rsenv.eln.eln_cli import print_journal_yfm_issues_cli
 from rsenv.eln.eln_yfm_utils import parse_yfm
 
-WARN_MISSING_YFM = False
-WARN_YAML_SCANNER_ERROR = True
 
 REQUIRED_PICO_KEYS = ('title', 'description', 'author', )
 REQUIRED_EXP_KEYS = ('expid', 'titledesc', 'status', 'startdate', 'enddate', 'result')
 REQUIRED_KEYS = REQUIRED_PICO_KEYS + REQUIRED_EXP_KEYS
+NODEFAULT = object()
 
 
 def find_md_files(basedir='.', pattern=r'*.md', pattern_type='glob'):
     # return list(find_files(start_points=[basedir], include_patterns=[pattern]))
     # Alternative, using glob:
     return glob.glob(os.path.join(basedir, '**/*.md'))
-
-
-def read_document(fn, add_fileinfo_to_meta=True, warn_yaml_scanner_error=None):
-    """ Reads a document file and extracts the metadata / YAML front matter and the main content.
-
-    Args:
-        fn: The document file to read.
-        add_fileinfo_to_meta: Whether to add file info directly into the main document dict.
-            Adding file info like this may clutter/override metadata from the YFM.
-        warn_yaml_scanner_error:
-
-    Returns:
-        document dict, with keys:
-            filename:
-            fileinfo:
-            raw_content: The whole file content.
-            md_content/content: The markdown part of the file
-                ('md_content' and 'content' are equivalent. I figured I may want to use this also
-                 for filetypes other than markdown text files).
-            meta: The YFM metadata.
-
-    """
-    if warn_yaml_scanner_error is None:
-        warn_yaml_scanner_error = WARN_YAML_SCANNER_ERROR
-    dirname, basename = os.path.split(fn)
-    fnroot, fnext = os.path.splitext(basename)
-    fileinfo = {
-        'filename': fn,
-        'dirname': dirname,
-        'basename': basename,
-        'fnroot': fnroot,
-        'fnext': fnext
-    }
-    with open(fn, 'r', encoding='utf-8') as fd:
-        raw_content = fd.read()
-    try:
-        yfm, md_content = parse_yfm(raw_content)
-    except yaml.scanner.ScannerError as exc:
-        if warn_yaml_scanner_error:
-            if warn_yaml_scanner_error == 'raise':
-                raise exc
-            print(f"WARNING: YAML ScannerError while parsing YFM of file {fn}.")
-        yfm = None
-        md_content = None
-
-    if add_fileinfo_to_meta and yfm is not None:
-        yfm.update(fileinfo)
-    document = {
-        'filename': fn,
-        'fileinfo': fileinfo,
-        'raw_content': raw_content,
-        # 'yfm_content': yfm_content,
-        'md_content': md_content,
-        'content': md_content,
-        'meta': yfm,
-    }
-    return document
 
 
 def pico_find_variable_placeholders(content, pat=r"%[\w\.]+%"):
@@ -191,9 +136,6 @@ def pico_find_variable_placeholders(content, pat=r"%[\w\.]+%"):
     res = pat.findall(content)
     print("type(res):", type(res))
     return set(res)  # Set to remove duplicates
-
-
-NODEFAULT = object()
 
 
 def get_attrs_string_value(dct, attrs, default=NODEFAULT):
@@ -232,7 +174,7 @@ def get_attrs_string_value(dct, attrs, default=NODEFAULT):
         return val
 
 
-def pico_variable_substitution(content, template_vars, errors='pass', varfmt="{sub}"):
+def substitute_pico_variables(content, template_vars, errors='pass', varfmt="{sub}"):
     """ Perform Pico-style %variable% substitution. """
     # variable members are available as %variable.attribute%
     # Two approaches:
@@ -262,44 +204,3 @@ def pico_variable_substitution(content, template_vars, errors='pass', varfmt="{s
             # sub can be e.g. lists or dicts; the format string can be customized for each variable.
             content = content.replace(placeholder, varfmt[varname].format(sub, var=sub, sub=sub))
     return content
-
-
-def load_all_documents(basedir='.', add_fileinfo_to_meta=True, exclude_if_missing_yfm=True):
-    """ Find all Markdown documents/journals (recursively) within a given base directory.
-
-    Args:
-        basedir: The directory to look for ELN documents/journals in.
-        add_fileinfo_to_meta: Whether to add fileinfo to the document's metadata (the parsed YFM).
-        exclude_if_missing_yfm: Exclude pages if they don't have YAML front-matter.
-
-    Returns:
-        List of documents (dicts).
-
-    """
-    files = find_md_files(basedir=basedir)
-    documents = []
-    for fn in files:
-        document = read_document(fn, add_fileinfo_to_meta=add_fileinfo_to_meta)
-        if document['meta'] is not None or not exclude_if_missing_yfm:
-            documents.append(document)
-    return documents
-
-
-def load_all_documents_metadata(basedir='.', add_fileinfo_to_meta=True, exclude_if_missing_yfm=True):
-    """ Find and load Markdown documents and extract YFM metadata.
-
-    Args:
-        basedir: The directory to find journals in.
-        add_fileinfo_to_meta: Whether to add fileinfo (e.g. filename, directory, etc).
-        exclude_if_missing_yfm: Exclude journals/files if they don't have any YAML front-matter.
-
-    Returns:
-        List of metadata dicts (as read from the document YFM).
-    """
-    documents = load_all_documents(
-        basedir=basedir, add_fileinfo_to_meta=add_fileinfo_to_meta, exclude_if_missing_yfm=exclude_if_missing_yfm)
-    # print("\n".join("{}: {}".format(j['filename'], type(j['meta'])) for j in journals))
-    metadata = [document['meta'] for document in documents]
-    return metadata
-
-

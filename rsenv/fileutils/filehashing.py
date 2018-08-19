@@ -50,3 +50,6 @@ def calculate_file_hash(
         return int.from_bytes(hashmethod.digest()[:8], byteorder='little')
     else:
         return hashmethod.digest()
+
+
+
