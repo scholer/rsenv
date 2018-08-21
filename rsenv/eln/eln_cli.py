@@ -3,7 +3,7 @@
 import inspect
 import click
 
-from rsenv.eln.eln_document_utils import print_journal_yfm_issues
+from rsenv.eln.eln_md_pico import print_document_yfm_issues
 from rsenv.eln.eln_exp_filters import print_started_exps, print_unfinished_exps
 
 
@@ -31,9 +31,9 @@ print_unfinished_exps_cli = click.Command(
 
 
 print_journal_yfm_issues_cli = click.Command(
-    callback=print_journal_yfm_issues,
-    name=print_journal_yfm_issues.__name__,
-    help=inspect.getdoc(print_journal_yfm_issues),
+    callback=print_document_yfm_issues,
+    name=print_document_yfm_issues.__name__,
+    help=inspect.getdoc(print_document_yfm_issues),
     params=[
         # click.Option(['--rowfmt'], default='{status:^10}: {expid:<10} {titledesc} (enddate={enddate})'),
         click.Argument(

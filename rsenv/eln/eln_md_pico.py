@@ -110,12 +110,7 @@ import yaml
 import yaml.scanner
 from collections import defaultdict
 
-from zepto_eln.md_utils.document_io import load_document, load_all_documents
-
-
-from rsenv.eln.eln_cli import print_journal_yfm_issues_cli
-from rsenv.eln.eln_yfm_utils import parse_yfm
-
+from zepto_eln.md_utils.document_io import load_all_documents_metadata
 
 REQUIRED_PICO_KEYS = ('title', 'description', 'author', )
 REQUIRED_EXP_KEYS = ('expid', 'titledesc', 'status', 'startdate', 'enddate', 'result')
@@ -204,3 +199,17 @@ def substitute_pico_variables(content, template_vars, errors='pass', varfmt="{su
             # sub can be e.g. lists or dicts; the format string can be customized for each variable.
             content = content.replace(placeholder, varfmt[varname].format(sub, var=sub, sub=sub))
     return content
+
+
+def print_document_yfm_issues(
+        basedir='.',
+        required_keys=REQUIRED_KEYS,
+):
+    """ Print journals that have YFM issues, e.g. missing YFM keys. """
+    required_keys = set(required_keys)
+    journals = load_all_documents_metadata(basedir=basedir, add_fileinfo_to_meta=True)
+    for meta in journals:
+        missing = required_keys.difference(meta.keys())
+        if missing:
+            print("FILE:", meta['filename'])
+            print(" - MISSING KEYS:", missing)
