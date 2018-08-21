@@ -1,9 +1,10 @@
-import inspect
-
-import click
 # Copyright 2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
 
-from rsenv.eln.eln_md_pico import load_all_documents_metadata, REQUIRED_KEYS
+import inspect
+import click
+
+from rsenv.eln.eln_md_pico import REQUIRED_KEYS
+from zepto_eln.md_utils.document_io import load_all_documents_metadata
 
 
 def get_started_exps(basedir='.', add_fileinfo_to_meta=True):

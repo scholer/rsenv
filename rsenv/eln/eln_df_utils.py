@@ -2,11 +2,10 @@
 
 import pandas as pd
 
-from rsenv.eln.eln_md_pico import load_all_documents_metadata
+from zepto_eln.md_utils.document_io import load_all_documents_metadata
 
 
-
-# Pandas DataFrame versions of the functions above (if you prefer the convenience of DataFrames):
+# Pandas DataFrame versions of the functions from document_io (if you prefer the convenience of DataFrames):
 
 def get_journals_metadata_df(basedir='.', add_fileinfo_to_meta=True):
     """ Get journal metadata as a Pandas DataFrame. """
