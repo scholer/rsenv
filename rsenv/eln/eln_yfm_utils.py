@@ -1,4 +1,4 @@
-# Copyright 2018 Rasmus Scholer Sorensen
+# Copyright 2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
 
 """
 
