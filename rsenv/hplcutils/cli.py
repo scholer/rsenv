@@ -27,11 +27,9 @@ from .chromviz import plot_chromatograms as plot_chromatograms_data
 logger = logging.getLogger(__name__)
 
 
-# TODO: Convert this to a single, unified HPLC visualization CLI
-# TODO: (rather than having separate CLIs for plotting chromatograms vs making pseudogel visualization)
 # TODO: Consider supporting glob-style input file patterns (on Windows).
 # TODO: Split this out so you have both a Click CLI command and a regular Python API function.
-# CLI, available as `hplc-to-pseudogel`
+# CLI, available as `hplc-cli`
 @click.command()
 @click.argument('cdf_files_or_dir', nargs=-1, type=click.Path(exists=True))  # Use nargs=-1 for many / '*'.
 @click.option('--fractions-file', nargs=1)  # , type=click.Path(exists=True, file_okay=True, dir_okay=False))
@@ -77,7 +75,7 @@ logger = logging.getLogger(__name__)
 @click.option('--save-annotations/--no-save-annotations', default=True)
 @click.option('--save-gaml/--no-save-gaml', default=True)
 @click.option('--verbose', '-v', count=True)
-def hplc_to_pseudogel_cli(
+def hplc_cli(
         # NOTE: I'm not sure it makes any sense to define default function values when the defaults
         # are actually specified in the click.option(...) decorators.
         cdf_files_or_dir,
@@ -155,13 +153,15 @@ def hplc_to_pseudogel_cli(
         nan_interpolation_method:
         baseline_correction: Perform this baseline correction to the signal before creating a lane from it.
         normalize: Normalize chromatograms.
-        gel_blur:
-        flip_v:
+        make_pseudogel: Enable pseudogel creation from the lane profiles.
+        gel_blur: Add this amount of gaussian blur filtering to the pseudogel.
+        flip_v: Flip the pseudogel vertically, so the most retarded species are at the top of the gel (like a PAGE gel).
         invert_image: Invert the gel. True means black bands on a white gel.
             For pyplot_show, this can also be controlled by specifying a reversed/inverted colormap, e.g. greys_r.
             But obviously that doesn't change the "clean", un-annotated pseudogel.
         contrast_percentiles: The contrast range in percentiles.
-        fnprefix: A constant prefix that can be used for filename formats.
+        fnprefix: A constant prefix, used as "{fnprefix}" variable when formatting output filenames.
+        selection_str: Change the "{selection_str}" variable using when formatting output filenames.
         outputfn: Save the generated pseudogel to this filename.
         pyplot_show: Show and annotate gel with pyplot.
         pyplot_show_adjusted: Use contrast-adjusted image when showing values with pyplot (is NOT quantitative).
@@ -170,6 +170,7 @@ def hplc_to_pseudogel_cli(
         pyplot_gel_fn: Save pyplot annotated gel figure under this filename.
         pyplot_fontsize: Font size to use when annotating gel with pyplot.
         plot_chromatograms: Plot chromatograms, as traditional line plots. Good for QA.
+        interactive_chromatograms_plot: Activate "interactive pyplot mode".
         chromatograms_outputfn: Save plotted chromatograms to this filename.
         print_samplenames: Print samplenames.
         save_annotations: Save the generated sample names to this file.
