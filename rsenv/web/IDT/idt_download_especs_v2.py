@@ -1,5 +1,20 @@
+# Copyright 2015-2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
 
 """
+
+Update: I've "generalized" this method by splitting it into two steps:
+
+1. A "generic_text_extractor_cli", which extracts the needed values from a text file,
+    e.g. order numbers in HTML copy/pasted from the orderstatus page.
+    Save the extracted values in a text file, e.g. `extracted_values.txt`.
+    Extraction settings are saved in a generic yaml file, e.g. `generic_text_extractor.yaml`
+
+2. A "generic_batch_downloader_cli", that, for each extracted value, and a given url format string,
+    uses the formatted url to download files.
+    Settings are saved in a generic yaml file, e.g. `generic_batch_downloader.yaml`
+    Settings include e.g. IDT cookies.
+
+* See `generic_text_extraction.py` and `generic_batch_download.py` modules.
 
 
 Update: IDT has switched to a completely javascript based frontend.

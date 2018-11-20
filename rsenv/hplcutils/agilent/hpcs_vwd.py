@@ -1,4 +1,5 @@
-# Copyright 2018 Rasmus S. Sorensen
+# Copyright 2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
+
 """
 
 Read HPLC chromatograms from HP/Agilent ChemStation variable-wavelength detector (VWD) data files.

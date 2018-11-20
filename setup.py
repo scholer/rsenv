@@ -1,6 +1,17 @@
 from distutils.core import setup
 
 
+"""
+
+Install or update from source, in editable mode:
+
+    cd <directory containing this setup.py file>
+    pip install -e .
+
+
+"""
+
+
 long_description = """
 
 Various tools/utilities and modules for work.
@@ -17,7 +28,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.4dev1',  # Update for each new version
+    version='0.2.6dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -53,8 +64,16 @@ setup(
             'csv-to-hdf5=rsenv.fileconverters.hdf5csv:csv_to_hdf5_cli',
             'hdf5-to-csv=rsenv.fileconverters.hdf5csv:hdf5_to_csv_cli',
             'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
+            # `sha256sum` is used by UNIX sha256sum.exe distributed with e.g. Git
+            'sha256sumsum=rsenv.utils.hash_utils:file_sha256sumsum_cli',
+            'sha256setsum=rsenv.utils.hash_utils:file_sha256setsum_cli',
+            'sequencesethash=rsenv.utils.hash_utils:file_sequencesethash_cli',
 
-            # sequences and cadnano:
+            # Text extraction and web batch downloader:
+            'generic_text_extractor_cli=rsenv.web.IDT.generic_text_extraction:generic_text_extractor_cli',
+            'generic_batch_downloader_cli=rsenv.web.IDT.generic_batch_download:generic_batch_downloader_cli',
+
+            # Sequences and cadnano:
             'cadnano_maptransformer=rsenv.seq.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
 
             # File indexing and duplication finder:
@@ -65,9 +84,11 @@ setup(
             'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',
             'eln-print-journal-yfm-issues=rsenv.eln.eln_md_pico:print_journal_yfm_issues_cli',
             'eln-md-to-html=rsenv.eln.eln_md_to_html:convert_md_file_to_html_cli',
-            # RsEnv utils:
+
+            # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
             'rsenv=rsenv.rsenv_cli:rsenv_cli',
+
         ],
         # 'gui_scripts': [
         #     'AnnotateGel=gelutils.gelannotator_gui:main',
@@ -94,7 +115,7 @@ setup(
         # 'openpyxl',  # Excel files package, required for xlsx-to-csv converter.
         # My own packages:
         'pptx-downsizer',
-        'gelutils',
+        # 'gelutils',  # I'm disabling this for now, since gelutils currently only works with old Pillow version.
         # 'rstodo',
         # 'git_status_checker',
         # 'zepto-eln-server',

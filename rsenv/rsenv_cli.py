@@ -1,3 +1,4 @@
+# Copyright 2018 Rasmus Scholer Sorensen, <rasmusscholer@gmail.com>
 
 
 import click
