@@ -28,7 +28,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.6dev1',  # Update for each new version
+    version='0.2.7dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -64,6 +64,7 @@ setup(
             'csv-to-hdf5=rsenv.fileconverters.hdf5csv:csv_to_hdf5_cli',
             'hdf5-to-csv=rsenv.fileconverters.hdf5csv:hdf5_to_csv_cli',
             'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
+
             # `sha256sum` is used by UNIX sha256sum.exe distributed with e.g. Git
             'sha256sumsum=rsenv.utils.hash_utils:file_sha256sumsum_cli',
             'sha256setsum=rsenv.utils.hash_utils:file_sha256setsum_cli',
@@ -72,6 +73,9 @@ setup(
             # Text extraction and web batch downloader:
             'generic_text_extractor_cli=rsenv.web.IDT.generic_text_extraction:generic_text_extractor_cli',
             'generic_batch_downloader_cli=rsenv.web.IDT.generic_batch_download:generic_batch_downloader_cli',
+
+            # Oligo-management:
+            'convert-IDT-espec-to-platelibrary-file-cli=rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
 
             # Sequences and cadnano:
             'cadnano_maptransformer=rsenv.seq.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',

@@ -1,4 +1,11 @@
 
+0.2.7:
+
+* Added module `rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file`
+  and setup.py CLI `convert_IDT_espec_to_platelibrary_file_cli`.
+* Renamed `click_cli_cmd_utils` module to `cli_cmd_utils` and 
+  `create_click_command` function to `create_click_cli_command`.
+
 0.2.6:
 
 * Added `generic_text_extraction` module and `generic_text_extractor_cli`, 

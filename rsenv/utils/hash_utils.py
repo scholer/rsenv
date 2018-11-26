@@ -34,7 +34,7 @@ import hashlib  # Use `hashlib.algorithms_available` to see available hashes.
 import click
 # import inspect
 
-from rsenv.utils.click_cli_cmd_utils import create_click_command
+from rsenv.utils.cli_cmd_utils import create_click_cli_command
 
 
 def sha256_digest(s):
@@ -189,5 +189,5 @@ def file_sequencesethash_cli(files, strip_eol=True, strip_whitespace=True, remov
         print(f"{hex_digest} *{file}")
 
 # Click CLI Commands:
-# file_sha256sumsum_cli = create_click_command(file_sha256sumsum)
-# file_sha256setsum_cli = create_click_command(file_sha256setsum)
+# file_sha256sumsum_cli = create_click_cli_command(file_sha256sumsum)
+# file_sha256setsum_cli = create_click_cli_command(file_sha256setsum)
