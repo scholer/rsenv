@@ -67,3 +67,6 @@ site/
 
 # Jupyter notebook autosaves:
 .ipynb_checkpoints
+
+# Ignoring Jupyter Notebooks, for now:
+*.ipynb
