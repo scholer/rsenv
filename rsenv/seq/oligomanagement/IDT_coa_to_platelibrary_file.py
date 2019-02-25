@@ -46,8 +46,8 @@ import os
 import sys
 import re
 # from types import Iterator, Optional
-from typing import Iterable, Optional, List
-from collections import OrderedDict, defaultdict
+# from typing import Iterable, Optional, List
+from collections import OrderedDict
 from pprint import pprint
 import pandas as pd
 import click
@@ -135,8 +135,8 @@ except AssertionError as exc:
     print("ERROR: library columns mis-match:")
     print(" - column_mapping_coa:\n", column_mapping_coa_keys)
     print(" - column_mapping_xlsx:\n", column_mapping_xlsx_keys)
-    print(" - columns in xlsx but not coa:\n", [c for c in column_mapping_xlsx_keys if c not in column_mapping_coa_keys])
-    print(" - columns in coa but not xlsx:\n", [c for c in column_mapping_coa_keys if c not in column_mapping_xlsx_keys])
+    print(" - cols in xlsx but not coa:\n", [c for c in column_mapping_xlsx_keys if c not in column_mapping_coa_keys])
+    print(" - cols in coa but not xlsx:\n", [c for c in column_mapping_coa_keys if c not in column_mapping_xlsx_keys])
     raise exc
 
 
@@ -149,7 +149,7 @@ def get_dna_sequence_nomods(seq, mod_regex=None):
     if mod_regex is None:
         mod_regex = IDT_MOD_REGEX
     seq = seq.replace(" ", "")
-    seq = IDT_MOD_REGEX.sub("", seq)
+    seq = mod_regex.sub("", seq)
     seq = "".join(CONVERT_BASE_TO_DNA.get(b, '') for b in seq)
     return seq
 
@@ -157,12 +157,13 @@ def get_dna_sequence_nomods(seq, mod_regex=None):
 def convert_idt_coa_to_platelibrary_tsv(
         *input_files: str,  # Note: You have to do this to create nice fire CLI, type annotations alone doesn't work.
         # output_file_format="{fnroot}.tsv",
+        # output_file_format: str="{plate_name}.tsv",
         # output_file_format="{order_number}-{plate_name}.tsv",
         # output_file_format="{vendor}-{order_number}.tsv",
         # output_file_format="{vendor}-{order_number}_{plate_name}.tsv",
-        output_file_format: str="{plate_name}.tsv",
         # output_file_format="{plate_name} ({vendor}-{order_number}).tsv",
         # output_file_format="{expid}_{date}_{vendor}-{order_number}_{plate_name}.tsv",
+        output_file_format: str="{plate_name} {date} {vendor}-{order-no}.tsv",
         plate_name: str="", vendor: str="IDT", date: str="", expid: str="", notes: str="", order_number: str="",
         overwrite: str='Ask',  # Specify answer for "overwrite column" question, e.g. 'Ask', 'No', 'Yes', 'Empty'
         use_filename_as_platename: bool=False,
@@ -205,7 +206,7 @@ def convert_idt_coa_to_platelibrary_tsv(
         log("Processing file:", input_file)
         absdirname = os.path.dirname(os.path.abspath(input_file))
         fnroot, fnext = os.path.splitext(input_file)
-        fnbase_no_ext =  os.path.basename(fnroot)
+        fnbase_no_ext = os.path.basename(fnroot)
         input_format = fnext.strip('.').lower()
         if use_filename_as_platename:
             plate_name = fnbase_no_ext
@@ -219,11 +220,21 @@ def convert_idt_coa_to_platelibrary_tsv(
         print("Column mapping:")
         pprint(column_mapping)
 
+        fmt_params = {
+            'input_file': input_file,
+            'absdirname': absdirname, 'fnroot': fnroot, 'fnext': fnext, 'fnbase_no_ext': fnbase_no_ext,
+            'plate_name': plate_name, 'vendor': vendor, 'order_number': order_number,
+            'date': date, 'expid': expid, 'notes': notes,
+            'group_by_plate': "group_by_plate" if group_by_plate else "",
+        }
+
         # FIXES:
+        # First, make sure the input dataframe has all the columns that we expect:
         for col, default_value in zip(
                 ('Plate-name', 'Vendor', 'Date', 'ExpID', 'Notes'),  # , 'Sales Order'),
                 (plate_name, vendor, date, expid, notes)  # , order_number)
         ):
+            col_pythonname = col.replace("-", "_").lower()
             if column_mapping[col] in input_df and default_value:
                 print(f"Warning: `{column_mapping[col]}` column is present in the input file, "
                       f"but a default value `{default_value}` was also provided.")
@@ -233,22 +244,29 @@ def convert_idt_coa_to_platelibrary_tsv(
                     answer = overwrite
                 if answer[0].lower() == 'y':
                     input_df[col] = default_value or ""
+                    fmt_params[col] = fmt_params[col_pythonname] = default_value
                 elif answer[0].lower() == 'e':  # overwrite empty values
                     def is_none_or_empty_string(val):
                         # Maybe we don't want 0 (zero) to be an "empty value", but only "" (empty stirng) and None
                         return val is None or val == ""
                     # We use a mask to access empty rows (cells):
                     input_df[col, input_df[col].map(is_none_or_empty_string)] = default_value
+                    fmt_params[col] = fmt_params[col_pythonname] = default_value
+                else:
+                    print("Using", repr(input_df[column_mapping[col]][0]),
+                          "as formatting value for column", repr(column_mapping[col]))
+                    fmt_params[col] = fmt_params[col_pythonname] = input_df[column_mapping[col]][0]
             else:
                 print(f"Adding column to input table: {col} = {default_value}")
                 input_df[col] = default_value or ""
+                fmt_params[col] = fmt_params[col_pythonname] = default_value
 
         def fix_seq(seq):
             return seq.strip().replace(" ", "")
         # For series, we use Series.map() for elementwise apply; for dataframes we use DataFrame.applymap()
-        input_df['Sequence'] = input_df['Sequence'].map(fix_seq)
+        input_df['Sequence'] = input_df['Sequence'].map(fix_seq)  # "Sequence" may include modifications, etc.
 
-        input_df['ATGC-Sequence'] = input_df['Sequence'].map(get_dna_sequence_nomods)
+        input_df['ATGC-Sequence'] = input_df['Sequence'].map(get_dna_sequence_nomods)  # "Pure" DNA base sequence.
 
         n_bases = input_df['ATGC-Sequence'].map(len)
         if column_mapping['Length'] in input_df:
@@ -262,7 +280,7 @@ def convert_idt_coa_to_platelibrary_tsv(
             print(f"'Length' column ('{column_mapping['Length']}') NOT present in input file, adding...")
             input_df[column_mapping['Length']] = n_bases
 
-        # Add additional oligo-plate-library fields:
+        # Add additional oligo-plate-library fields: (If these are in the column_mapping dict, they must be in input_df.
         input_df['Volume-used/ul'] = 0
         input_df['Status'] = ""  # "ok/depleted/dried-out/discarded"
 
@@ -272,15 +290,16 @@ def convert_idt_coa_to_platelibrary_tsv(
         grouped_df = output_df.groupby('Plate-name')
         if group_by_plate:
             for plate_name, df_group in grouped_df:
-                order_number = df_group['Order-number'][0]
-                output_filename = output_file_format.format(**locals())
+                fmt_params['plate_name'] = fmt_params['Plate-name'] = plate_name
+                fmt_params['order_number'] = fmt_params['Order-number'] = df_group['Order-number'][0]
+                output_filename = output_file_format.format(**fmt_params)
                 print("Output filename:", output_filename)
                 print(f"Exporting {len(output_df)} rows to file:", output_filename)
                 output_df.to_csv(output_filename, sep=sep, index=False)
         else:
-            plate_name = output_df['Plate-name'][0]
-            order_number = output_df['Order-number'][0]
-            output_filename = output_file_format.format(**locals())
+            fmt_params['plate_name'] = fmt_params['Plate-name'] = output_df['Plate-name'][0]
+            fmt_params['order_number'] = fmt_params['Order-number'] = output_df['Order-number'][0]
+            output_filename = output_file_format.format(**fmt_params)
             print("Output filename:", output_filename)
             print(f"Exporting {len(output_df)} rows to file:", output_filename)
             output_df.to_csv(output_filename, sep=sep, index=False)
