@@ -70,23 +70,29 @@ CONTEXT_SETTINGS = dict(
 @click.option('--min-query-selection', default=0, type=int,
               help="Raise an error if query-selections return less than this number of candidates. (Query debugging)")
 @click.option('--normalize/--no-normalize', default=False, help="Normalize the spectrograms before plotting.")
-@click.option('--normalize-to', default=None, type=int, help="Normalize the spectrograms at a specific wavelength.")
-@click.option('--normalize-range', nargs=2, type=int, help="Normalize, using the average value within a certain range.")
+@click.option('--normalize-to', default=None, type=int, metavar="NM-VALUE", help="Normalize the spectrograms at a specific wavelength.")
+@click.option('--normalize-range', nargs=2, type=int, metavar="LOWER UPPER", help="Normalize, using the average value within a certain range.")
 # Plotting options and styles:
-@click.option('--nm-range', nargs=2, type=int, help="The range of wavelengths (nm) to use (data slicing).")
+@click.option('--nm-range', nargs=2, type=int, metavar="MIN MAX", help="The range of wavelengths (nm) to use (data slicing).")
 # @click.option('--AU-range', nargs=2, type=int, help="The range of absorbance values (AU/cm) to use.")
-@click.option('--xlim', '-x', nargs=2, type=int, help="Limit the plot to this x-axis range.")
-@click.option('--ylim', '-y', nargs=2, type=int, help="Limit the plot to this y-axis range.")
+@click.option('--xlim', '-x', nargs=2, type=int, metavar="XMIN XMAX", help="Limit the plot to this x-axis range.")
+@click.option('--ylim', '-y', nargs=2, type=int, metavar="YMIN YMAX", help="Limit the plot to this y-axis range.")
 @click.option('--linestyles', '-l', multiple=True,
-              help="The line style(s) to use when plotting. Will be combined combinatorically with colors.")
+              help="The line style(s) to use when plotting. Will be combined combinatorically with colors."
+              " Click options doesn't support an undefined number of values per option,"
+              " so linestyles, colors, and markers must be given multiple times, once for each color."
+              " Example: ` -l '-' -l ':', -l '--' `."
+              " See https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html for linestyle reference.")
 @click.option('--colors', '-c', multiple=True,
-              help="The color(s) to use when plotting. Will be combined combinatorially with line styles.")
+              help="The color(s) to use when plotting. Will be combined combinatorially with line styles."
+              " Example: `-c r -c #DD8833` to use red and orange lines.")
 @click.option('--markers', multiple=True,
-              help="The marker(s) to use when plotting. Will be combined combinatorially with other styles.")
+              help="The marker(s) to use when plotting. Will be combined combinatorially with other styles."
+              ' Example: ` --markers "" --markers . --markers 1 --markers + `')
 @click.option('--style-combination-order', nargs=3, default=('linestyle', 'color', 'marker'),
               help="The order in which linestyles, colors, and markers are combinatorically combined.")
 @click.option('--mpl-style', help="Use this matplotlib style.")
-@click.option('--figsize', nargs=2, type=float, help="Figure size.")
+@click.option('--figsize', nargs=2, type=float, metavar="WIDTH HEIGHT", help="Figure size (width, height).")
 @click.option('--use-seaborn/--no-use-seaborn', default=False, help="Import seaborn color/style schemes.")
 @click.option('--tight-layout/--no-tight-layout', '-t', default=None,
               help="If given, invoke `tight_layout()` before saving the figure.")
@@ -338,6 +344,9 @@ def plot(
                 print("\n".join(f"  {i:2} {n}" for i, n in zip(selected_idxs, selected_cols)))
         else:
             selected_cols = None
+
+        print("Plotting, using fig_kwargs:")
+        print(fig_kwargs)
 
         ax = denovix.plot_nanodrop_df(
             df=df, selected_columnnames=selected_cols,

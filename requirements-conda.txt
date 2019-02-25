@@ -10,3 +10,6 @@ pytables
 biopython
 matplotlib
 click
+pytz
+python-dateutil
+parsedatetime

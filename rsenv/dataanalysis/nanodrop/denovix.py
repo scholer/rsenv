@@ -243,12 +243,20 @@ def plot_nanodrop_df(
         user_vars['normstr'] = f'_normalized'
     else:
         user_vars['normstr'] = f'_absorbance'
+
+    # The `style` argument to pandas.plot() is a list of "b-" matplotlib "line style" strings, one string per column.
+    # However, matplotlib style strings doesn't support hex colors, only single-letter "rgbcmykw".
+    # For that reason, if `styles` is given, we plot manually, rather than using df.plot().
     if styles:
         if ax is None:
             # fig = matplotlib.figure.Figure()  # If you do this, you need to hook up the backend manually :-/
             from matplotlib import pyplot  # Use pyplot API instead..
+            print("Creating new figure using fig_kwargs:")
+            print(fig_kwargs)
             fig = pyplot.figure(**fig_kwargs)
             print("new figure:", fig)
+            print("Adding new axes/subplot using axes_kwargs:")
+            print(axes_kwargs)
             ax = fig.add_subplot(111, **axes_kwargs)
             print("new axes:", ax)
         for col, style in zip(df, styles):
@@ -256,7 +264,20 @@ def plot_nanodrop_df(
             style.update(plot_kwargs)
             ax.plot(s.index, s.values, label=col, **style)  # style: dict with 'linestyle',
     else:
-        ax = df.plot(style=styles, **plot_kwargs)
+        # Differentiating between "plot_kwargs", "fig_kwargs", and "axes_kwargs" is a paint...
+        # Make a combined "plot_kwargs" for df.plot:
+        dfplot_kwargs = plot_kwargs.copy()
+        for d in (axes_kwargs, fig_kwargs):
+            for k, v in d.items():
+                if v is not None:
+                    dfplot_kwargs.setdefault(k, v)
+        # Convert the styles from dict to matplotlib style strings:
+        # styles = [f"{d[color]}{d[line]}{d[marker]}" for d in styles]
+        # Oh, but colors are often in hex form, not just "b" or "r", which makes it impossible to specify properly.
+        # So, for this reason, if we need to use styles, we have to go the route above.
+        print("Plotting dataframe using df.plot dfplot_kwargs:")
+        print(dfplot_kwargs)
+        ax = df.plot(**dfplot_kwargs)
 
     if ylim:
         ax.set_ylim(*ylim)
