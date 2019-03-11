@@ -230,7 +230,7 @@ def read_vwd_fh(f, *, reset_xmin_xmax=False, time_unit='minutes'):
     """ Read vwd data from open file or file-like object.
 
     Args:
-        f: Open file.
+        f: Open file handle to read VWD data from.
         reset_xmin_xmax: Generate timepoints with linspace(0.0, total_time, n_datapoints),
             instead of linspace(xmin, xmax, n_datapoints), to mitigate minor differences in
             the start time between runs.
@@ -249,8 +249,8 @@ def read_vwd_fh(f, *, reset_xmin_xmax=False, time_unit='minutes'):
 
     xmin, xmax = read_xmin_xmax(f, unit=time_unit)
     total_time = xmax - xmin
-    print("xmin (minutes):", xmin)
-    print("xmax (minutes):", xmax)
+    print(f"xmin ({time_unit}):", xmin)
+    print(f"xmax ({time_unit}):", xmax)
     print("total time:    ", total_time)
 
     # f.seek(FILE_ADDRS['signal_stepsize'])

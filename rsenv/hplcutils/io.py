@@ -253,10 +253,12 @@ def load_hplc_aia_xr_datasets(aia_dir, concat=True, use_dask=False):
     return datasets
 
 
+# TODO: Split this function out into one that loads the timeseries, and another that creates a dataframe.
 def load_hplc_aia_xr_dataframe(
         cdf_files_or_aia_dir,
         runname_fmt="{i:02} {ds.sample_name}",
         selection_query=None, selection_method="glob", sort_columns=False,
+        reset_xmin_xmax=False,
         convert_to_actual_time=False, convert_seconds_to_minutes=True,
         nan_correction='dropna', nan_fill_value=0, nan_interpolation_method='linear',
         signal_range_crop=None,
@@ -267,6 +269,9 @@ def load_hplc_aia_xr_dataframe(
     Args:
         cdf_files_or_aia_dir: Either (a) AIA directory containing the exported HPLC .cdf files,
             or (b) a list of individual CDF files to load.
+        reset_xmin_xmax: Generate timepoints with linspace(0.0, total_time, n_datapoints),
+            instead of linspace(xmin, xmax, n_datapoints), to mitigate minor differences in
+            the start time between runs.
         convert_to_actual_time: Convert x-axis index to actual time (seconds). Otherwise is just range 0..N.
         convert_seconds_to_minutes: Convert time axis from seconds to minutes.
         verbose: Higher = more verbose information printing during data loading.
@@ -322,7 +327,7 @@ def load_hplc_aia_xr_dataframe(
             print(f"Reading {fpath!r} as a raw Agilent HPLC data file...")
             # Raw Agilent ChemStation VWD .ch hplc data file
             from .agilent.hpcs_vwd import read_agilent_1200_vwd_ch
-            data = read_agilent_1200_vwd_ch(fpath, time_unit=time_unit)
+            data = read_agilent_1200_vwd_ch(fpath, time_unit=time_unit, reset_xmin_xmax=reset_xmin_xmax)
             ts = pd.Series(data=data['signal_values'], index=data['timepoints'])
             ts.index.name = f"Time / {time_unit}"
             print(f"- Formatting series/column name using runname_fmt {runname_fmt!r}")
@@ -341,6 +346,7 @@ def load_hplc_aia_xr_dataframe(
                         print("- Sampling interval: {:0.03f} s".format(float(ds['actual_sampling_interval'])))
                         print("- Run length       : {:0.02f} min".format(float(ds['actual_run_time_length'])/60))
                         print("- Number of points :", len(ds.point_number))
+                # TODO: Support for
                 ts = ds['ordinate_values'].to_series()
                 if convert_to_actual_time:
                     ts.index *= float(ds.actual_sampling_interval)
@@ -355,7 +361,9 @@ def load_hplc_aia_xr_dataframe(
                     ds=ds,  # In case the user wants to use any of the other dataset attributes e.g. 'ds.operator'.
                 )
         series[columnname] = ts
+
     # Create DataFrame:
+    # TODO: How does Pandas deal with timeseries with differing indexes?
     df = pd.DataFrame(data=series)
 
     # Crop signal range (time axis), and select columns if we have a query selection request.

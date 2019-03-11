@@ -5,6 +5,7 @@ import itertools
 from collections import Counter, OrderedDict, defaultdict
 import yaml
 import click
+import pandas as pd
 
 from rsenv.dataanalysis.nanodrop import denovix
 from rsenv.utils.query_parsing import translate_all_requests_to_idxs
@@ -37,6 +38,15 @@ from rsenv.utils.query_parsing import translate_all_requests_to_idxs
 
 """
 
+unit_prefixes = {
+    'm': 1_000,
+    'u': 1_000_000,
+    'µ': 1_000_000,
+    'n': 1_000_000_000,
+    'p': 1_000_000_000_000,
+    'f': 1_000_000_000_000_000,
+}
+
 # From http://click.pocoo.org/6/arguments/:
 # Click will not attempt to document arguments for you and wants you to document them manually (...).
 
@@ -58,9 +68,9 @@ CONTEXT_SETTINGS = dict(
                    "You can specify as many user-vars as you want, "
                    "and each user-var name can be specified multiple times to loop over the different variations.")
 # Dataset naming and selection:
-@click.option('--header_fmt',
-              help="A python format string used to generate DataFrame column headers "
-                   "using metadata fields from the file.")
+@click.option('--header-fmt',
+              help="A python format string used to generate DataFrame column headers using metadata fields from the "
+                   'input file. To only include Sample Name, use `--header-fmt "{Sample Name}"')
 @click.option('--query-match-method', default='glob',
               help="How to query select the data sets to plot (matching against the generated header). "
                    "Options: 'glob', 'regex', 'full-word', 'exact', 'contains', etc. Default: glob.")
@@ -70,10 +80,13 @@ CONTEXT_SETTINGS = dict(
 @click.option('--min-query-selection', default=0, type=int,
               help="Raise an error if query-selections return less than this number of candidates. (Query debugging)")
 @click.option('--normalize/--no-normalize', default=False, help="Normalize the spectrograms before plotting.")
-@click.option('--normalize-to', default=None, type=int, metavar="NM-VALUE", help="Normalize the spectrograms at a specific wavelength.")
-@click.option('--normalize-range', nargs=2, type=int, metavar="LOWER UPPER", help="Normalize, using the average value within a certain range.")
+@click.option('--normalize-to', default=None, type=int, metavar="NM-VALUE",
+              help="Normalize the spectrograms at a specific wavelength.")
+@click.option('--normalize-range', nargs=2, type=int, metavar="LOWER UPPER",
+              help="Normalize, using the average value within a certain range.")
 # Plotting options and styles:
-@click.option('--nm-range', nargs=2, type=int, metavar="MIN MAX", help="The range of wavelengths (nm) to use (data slicing).")
+@click.option('--nm-range', nargs=2, type=int, metavar="MIN MAX",
+              help="The range of wavelengths (nm) to use (data slicing).")
 # @click.option('--AU-range', nargs=2, type=int, help="The range of absorbance values (AU/cm) to use.")
 @click.option('--xlim', '-x', nargs=2, type=int, metavar="XMIN XMAX", help="Limit the plot to this x-axis range.")
 @click.option('--ylim', '-y', nargs=2, type=int, metavar="YMIN YMAX", help="Limit the plot to this y-axis range.")
@@ -82,7 +95,7 @@ CONTEXT_SETTINGS = dict(
               " Click options doesn't support an undefined number of values per option,"
               " so linestyles, colors, and markers must be given multiple times, once for each color."
               " Example: ` -l '-' -l ':', -l '--' `."
-              " See https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html for linestyle reference.")
+              " See https://matplotlib.org/gallery/lines_bars_and_markers/line_styles_reference.html for reference.")
 @click.option('--colors', '-c', multiple=True,
               help="The color(s) to use when plotting. Will be combined combinatorially with line styles."
               " Example: `-c r -c #DD8833` to use red and orange lines.")
@@ -268,7 +281,7 @@ def plot(
     if showplot is None:
         showplot = yamlconfig.get('showplot', False)
     if header_fmt is None:
-        header_fmt = yamlconfig.get('header_fmt', "{Sample Name}-{Sample Number}")
+        header_fmt = yamlconfig.get('header_fmt', "{Sample Number:>2} {Sample Name}")  # OBS: Sample Number is str.
     if not query:
         query = yamlconfig.get('query_list')
     if not nm_range:
@@ -374,7 +387,6 @@ def plot(
     '--header-fmt', default="{Sample Name}-{Sample Number}",
     help="Format the DataFrame column names/headers with this format string using metadata fields from the file."
 )
-@click.option('--extinction', '-e', default=None, nargs=2)
 @click.option('--verbose', '-v', count=True, help="The verbosity with which information is printed during execution.")
 @click.option('--query-match-method', default='glob',
               help="How to query select the nanodrop data set to plot. Default: glob.")
@@ -385,11 +397,9 @@ def plot(
 @click.argument('query', nargs=-1)
 def ls(
         filepath,
-        header_fmt="{Sample Name}-{Sample Number}",  # how to generate column names
+        header_fmt="{Sample Name}-{Sample Number}",  # how to generate measurement/column headers
         print_fmt="       {meta['Sample Number']:>3} \t{meta['Sample Name']:20} \t{header:30}",
         report_header_fmt=None,
-        extinction=None,  # two-tuple of (wavelength, ext-coeff) in (nm, AU/cm/M)
-        pathlength=0.1,  # Light path, in cm.
         query=None, query_match_method="glob",
         query_include_method='extend-unique',
         query_exclude_method='list-remove',
@@ -399,14 +409,17 @@ def ls(
 ):
     """ Print/list information about sample data in a Nanodrop file.
 
+    OBS: This command was changed to make it more simple. Use `report` for advanced usage (concentration calc, etc.)
+    Differences between `ls` and `report`:
+        `ls` supports custom `print-fmt` and `header-fmt`; `report` uses a standard table layout format.
+        `report` supports `extinction` (wavelength, ext.coeff) arguments to extract absorbance
+            values and calculate concentrations; `ls` does not.
+
     Args:
         filepath: The nanodrop file to list information from.
         header_fmt: How to generate dataframe column names (column headers).
         print_fmt: How to print information for each sample (python format string).
         report_header_fmt: Add this header on top of the reported list.
-        extinction: Provide sample extinction (wavelength, ext. coeff) tuple,
-            and the program will calculate concentration (M, mM, uM).
-        pathlength: The pathlength (light path) used when acquiring the data, in cm. Typically 0.1 cm for Nanodrop.
         query: Only list samples matching these selection queries.
         query_match_method: The query matching method used. Default is glob, which allows wildcards, e.g "RS511*".
         query_include_method: How to merge idxs for each request with the existing idxs list from preceding requests.
@@ -483,15 +496,157 @@ Sample Number:\tSample Name:           \tHeader/Legend: (generated with `header-
         A = values = df[header]  # All absorbance values
         # print(f"df[{header!r}]:")
         # print(df[header])
-        if extinction:
-            wavelength, ext_coeff = tuple(map(float, extinction))
-            AU = values[wavelength]  # The specific absorbance value at the given wavelength.
-            c = conc = M = AU / ext_coeff / pathlength  # A = ext * c * L  <=> c = A / c / L
-            mM = M * 1_000
-            uM = M * 1_000_000
         # fmtdict = dict(header=header, meta=meta, values=values, A=values, c=conc, M=conc, mM=mM, uM=uM, AU=AU)
         # click.echo(print_fmt.format(**fmtdict))
         click.echo(print_fmt.format(**locals()))
+
+
+@click.command(help="Report samples in a Nanodrop/Denovix data file.")
+@click.argument('filepath', type=click.Path(exists=True))  # Do not provide help to arguments only options.
+@click.option('--output-format', '-f', default='text')
+# @click.option('--output-destination', '-o', default='-')
+@click.option(
+    '--header-fmt', default="{Sample Name}-{Sample Number}",
+    help="Format the DataFrame column names/headers with this format string using metadata fields from the file."
+)
+@click.option('--wavelength', '-w', default=None, type=int, multiple=True,
+              help="Specify a wavelength for which to include absorbance on in the report. See also `--extinction`."
+              "Can be given multiple times to report at multiple wavelengths, e.g. `-w 230 -w 260 -w 280 -w 310`.")
+@click.option('--extinction', '-e', default=None, type=(int, float), multiple=True,
+              help="Provide extinction tuples (wavelength, ext. coeff), and the report will calculate concentrations."
+              "Can be given multiple times to report at multiple wavelengths, e.g. `-e 230 8000 -e 260 10000`")
+@click.option('--concentration-units', '-u', default=['mM', 'uM'], multiple=True,
+              help="The units in which to report concentrations."
+              "Can be given multiple times to report at multiple units, e.g. `-u mM -u uM`")
+@click.option('--verbose', '-v', count=True, help="The verbosity with which information is printed during execution.")
+@click.option('--query-match-method', default='glob',
+              help="How to query-select the nanodrop data sets to include. Default: glob.")
+@click.option('--query-include-method', default='extend-unique',
+              help="How to build/merge the list of selected samples for each query. "
+                   "Default: 'extend-unique'. Alternatively: 'set-sorted' (for sorted idxs list).")
+@click.option('--min-query-selection', default=0, type=int,
+              help="Raise an error if the query selection returns less than this number. "
+                   "Can be used to debug and prevent accidental querying errors, especially in batch operations.")
+@click.argument('query', nargs=-1)
+def report(
+        filepath,
+        header_fmt="{Sample Name}-{Sample Number}",  # how to generate column names
+        output_format='text',  # Text or HTML.
+        wavelength=None,
+        extinction=None,  # list of two-tuples with (wavelength, ext-coeff) floats in (nm, AU/cm/M)
+        concentration_units=('mM', 'uM'),
+        pathlength=1,  # Light path, in cm.
+        query=None, query_match_method="glob",
+        query_include_method='extend-unique',
+        query_exclude_method='list-remove',
+        min_query_selection=0,
+        verbose=0,
+):
+    """ Print a report with information about sample/measurements in a Nanodrop/Denovix file.
+
+    Args:
+        filepath: The nanodrop file to list information from.
+        header_fmt: How to generate dataframe column names/headers based on metadata (Sample Name, Sample Number, etc.)
+        output_format: The format to output to, e.g. text or HTML.
+        wavelength: A list of wavelength for which to include absorbance on in the report.
+        extinction: Provide sample extinction (wavelength, ext. coeff) tuple,
+            and the program will calculate concentration (M, mM, uM).
+        concentration_units: The units to report the concentration in (e.g. 'M', 'mM', 'uM', etc).
+        pathlength: The pathlength (light path) used when acquiring the data, in cm. Typically 0.1 cm for Nanodrop.
+        query: Only list samples matching these selection queries.
+        query_match_method: The query matching method used. Default is glob, which allows wildcards, e.g "RS511*".
+        query_include_method: How to merge idxs for each request with the existing idxs list from preceding requests.
+        query_exclude_method: How to remove idxs for negative selection requests (starting with minus-hyphen).
+            Queries are processed sequentially, and supports '-' prefix to negate the selection,
+            and special 'all' keyword, e.g.
+                ["all", "-John*", "John Hancock"]
+            to select all people except if their name starts with John, although do include John Hancock.
+        min_query_selection:
+        verbose: The verbosity with which to print informational messages during execution.
+
+    Returns:
+        None (all output is done to stdout).
+
+    Examples:
+
+        $ nanodrop-cli ls UVvis_merged.csv -e 290 12500 -v -v \
+            --print-fmt "{meta[Sample Number]:2}\t {meta[Sample Name]:16}\t {A[290]: 6.3f}  {uM: 5.0f}"  \
+            --report-header-fmt "#:\t Sample Name     \t  A290 \t    uM\n----------------------------------------------"
+            "RS531*" "*dUTP" "KCl*"
+
+    Notes:
+
+        As always, you can use '--' to separate options and arguments, if you need to input arguments
+        that looks like options (e.g. starts with '-').
+
+    See also:
+
+        * `ls` to list samples from a Nanodrop file (a simpler version of `report`).
+
+    """
+    if concentration_units is None or concentration_units == ():
+        concentration_units = ['mM', 'uM']
+
+    df, metadata = denovix.csv_to_dataframe(filepath, header_fmt=header_fmt)
+    if query:
+        selected_idxs = translate_all_requests_to_idxs(
+            query, candidates=df.columns, match_method=query_match_method,
+            include_method=query_include_method, exclude_method=query_exclude_method,
+            min_query_selection=min_query_selection,
+        )
+        selected_cols = [df.columns[idx] for idx in selected_idxs]
+        if verbose >= 2:
+            print("\nSelected idxs:", selected_idxs)
+            print("Selected cols:", selected_cols)
+            # print(df.iloc[:, 0:2])  # 0-based indexing; equivalent to df.loc[:, selected_cols]
+        assert len(selected_idxs) == len(set(selected_idxs))
+        df = df.iloc[:, selected_idxs]  # 0-based indexing; equivalent to df.loc[:, selected_cols]
+        # Also need to update metadata list:
+        metadata = [metadata[idx] for idx in selected_idxs]
+    report_df = pd.DataFrame(data={'Measurement-Header:': df.columns})
+    if extinction:
+        print(f"\nUsing path length L = {pathlength} cm for concentration calculations (`--pathlength`)...\n\n")
+    for wavelength in wavelength:
+        AU = df.loc[wavelength, :].values  # This produces a series; use pd.Series.values to get values.
+        abs_header, apl_header = f"A{wavelength}", f"A{wavelength}/cm"
+        AU_per_cm = AU / pathlength  # A/cm, pathlength in cm.
+        report_df[abs_header], report_df[apl_header] = AU, AU_per_cm
+    print("concentration_units:")
+    print(concentration_units)
+    for wavelength, ext_coeff in extinction:
+        AU = df.loc[wavelength, :].values  # This produces a series; use pd.Series.values to get values.
+        abs_header, apl_header, = f"A{wavelength}", f"A{wavelength}/cm"
+        AU_per_cm = AU / pathlength  # A/cm, pathlength in cm.
+        conc = AU_per_cm / ext_coeff  # In moles/L
+        report_df[abs_header], report_df[apl_header] = AU, AU_per_cm
+
+        for unit in concentration_units:
+            if len(unit) > 2:
+                raise ValueError(f"Unit {unit!r} not recognized.")
+            if unit == 'M':
+                factor = 1
+            else:
+                factor = unit_prefixes[unit[0]]
+            report_df[f"c_A{wavelength}/{unit}"] = conc * factor
+
+    # Table styling:
+    # https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_string.html
+    # pd.options.display.float_format = '{:,.2f}'.format  # Using the format() function of the string.
+    # Use `float_format` parameter to control how floats are printed,
+    # Use `formatters` to have per-column formats.
+
+    output_format = output_format.lower()
+    if output_format == "to_string":
+        click.echo(report_df.to_string(index=False, header=True))
+    elif output_format == "text":
+        import tabulate
+        # Other packages for pretty-printing tables include:
+        # beautifultable terminaltables tabulate prettypandas fixedwidth
+        click.echo(tabulate.tabulate(report_df, headers=report_df.columns, showindex=False))
+    elif output_format == "html":
+        click.echo(report_df.to_html(index=False, header=True))
+    else:
+        raise ValueError(f"`output_format` {output_format!r} not recognized.")
 
 
 @click.group()
@@ -501,6 +656,7 @@ def cli():  # context_settings=CONTEXT_SETTINGS
 
 cli.add_command(plot)
 cli.add_command(ls)
+cli.add_command(report)
 
 
 if __name__ == '__main__':

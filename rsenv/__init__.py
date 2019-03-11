@@ -43,3 +43,6 @@
 # run before anything else when the interactive interpreter is run.
 #import rlcompleter, readline
 #readline.parse_and_bind('tab:complete')
+
+
+__version__ = '0.2.8'

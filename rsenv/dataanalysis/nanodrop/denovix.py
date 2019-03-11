@@ -67,7 +67,8 @@ def csv_to_dataframe(filename, header_fmt="{Sample Name}-{Sample Number}",
         # datetime_hdr_idx = header.index('Sample Name')
         if values_start_idx is None:
             values_start_idx = next(idx for idx, fieldname in enumerate(header) if str_is_int(fieldname))
-            print(f"Wavelength values detected starting at column idx {values_start_idx}")
+            if verbose:
+                print(f"Wavelength values detected starting at column idx {values_start_idx}")
         x_vals = str_arr_to_int(header[values_start_idx:])
         # measurements = [{
         #     'metadata': dict(*zip(header[:values_start_idx], row[:values_start_idx])),

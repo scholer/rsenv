@@ -10,5 +10,6 @@ NetCDF
 pytables
 biopython
 matplotlib
-flask
+seaborn
+# flask
 click

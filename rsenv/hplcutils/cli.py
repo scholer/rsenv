@@ -12,7 +12,7 @@ import pathlib
 import numpy as np
 import yaml
 from matplotlib import pyplot
-import PIL.ImageOps
+import PIL.ImageOps  # For working with "pseudo-gel" visualization image.
 import logging
 try:
     import click_log
@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: Consider supporting glob-style input file patterns (on Windows).
 # TODO: Split this out so you have both a Click CLI command and a regular Python API function.
+# TODO: Add option to avoid using dataframes and just have a plain list of samples with t-y values.
 # CLI, available as `hplc-cli`
 @click.command()
 @click.argument('cdf_files_or_dir', nargs=-1, type=click.Path(exists=True))  # Use nargs=-1 for many / '*'.
@@ -41,6 +42,10 @@ logger = logging.getLogger(__name__)
 @click.option('--sort-columns/--no-sort-columns')
 @click.option('--convert-to-actual-time/--no-convert-to-actual-time', default=True)
 @click.option('--convert-seconds-to-minutes/--no-convert-seconds-to-minutes', default=True)
+@click.option('--reset-input-tmin-tmax/--no-reset-input-tmin-tmax', default=False,
+              help="Reset the sampling timepoints of the HPLC chromatograms."
+                   " This can help mitigate issues where minor differences in sampling time"
+                   " makes it difficult to have a unified dataframe with a single index.")
 @click.option('--crop-range', '-r', default=None, nargs=2, type=float)  # Defaults to empty tuple, not None.
 @click.option('--nan-correction', default='dropna')
 @click.option('--nan-fill-value', default=0)
@@ -85,6 +90,7 @@ def hplc_cli(
         selection_query=None,
         selection_method='glob',
         sort_columns=False,
+        reset_input_tmin_tmax=False,  # --reset-input-tmin-tmax
         signal_downsampling=20,
         crop_range=None,
         convert_to_actual_time=True,
@@ -142,6 +148,8 @@ def hplc_cli(
         selection_query:
         selection_method:
         sort_columns: Whether to sort columns (lexicographically, using column names produced by `runname_fmt`).
+        reset_input_tmin_tmax: Reset sampling timepoint of the input data to avoid issues caused by minor differences
+            in sampling start time. Passed to load_hplc_aia_xr_dataframe.
         signal_downsampling: Downsample the signal by this factor.
             The time resolution of HPLC chromatograms is often very high, typically tens of Hz.
             Without downsampling or cropping, the gel image would be very big, e.g. 18000 x 10000 pixels.
@@ -235,12 +243,13 @@ def hplc_cli(
     else:
         fractions_df = None
 
-    # Load CDF files in AIA dir as a Pandas DataFrame:
-    # TODO: Enable support for loading raw VWD.ch files.
+    # Load CDF files in AIA dir as a Pandas DataFrame (or, raw vwd1A.ch files):
+    # TODO: Support loading data as a list of timeseries, instead of dataframe, to avoid time-synchronization issues.
     df = load_hplc_aia_xr_dataframe(
         cdf_files_or_dir,
         runname_fmt=runname_fmt,
         selection_query=selection_query, selection_method=selection_method, sort_columns=sort_columns,
+        reset_xmin_xmax=reset_input_tmin_tmax,
         convert_to_actual_time=convert_to_actual_time, convert_seconds_to_minutes=convert_seconds_to_minutes,
         nan_correction=nan_correction, nan_fill_value=nan_fill_value, nan_interpolation_method=nan_interpolation_method,
         signal_range_crop=crop_range,

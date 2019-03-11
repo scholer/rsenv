@@ -28,7 +28,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.7dev1',  # Update for each new version
+    version='0.2.8',  # Update for each new version; also update rsenv.__version__ in __init__.py
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -108,6 +108,7 @@ setup(
         'scipy',
         'biopython',
         'matplotlib',
+        'seaborn',    # Used by rsenv.hplcutils.chromviz
         # 'svgwrite',
         # 'cffi',      # Cairo is only required to convert SVG files to PNG
         # 'cairocffi',
@@ -118,11 +119,12 @@ setup(
         'click',     # Easy creation of command line interfaces (CLI).
         # 'openpyxl',  # Excel files package, required for xlsx-to-csv converter.
         # My own packages:
+        # You may want to consider installing these first with `pip install -e <project dir>`.
         'pptx-downsizer',
         # 'gelutils',  # I'm disabling this for now, since gelutils currently only works with old Pillow version.
         # 'rstodo',
         # 'git_status_checker',
-        # 'zepto-eln-server',
+        # 'zepto-eln-server',  # required by rsenv.eln.eln_md_to_html.
     ],
     classifiers=[
         # How mature is this project? Common values are
