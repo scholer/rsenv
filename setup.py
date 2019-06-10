@@ -28,7 +28,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.7dev1',  # Update for each new version
+    version='0.3.0',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -71,8 +71,8 @@ setup(
             'sequencesethash=rsenv.utils.hash_utils:file_sequencesethash_cli',
 
             # Text extraction and web batch downloader:
-            'generic_text_extractor_cli=rsenv.web.IDT.generic_text_extraction:generic_text_extractor_cli',
-            'generic_batch_downloader_cli=rsenv.web.IDT.generic_batch_download:generic_batch_downloader_cli',
+            'generic-text-extractor=rsenv.web.generic_text_extraction:generic_text_extractor_cli',
+            'generic-batch-downloader=rsenv.web.generic_batch_download:generic_batch_downloader_cli',
 
             # Oligo-management:
             'convert-IDT-espec-to-platelibrary-file-cli=rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
