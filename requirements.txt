@@ -6,10 +6,6 @@ numpy
 scipy
 pandas
 xarray
-NetCDF
-pytables
-biopython
 matplotlib
 seaborn
-# flask
 click

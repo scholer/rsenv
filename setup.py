@@ -28,7 +28,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.2.8',  # Update for each new version; also update rsenv.__version__ in __init__.py
+    version='0.3.0',  # Update for each new version; also update rsenv.__version__ in __init__.py
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -84,10 +84,10 @@ setup(
             'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
 
             # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
-            'eln-print-started-exps=rsenv.eln.eln_md_pico:print_started_exps_cli',
-            'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',
-            'eln-print-journal-yfm-issues=rsenv.eln.eln_md_pico:print_journal_yfm_issues_cli',
-            'eln-md-to-html=rsenv.eln.eln_md_to_html:convert_md_file_to_html_cli',
+            'eln-print-started-exps=rsenv.eln.eln_cli:print_started_exps_cli',
+            'eln-print-unfinished-exps=rsenv.eln.eln_cli:print_unfinished_exps_cli',
+            'eln-print-journal-yfm-issues=rsenv.eln.eln_cli:print_journal_yfm_issues_cli',
+            'eln-md-to-html=rsenv.eln.eln_cli:convert_md_file_to_html_cli',
 
             # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
@@ -153,10 +153,11 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
 
         'Operating System :: MacOS',
         'Operating System :: Microsoft',

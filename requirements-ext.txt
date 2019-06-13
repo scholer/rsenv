@@ -1,0 +1,7 @@
+# NetCDF and pytables - for loading HPLC CDF/AIA files/directories.
+NetCDF
+pytables
+# Biopython - for calculating TM and other DNA/protein-related functions.
+biopython
+# Flask - for running ZeptoELN-Server.
+flask
