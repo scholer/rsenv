@@ -71,8 +71,8 @@ setup(
             'sequencesethash=rsenv.utils.hash_utils:file_sequencesethash_cli',
 
             # Text extraction and web batch downloader:
-            'generic_text_extractor_cli=rsenv.web.IDT.generic_text_extraction:generic_text_extractor_cli',
-            'generic_batch_downloader_cli=rsenv.web.IDT.generic_batch_download:generic_batch_downloader_cli',
+            'generic-text-extractor=rsenv.web.generic_text_extraction:generic_text_extractor_cli',
+            'generic-batch-downloader=rsenv.web.generic_batch_download:generic_batch_downloader_cli',
 
             # Oligo-management:
             'convert-IDT-espec-to-platelibrary-file-cli=rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
