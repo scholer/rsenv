@@ -84,10 +84,7 @@ setup(
             'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
 
             # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
-            'eln-print-started-exps=rsenv.eln.eln_cli:print_started_exps_cli',
-            'eln-print-unfinished-exps=rsenv.eln.eln_cli:print_unfinished_exps_cli',
-            'eln-print-journal-yfm-issues=rsenv.eln.eln_cli:print_journal_yfm_issues_cli',
-            'eln-md-to-html=rsenv.eln.eln_cli:convert_md_file_to_html_cli',
+            # These have been moved to zepto-eln-core package.
 
             # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
