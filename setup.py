@@ -28,7 +28,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.3.0',  # Update for each new version; also update rsenv.__version__ in __init__.py
+    version='0.4.0',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -86,6 +86,12 @@ setup(
             # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
             # These have been moved to zepto-eln-core package.
 
+            # Git commands:
+            'git-add-and-commit-to-branch=rsenv.git.git_clis:git_add_and_commit_to_branch',
+            'git-add-and-commit-to-branch-simple=rsenv.git.git_clis:git_add_and_commit_to_branch_script',
+            # Uh, is there a problem when there is two entry points with almost same name except one has -script?
+            # Yes, indeed! It seems entry points shouldn't end with `-script` - or at least not two different ones.
+
             # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
             'rsenv=rsenv.rsenv_cli:rsenv_cli',
@@ -115,13 +121,16 @@ setup(
         'pandas',    # General purpose reading/writing/plotting/manipulation of data.
         'click',     # Easy creation of command line interfaces (CLI).
         # 'openpyxl',  # Excel files package, required for xlsx-to-csv converter.
+        'gitpython',  # GitPython, for git add-commit scripts
+
         # My own packages:
         # You may want to consider installing these first with `pip install -e <project dir>`.
         'pptx-downsizer',
         # 'gelutils',  # I'm disabling this for now, since gelutils currently only works with old Pillow version.
         # 'rstodo',
         # 'git_status_checker',
-        # 'zepto-eln-server',  # required by rsenv.eln.eln_md_to_html.
+        # 'zepto-eln-server',
+        # 'zepto-eln-core',
     ],
     classifiers=[
         # How mature is this project? Common values are

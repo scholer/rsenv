@@ -1,3 +1,5 @@
+# Copyright 2018-2019 Rasmus Scholer Sorensen <rasmusscholer@gmail.com>
+
 """
 
 Simple script to convert IDT's "CoA" espec files to my standard plate library format:
