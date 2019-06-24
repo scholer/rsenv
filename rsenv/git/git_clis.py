@@ -21,14 +21,30 @@ import git
 
 
 @click.command()
-@click.option('--path', default='.')
-@click.option('--branch')
-@click.option('--msg-fmt', default="Commit, {date:%Y-%m-%d}.")
-@click.option('--show-status/--no-show-status', default=False)
-@click.option('--add-all/--no-add-all', default=False)
-@click.option('--dry-run/--no-dry-run', default=False)
-@click.option('--verbose/--no-verbose', default=True)
-@click.option('--pause/--no-pause', default=False)
+@click.option(
+    '--path', default='.',
+    help="The directory to invoke the commands in. Defaults to the current directory.")
+@click.option(
+    '--branch',
+    help="The branch to perform the operations on, defaulting to the currently checked out branch.")
+@click.option(
+    '--msg-fmt', default="Commit, {date:%Y-%m-%d}.",
+    help='The commit message - can include formatting variables. Default: "Commit, {date:%Y-%m-%d}.".')
+@click.option(
+    '--show-status/--no-show-status', default=False,
+    help="Show `git status` after adding files, before commit.")
+@click.option(
+    '--add-all/--no-add-all', default=False,
+    help="Add all files (including untracked files). Only files excluded by .gitignore will not be included.")
+@click.option(
+    '--dry-run/--no-dry-run', default=False,
+    help="Don't add or commit any files, just run the commands as though you would.")
+@click.option(
+    '--verbose/--no-verbose', default=True,
+    help="Enable verbose output when adding and committing files (includes diff of all added files!).")
+@click.option(
+    '--pause/--no-pause', default=False,
+    help="Pause at end of script (by waiting for user input).")
 def git_add_and_commit_to_branch_script(path='.', branch=None, msg_fmt="Commit, {date:%Y-%m-%d}.",
                                         show_status=False, add_all=False, dry_run=False, verbose=True, pause=False):
     """ Simple, subprocess-based version of `git_add_and_commit_to_branch` below.

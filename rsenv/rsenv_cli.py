@@ -23,9 +23,11 @@ import click
 # 'rsenv=rsenv.rsenv_cli:rsenv_cli',
 from rsenv.hplcutils.cli import hplc_cli
 from rsenv.hplcutils.rename_cdf_files import rename_cdf_files_cli
-from rsenv.eln.eln_md_to_html import convert_md_file_to_html_cli
-from rsenv.eln.eln_cli import print_started_exps_cli, print_unfinished_exps_cli, print_journal_yfm_issues_cli
 from rsenv.utils.clipboard import clipboard_image_to_file_cli
+
+# ELN CLIs moved to zepto-eln-core distribution package.
+# from rsenv.eln.eln_md_to_html import convert_md_file_to_html_cli
+# from rsenv.eln.eln_cli import print_started_exps_cli, print_unfinished_exps_cli, print_journal_yfm_issues_cli
 
 # MAKE SURE TO USE THE CLICK COMMAND ("*_cli") VERSIONS OF THE FUNCTIONS
 # (I often make both a CLI and a regular, non-CLI version of most functions.)
@@ -55,17 +57,15 @@ File conversion CLIs:
     'csv-to-hdf5=rsenv.fileconverters.hdf5csv:csv_to_hdf5_cli',
     'hdf5-to-csv=rsenv.fileconverters.hdf5csv:hdf5_to_csv_cli',
 
+Git commands/scripts:
+    'git-add-and-commit-to-branch=rsenv.git.git_clis:git_add_and_commit_to_branch',
+    'git-add-and-commit-to-branch-simple=rsenv.git.git_clis:git_add_and_commit_to_branch_script',
+
 Clipboard CLIs:
     'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
 
 Other file utilities:
     'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
-
-ELN CLIs: Print information about Pico/Markdown pages/files (based on the YAML header)
-    'eln-print-started-exps=rsenv.eln.eln_md_pico:print_started_exps_cli',
-    'eln-print-unfinished-exps=rsenv.eln.eln_md_pico:print_unfinished_exps_cli',
-    'eln-print-journal-yfm-issues=rsenv.eln.eln_md_pico:print_journal_yfm_issues_cli',
-    'eln-md-to-html=rsenv.eln.eln_md_to_html:convert_md_file_to_html_cli',
 
 RsEnv CLIs:
     'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
@@ -79,8 +79,16 @@ Actionista.todoist package:
     todoist-action-cli
     
 
+Zepto-ELN-core CLIs - Print information about Pico/Markdown pages/files (based on the YAML header):
+
+    eln-print-started-exps
+    eln-print-unfinished-exps
+    eln-print-journal-yfm
+    eln-md-to-html
+
+
 Zepto-ELN-server flask app:
-    
+
     cd <path/to/markdown/documents/root>
     set ZEPTO_ELN_SERVER_SETTINGS=\path\to\settings.cfg
     set FLASK_ENV=development
@@ -100,7 +108,7 @@ PPTX-downsizer: Reduce PowerPoint file size
     pptx-downsizer
     
 
-Git-status-checker:
+Git-status-checker: Report status of multiple git repositories (recursing through directories)
 
     git-status-checker
     
@@ -133,10 +141,10 @@ rsenv_cli.add_command(print_rsenv_help, name='help')
 rsenv_cli.add_command(hplc_cli, name='hplc-cli')
 rsenv_cli.add_command(rename_cdf_files_cli, name='hplc-rename-cdf-files')
 rsenv_cli.add_command(clipboard_image_to_file_cli, name='clipboard-image-to-file')
-rsenv_cli.add_command(convert_md_file_to_html_cli, name='eln-md-to-html')
-rsenv_cli.add_command(print_started_exps_cli, name='eln-print-started-exps')
-rsenv_cli.add_command(print_unfinished_exps_cli, name='eln-print-unfinished-exps')
-rsenv_cli.add_command(print_journal_yfm_issues_cli, name='eln-print-journal-yfm-issues')
+# rsenv_cli.add_command(convert_md_file_to_html_cli, name='eln-md-to-html')
+# rsenv_cli.add_command(print_started_exps_cli, name='eln-print-started-exps')
+# rsenv_cli.add_command(print_unfinished_exps_cli, name='eln-print-unfinished-exps')
+# rsenv_cli.add_command(print_journal_yfm_issues_cli, name='eln-print-journal-yfm-issues')
 
 
 if __name__ == '__main__':

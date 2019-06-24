@@ -86,7 +86,7 @@ setup(
             # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
             # These have been moved to zepto-eln-core package.
 
-            # Git commands:
+            # Git commands/scripts:
             'git-add-and-commit-to-branch=rsenv.git.git_clis:git_add_and_commit_to_branch',
             'git-add-and-commit-to-branch-simple=rsenv.git.git_clis:git_add_and_commit_to_branch_script',
             # Uh, is there a problem when there is two entry points with almost same name except one has -script?
