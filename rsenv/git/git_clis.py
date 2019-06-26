@@ -27,6 +27,34 @@ High-level libraries:
 * gitpython
     * https://github.com/gitpython-developers/GitPython
     * Uses gitdb.
+    * WARNING: Does not appear to support worktrees,
+        i.e. working inside a `reposotory.git` repo, which
+        uses `core.worktree` config to specify the worktree path.
+    * More references on the worktree issue:
+        * https://github.com/datalad/datalad/issues/753
+    * Actually, I think the core.worktree support has been added with this commit from Sep 28, 2018:
+        https://github.com/gitpython-developers/GitPython/commit/530ab00f28262f6be657b8ce7d4673131b2ff34a
+    * I'm currently using gitpython 2.1.11, released Jul 15, 2018. This is currently the most recent release,
+        so if I want to support core.worktree config option, I have to pip-install the latest git master from github.
+        pip install git+git@github.com:gitpython-developers/GitPython.git or maybe
+        pip install git+https://github.com/gitpython-developers/GitPython.git
+    * Workarounds:
+        1. Use a newer version of gitpython.
+        2. Monkey-patch the repo object?
+        3. Use dulwich?
+        4. For the script CLI, you only need gitpython for checking if the repository has staged changes.
+            You can also check this using a git shell command, e.g.:
+                `git diff --quiet --exit-code --cached`
+                gives nonzero exit code if there are outstanding changes staged.
+            subprocess.run() returns a CompletedProcess object with a `returncode` attribute.
+            In Windows CMD, check exit code with `echo %errorlevel%`.
+            By the way, `git diff --cached` is more reliable than `git diff-index`, since `git diff-index` may report
+            changes if the files have been touched but not actually changed.
+    * Does dulwich support worktrees?
+        * PR implementing worktree support: https://github.com/dulwich/dulwich/pull/454
+    * WARNING: "As GitPython is in maintenance mode, I won't be adding any new features."
+        from: https://github.com/gitpython-developers/GitPython/issues/344
+    * So, I guess that means gitpython is becoming obsolte?
 * gittle
     * https://github.com/FriendCode/gittle
     * Uses dulwich.
@@ -42,8 +70,15 @@ Git CLIs (prior art):
     * Git for Humans, Inspired by GitHub for Mac™.
     * Uses gitpython.
 
+* datalad
+    * https://github.com/datalad/datalad
+    * "Keep scientific data under control with git and git-annex http://datalad.org".
+    *
 
-Comparison:
+
+
+
+## Comparisons:
 
 Gittle:
 
@@ -102,39 +137,49 @@ However, it is required that the `-c key=value` option is before the `status` co
 import sys
 import os
 import subprocess
+import shlex
 import click
 from datetime import datetime
 import git
 
 
+def repo_has_uncommitted_staged_changes(path):
+    completed_proc = subprocess.run(shlex.split('git diff --quiet --exit-code --cached'))
+    # A non-zero exit code means it has staged, uncommitted changes:
+    return completed_proc.returncode != 0
+
+
 @click.command()
 @click.option(
-    '--path', default='.',
+    '--path', '-p', default=None, multiple=True,
     help="The directory to invoke the commands in. Defaults to the current directory.")
 @click.option(
-    '--branch',
+    '--branch', '-b',
     help="The branch to perform the operations on, defaulting to the currently checked out branch.")
 @click.option(
-    '--msg-fmt', default="Commit, {date:%Y-%m-%d}.",
+    '--msg-fmt', '-m', default="Commit, {date:%Y-%m-%d}.",
     help='The commit message - can include formatting variables. Default: "Commit, {date:%Y-%m-%d}.".')
 @click.option(
-    '--add-all/--no-add-all', default=False,
+    '--add-all/--no-add-all', '-A', default=False,
     help="Add all files (including untracked files). Only files excluded by .gitignore will not be included.")
 @click.option(
     '--show-status/--no-show-status', default=False,
     help="Show `git status` after adding files, before commit.")
 @click.option(
-    '--dry-run/--no-dry-run', default=False,
+    '--dry-run/--no-dry-run', '-n', default=False,
     help="Don't add or commit any files, just run the commands as though you would.")
 @click.option(
-    '--verbose/--no-verbose', default=True,
+    '--verbose/--no-verbose', '-v', default=True,
     help="Enable verbose output when adding and committing files (includes diff of all added files!).")
 @click.option(
-    '--pause/--no-pause', default=False,
+    '--pause/--no-pause', '-w', default=False,
     help="Pause at end of script (by waiting for user input).")
+@click.option(
+    '--pause-on-error/--no-pause-on-error', default=False,
+    help="Pause if errors are encountered during script (asking user to abort or continue).")
 def git_add_and_commit_script(
         path='.', branch=None, msg_fmt="Commit, {date:%Y-%m-%d}.",
-        add_all=False, show_status=False, dry_run=False, verbose=True, pause=False
+        add_all=False, show_status=False, dry_run=False, verbose=True, pause=False, pause_on_error=False,
 ):
     """ Add and commit changed files to branch in git repository.
     This is a simple, subprocess-based version of `git_add_and_commit_to_branch` below.
@@ -146,7 +191,7 @@ def git_add_and_commit_script(
     without hacking around too much with `gitpython`.
 
     Args:
-        path: The directory to invoke the commands in. Defaults to the current directory.
+        path: The directory (or directories) to invoke the commands in. Defaults to the current directory.
         branch: The branch to perform the operations on, defaulting to the currently checked out branch.
         msg_fmt: The commit message - can include formatting variables. Default: "Commit, {date:%Y-%m-%d}.".
         add_all: Add all files (including untracked files). Only files excluded by .gitignore will not be included.
@@ -160,61 +205,109 @@ def git_add_and_commit_script(
 
     TODO: Consider using the `sh` module to create the shell commands.
     """
-    original_dir = os.getcwd()
-    os.chdir(path)
-    absdir = os.path.realpath(path)
+    if not path:
+        path = ['.']
+    if isinstance(path, str):
+        path = [path]
     run_date = datetime.now()
-    print(
-        f"\n\n[{run_date:%Y-%m-%d %H:%m}] git-add-and-commit-to-branch-script started for repository: {absdir}",
-        file=sys.stderr
-    )
-    commit_msg = msg_fmt.format(date=datetime.now())
-    git_add_args = []  # verbose, dry-run.
-    git_commit_args = ['-m', commit_msg]
+    print(f"\n\n\n[{run_date:%Y-%m-%d %H:%m}] git-add-and-commit-script paths: {path}")
+    original_dir = os.getcwd()
 
-    if verbose:
-        git_add_args.append('--verbose')
-        # git_commit_args.append('--verbose')  # Verbose commit will show diffs for all committed files!
-    if dry_run:
-        git_add_args.append('--dry-run')
-        git_commit_args.append('--dry-run')
+    for repo_path in path:
+        repo = git.Repo(repo_path)
+        cfg = repo.config_reader()
+        core_worktree = cfg.get('core', 'worktree')
+        if core_worktree:
+            pass
+        os.chdir(repo_path)
+        absdir = os.path.realpath(repo_path)
+        run_date = datetime.now()
+        print("\n\n     - - - - - - - - - - - - - - - - - -      ")
+        print(
+            f"\n\n[{run_date:%Y-%m-%d %H:%m}] git-add-and-commit-script started for repository: {absdir}",
+            file=sys.stderr
+        )
+        commit_msg = msg_fmt.format(date=datetime.now())
+        git_add_args = []  # verbose, dry-run.
+        git_commit_args = ['-m', commit_msg]
 
-    if branch:
-        print(f"\nChecking out branch {branch!r} from repository '{absdir}'.", file=sys.stderr)
-        subprocess.run(['git', 'checkout', branch], shell=True, check=True)
+        if verbose:
+            git_add_args.append('--verbose')
+            # git_commit_args.append('--verbose')  # Verbose commit will show diffs for all committed files!
+        if dry_run:
+            git_add_args.append('--dry-run')
+            git_commit_args.append('--dry-run')
 
-    if add_all:
-        git_add_args.append('--all')
-    else:
-        git_add_args.append('--update')
+        if branch:
+            git_checkout_cmd = ['git', 'checkout', branch]
+            if branch not in repo.heads:
+                print(f"\nWARNING: branch '{branch}' not present in repository '{absdir}'")
+                ans = input(
+                    f"Would you like to [skip] this repository, [abort] run, or [create] this branch? [S/a/c] "
+                ).lower() or 's'
+                if ans[0] == 'a':
+                    print(" - OK, ABORTING RUN.")
+                    exit(1)
+                elif ans[0] == 'c':
+                    print(f" - OK, will create branch '{branch}'.")
+                    git_checkout_cmd = ['git', 'checkout', '-b', branch]
+                elif ans[0] == 's':
+                    print(" - OK, Skipping repository {absdir}.")
+                    continue
+                else:
+                    print("Answer not recognized; skipping.")
+                    continue
+            print(f"\nChecking out branch {branch!r} from repository '{absdir}'.", file=sys.stderr)
+            try:
+                # Checking out the already-active branch will just give output "Already on 'daily_commits'".
+                subprocess.run(git_checkout_cmd, shell=True, check=True)
+            except subprocess.CalledProcessError as exc:
+                print(f"Error checking out branch '{branch}': {exc}")
+                print(" - ")
+                if pause_on_error:
+                    ans = input("Press Enter to continue. Press 'a'+enter or Ctrl+c to abort...")
+                    if ans and ans.lower()[0] == 'a':
+                        exit(exc.returncode or 1)
+                else:
+                    raise exc
 
-    print(
-        f"\nAdding files to the index of branch '{branch}' in '{absdir}' using args `{' '.join(git_add_args)}` ...",
-        file=sys.stderr
-    )
-    subprocess.run(['git', 'add'] + git_add_args, shell=True, check=True)
+        if add_all:
+            git_add_args.append('--all')
+        else:
+            git_add_args.append('--update')
 
-    if show_status:
-        # --untracked-files=all can also be written -uall.
-        # git status --verbose also does a diff on staged files.
-        print("\nStatus:", file=sys.stderr)
-        subprocess.run(['git', 'status', '--untracked-files=all'], shell=True, check=True)
+        print(
+            f"\nAdding files to the index of branch '{branch}' in '{absdir}' using args `{' '.join(git_add_args)}`.",
+            file=sys.stderr
+        )
+        subprocess.run(['git', 'add'] + git_add_args, shell=True, check=True)
 
-    # OBS: We should check if there actually is anything to commit,
-    # otherwise, `git-commit will yield an error.
-    repo = git.Repo(path)
-    # repo.index.diff()  # will diff the index against itself, yielding an empty diff.
-    # repo.index.diff(None)  # will diff the index against the working tree.
-    # repo.index.diff('HEAD')  # will diff the index against the current HEAD.
-    # We have just added all changes to the index, so we are diffing the stage against the HEAD.
-    if repo.index.diff('HEAD'):
-        print(f"\nCommitting {'to branch ' + branch if branch else ''} in {absdir}: \"{commit_msg}\"", file=sys.stderr)
-        subprocess.run(['git', 'commit']+git_commit_args, shell=True, check=True)
-    else:
-        print("\nNo changes staged for commit on the index; skipping commit.", file=sys.stderr)
+        if show_status:
+            # --untracked-files=all can also be written -uall.
+            # git status --verbose also does a diff on staged files.
+            print("\nStatus:", file=sys.stderr)
+            subprocess.run(['git', 'status', '--untracked-files=all'], shell=True, check=True)
+
+        # OBS: We should check if there actually is anything to commit,
+        # otherwise, `git-commit will yield an error.
+        # repo.index.diff()  # will diff the index against itself, yielding an empty diff.
+        # repo.index.diff(None)  # will diff the index against the working tree.
+        # repo.index.diff('HEAD')  # will diff the index against the current HEAD.
+        # We have just added all changes to the index, so we are diffing the stage against the HEAD.
+        # OBS: repo.index.diff('HEAD') will fail if this is a completely new branch with no prior commits.
+        # if repo.index.diff('HEAD'):
+        if repo_has_uncommitted_staged_changes(absdir):
+            print(
+                f"\nCommitting {'to branch ' + branch if branch else ''} in {absdir}: \"{commit_msg}\".",
+                file=sys.stderr
+            )
+            subprocess.run(['git', 'commit']+git_commit_args, shell=True, check=True)
+        else:
+            print("\nNo changes staged for commit on the index; skipping commit.", file=sys.stderr)
+
     os.chdir(original_dir)
     if pause:
-        input("\nPress enter to continue...")
+        input("\n\nPress enter to continue...")
 
 
 @click.command()

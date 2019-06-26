@@ -27,12 +27,10 @@ setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    # long_description=open('README.txt').read(),
-    version='0.4.1',  # Update for each new version
+    version='0.4.2',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
-    # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
-    download_url='https://github.com/scholer/rsenv/archive/master.zip',  # Update for each new version
+    download_url='https://github.com/scholer/rsenv/archive/master.zip',
     author='Rasmus Scholer Sorensen',
     author_email='rasmusscholer@gmail.com',
     license='GNU General Public License v3 (GPLv3)',
