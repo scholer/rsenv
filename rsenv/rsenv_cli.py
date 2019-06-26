@@ -59,7 +59,7 @@ File conversion CLIs:
 
 Git commands/scripts:
     'git-add-and-commit-to-branch=rsenv.git.git_clis:git_add_and_commit_to_branch',
-    'git-add-and-commit-to-branch-simple=rsenv.git.git_clis:git_add_and_commit_to_branch_script',
+    'git-add-and-commit-to-branch-simple=rsenv.git.git_clis:git_add_and_commit_script',
 
 Clipboard CLIs:
     'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',

@@ -28,7 +28,7 @@ setup(
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
     # long_description=open('README.txt').read(),
-    version='0.4.0',  # Update for each new version
+    version='0.4.1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     # download_url='https://github.com/scholer/rsenv/tarball/0.1.0',
@@ -37,8 +37,8 @@ setup(
     author_email='rasmusscholer@gmail.com',
     license='GNU General Public License v3 (GPLv3)',
     keywords=[
-        #"GEL", "Image", "Annotation", "PAGE", "Agarose", "Protein",
-        #"SDS", "Gel electrophoresis", "Typhoon", "GelDoc",
+        # "GEL", "Image", "Annotation", "PAGE", "Agarose", "Protein",
+        # "SDS", "Gel electrophoresis", "Typhoon", "GelDoc",
         "Molecular biology", "Biotechnology", "Bioinformatics",
         "DNA", "DNA sequences", "sequence manipulation",
         "Data analysis", "Data processing", "plotting", "Data visualization",
@@ -75,7 +75,8 @@ setup(
             'generic-batch-downloader=rsenv.web.generic_batch_download:generic_batch_downloader_cli',
 
             # Oligo-management:
-            'convert-IDT-espec-to-platelibrary-file-cli=rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
+            'convert-IDT-espec-to-platelibrary-file-cli='
+            'rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
 
             # Sequences and cadnano:
             'cadnano_maptransformer=rsenv.seq.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
@@ -88,9 +89,9 @@ setup(
 
             # Git commands/scripts:
             'git-add-and-commit-to-branch=rsenv.git.git_clis:git_add_and_commit_to_branch',
-            'git-add-and-commit-to-branch-simple=rsenv.git.git_clis:git_add_and_commit_to_branch_script',
-            # Uh, is there a problem when there is two entry points with almost same name except one has -script?
-            # Yes, indeed! It seems entry points shouldn't end with `-script` - or at least not two different ones.
+            'git-add-and-commit-script=rsenv.git.git_clis:git_add_and_commit_script',
+            # OBS: There is a bug when setup.py contains two entry points with same name except one
+            # has -script postfix, which prevents the other entry point from being generated correctly.
 
             # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
