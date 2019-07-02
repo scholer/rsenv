@@ -27,7 +27,7 @@ setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    version='0.4.2',  # Update for each new version
+    version='0.4.3',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     download_url='https://github.com/scholer/rsenv/archive/master.zip',

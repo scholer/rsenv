@@ -163,6 +163,9 @@ def repo_has_uncommitted_staged_changes(path):
     '--add-all/--no-add-all', '-A', default=False,
     help="Add all files (including untracked files). Only files excluded by .gitignore will not be included.")
 @click.option(
+    '--show-compact-summary/--no-show-compact-summary', default=False,
+    help="Show `git diff --compact-summary` before adding files, before commit. Implies --stat.")
+@click.option(
     '--show-status/--no-show-status', default=False,
     help="Show `git status` after adding files, before commit.")
 @click.option(
@@ -179,7 +182,7 @@ def repo_has_uncommitted_staged_changes(path):
     help="Pause if errors are encountered during script (asking user to abort or continue).")
 def git_add_and_commit_script(
         path='.', branch=None, msg_fmt="Commit, {date:%Y-%m-%d}.",
-        add_all=False, show_status=False, dry_run=False, verbose=True, pause=False, pause_on_error=False,
+        add_all=False, show_compact_summary=False, show_status=False, dry_run=False, verbose=True, pause=False, pause_on_error=False
 ):
     """ Add and commit changed files to branch in git repository.
     This is a simple, subprocess-based version of `git_add_and_commit_to_branch` below.
@@ -195,6 +198,7 @@ def git_add_and_commit_script(
         branch: The branch to perform the operations on, defaulting to the currently checked out branch.
         msg_fmt: The commit message - can include formatting variables. Default: "Commit, {date:%Y-%m-%d}.".
         add_all: Add all files (including untracked files). Only files excluded by .gitignore will not be included.
+        show_compact_summary: Show `git diff --compact-summary` before adding files, before commit.
         show_status: Show `git status` after adding files, before commit.
         dry_run: Don't add or commit any files, just run the commands as though you would.
         verbose: Enable verbose output when adding files (includes diff of all added files!).
@@ -270,6 +274,15 @@ def git_add_and_commit_script(
                         exit(exc.returncode or 1)
                 else:
                     raise exc
+        else:
+            branch = str(repo.active_branch)
+
+        if show_compact_summary:
+            # Use `git diff` to see difference between worktree and index;
+            # Use `git diff --cached` to see difference between index and HEAD;
+            # Use `git diff HEAD` to see difference between worktree and HEAD;
+            print(f"\nCompact-summary diff between working directory and HEAD of branch '{branch}'", file=sys.stderr)
+            subprocess.run(['git', 'diff', '--compact-summary', 'HEAD'], shell=True, check=True)
 
         if add_all:
             git_add_args.append('--all')
@@ -297,10 +310,7 @@ def git_add_and_commit_script(
         # OBS: repo.index.diff('HEAD') will fail if this is a completely new branch with no prior commits.
         # if repo.index.diff('HEAD'):
         if repo_has_uncommitted_staged_changes(absdir):
-            print(
-                f"\nCommitting {'to branch ' + branch if branch else ''} in {absdir}: \"{commit_msg}\".",
-                file=sys.stderr
-            )
+            print(f"\nCommitting to branch '{branch}' in {absdir}: \"{commit_msg}\".", file=sys.stderr)
             subprocess.run(['git', 'commit']+git_commit_args, shell=True, check=True)
         else:
             print("\nNo changes staged for commit on the index; skipping commit.", file=sys.stderr)
