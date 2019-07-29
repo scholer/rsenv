@@ -41,24 +41,47 @@ Qt example:
 
 
 Xerox:
+    https://github.com/kennethreitz/xerox
+    This project has been archived by Kenneth Reitz.
+    On Windows, uses pywin32/win32clipboard.
     On Mac, uses `pbcopy` and `pbpaste` via `subprocess.Popen()` to read/write to/from the clipboard.
-    This would not work for binary inputs.
-    On Windows uses pywin32/win32clipboard.
+        (This would not work for binary inputs.)
+    On Unix/X11, uses `xclip` subprocess command.
     Also has tkinter-based copy/paste which it falls back to on windows if pywin32 is not available.
+    Pros:
+    * Like all of Kenneth's projects, the code for this is very Pythonic.
+    Cons:
+    * Only supports text (unicode).
+
 
 richxerox:
-    Extension of Xerox to provide multiple formats other than text (rtf, html).
     https://bitbucket.org/jeunice/richxerox
+    Extension of Xerox to provide multiple formats other than text (rtf, html).
+    For MacOS only - no Windows or Linux.
     Uses pyobjc AppKit.NSPasteboard
 
 
 pyperclip:
+    https://github.com/asweigart/pyperclip
     "Currently only handles plaintext."
     On Windows, uses Ctypes, no additional modules are needed.
-    On Mac, this module makes use of the pbcopy and pbpaste commands, which should come with the os.
-    On Linux, this module makes use of the xclip or xsel commands, which should come with the os.
+    On Mac, uses `pbcopy` and `pbpaste` subprocess commands, which should come with the os.
+    On Linux, uses `xclip` or `xsel` subprocess commands, which should come with the os.
     Can also use `qdbus org.kde.klipper` via `subprocess`, or use Qt or gtk.
     OBS: Is used by Pandas for reading/writing from/to clipboard.
+    Pros:
+    * Code is very extensive, many options for getting the clipboard.
+    * Does not have any dependencies.
+    Cons:
+    * Code is a little messy and not very pythonic or easy to read.
+
+
+pandas:
+* pandas.io.clipboard:
+* On Windows, uses `ctypes`, e.g. `ctypes.windll.user32.OpenClipboard`.
+* On MacOS, `pbcopy` and `pbpaste`.
+* On Linux, uses `xclip` and `xsel` or `klipper`/`qdbus`.
+* Can also use GTK or Qt
 
 
 AppKit from the pyobjc package (Mac):
@@ -94,10 +117,13 @@ Other:
     https://github.com/python-pillow/Pillow/blob/master/PIL/ImageGrab.py
 
 
-
 Regarding multiple clipboards and data:
 * Most OS'es have multiple clipboards.
 * In many OS'es, the clipboard can also contain different data types, sometimes simultaneously.
+
+
+Refs:
+* https://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
 
 
 """
@@ -124,7 +150,7 @@ except ImportError:
     # Will happen on Windows/Mac:
     pass
 
-# win32clipboard:
+# win32clipboard, from the "pywin32" dist package:
 try:
     import win32clipboard
     print("win32clipboard is available.")
@@ -161,15 +187,12 @@ def set_clipboard(text, datatype=None):
         clipboard = gtk.clipboard_get()
         text = clipboard.set_text(text)
     elif 'win32clipboard' in list(sys.modules.keys()):
-        wcb = win32clipboard
-        wcb.OpenClipboard()
-        wcb.EmptyClipboard()
-        # wcb.SetClipboardText(text)  # doesn't work
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
         # SetClipboardData Usage:
-        # >>> wcb.SetClipboardData(<type>, <data>)
-        # wcb.SetClipboardData(wcb.CF_TEXT, text.encode('utf-8')) # doesn't work
-        wcb.SetClipboardData(wcb.CF_UNICODETEXT, str(text)) # works
-        wcb.CloseClipboard() # User cannot use clipboard until it is closed.
+        # >>> SetClipboardData(<type>, <data>)
+        win32clipboard.SetClipboardData(win32clipboard.CF_UNICODETEXT, str(text))
+        win32clipboard.CloseClipboard()  # User cannot use clipboard until it is closed.
     else:
         # If code is run from within e.g. an ipython qt console, invoking Tk root's mainloop() may hang the console.
         r = Tk()
@@ -202,6 +225,7 @@ def get_clipboard():
         except TypeError as e:
             print(e)
             print("No text in clipboard.")
+            data = None
         wcb.CloseClipboard()  # User cannot use clipboard until it is closed.
         return data
     else:
@@ -224,9 +248,11 @@ def addToClipBoard_windows(text):
     """
     This uses the external 'clip' program to add content to the windows clipboard by invoking:
         >>> echo <text> | clip
+        >>> clip < README.md
     Example:
         >>> addToClipBoard('penny lane')
-
+    Ref:
+    * https://stackoverflow.com/questions/579687/how-do-i-copy-a-string-to-the-clipboard-on-windows-using-python
     """
     command = 'echo ' + text.strip() + '| clip'
     os.system(command)

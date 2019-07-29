@@ -27,7 +27,7 @@ setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    version='0.4.3',  # Update for each new version
+    version='0.5.0',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     download_url='https://github.com/scholer/rsenv/archive/master.zip',
@@ -81,6 +81,9 @@ setup(
 
             # File indexing and duplication finder:
             'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
+
+            # Label printing CLI:
+            'print-zpl-labels=rsenv.labelprint.labelprint_cli:print_zpl_labels_cli',
 
             # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
             # These have been moved to zepto-eln-core package.

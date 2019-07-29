@@ -31,16 +31,16 @@ import sys, os, binascii
 
 class OligosetFileColorMapper:
 
-    def __init__(self, oligosetfilename, colormapfilename, initialDict=dict(), verboselevel=3):
+    def __init__(self, oligosetfilename, colormapfilename, initialDict=None, verboselevel=3):
         #
         self.AllOK = None
         self.Oligosetfilename = oligosetfilename
         self.Colormapfilename = colormapfilename
         self.ModuleclassFieldname = 'Modulename'
-        self.Map = initialDict
+        self.Map = initialDict if initialDict is not None else {}
         self.MapOrder = None
         self.UsedMapKeys = set() # I'd like to save the used keys for later reference.
-        self.Verboselevel = verboselevel # Set this to -1 to suppress all log messages (e.g. if you want to use stdout for outputting the file)
+        self.Verboselevel = verboselevel  # Set this to -1 to suppress all log messages
 
         # First, load the oligosetfile into memory
         with open(oligosetfilename, 'rU') as oligosetfile:
@@ -54,13 +54,13 @@ class OligosetFileColorMapper:
             # I'll thus specify it manually myself. Also remember to write files in binary mode.
             self.CsvDialect.lineterminator = '\n'
             oligosetfile.seek(0)
-            # Important lesson: You DictReader has several more arguments, so you must define dialect=<dialect> for it to work.
+            # Important lesson: The DictReader has several more arguments, so you must define dialect=<dialect> for it to work.
             setreader = csv.DictReader(oligosetfile, dialect=self.CsvDialect)
             self.FileFields = setreader.fieldnames
             self.Dataset = [row for row in setreader if len(row)>0]
             if self.Verboselevel > 6:
-                print "Dataset from file: " + oligosetfilename
-                print self.Dataset
+                print("Dataset from file: " + oligosetfilename)
+                print(self.Dataset)
 
         # Load the modulecolormap from file
         with open(colormapfilename, 'rU') as colormapfile:
@@ -72,8 +72,8 @@ class OligosetFileColorMapper:
             #mapreader = csv.reader(colormapfile, delimiter='\t')
             #colormap = dict([(row[0],row[1]) for row in mapreader if len(row)>1])
             if self.Verboselevel > 5:
-                print "\nMap from file: " + colormapfilename
-                print colormap
+                print("\nMap from file: " + colormapfilename)
+                print(colormap)
             self.Map.update(colormap)
 
         # Find 'seq' header in the dataset:
@@ -84,9 +84,8 @@ class OligosetFileColorMapper:
                 self.ColorDataKey = key
                 break
         if self.ColorDataKey is None:
-            print "Error, could not find any columns in the oligoset file containing 'color'."
+            print("Error, could not find any columns in the oligoset file containing 'color'.")
             self.AllOK = False # Flag not to continue...
-
 
     def mapColorsToModules(self):
         """ Perform transformation of each sequence: """
@@ -94,7 +93,7 @@ class OligosetFileColorMapper:
         # --This is simpler, and print in same order as the colormap file.
         moduleStapleCount = dict([(color, 0) for color in self.MapOrder])
         if self.Verboselevel > 1:
-            print "Mapping color to module in dataset..."
+            print("Mapping color to module in dataset...")
 
         for row in self.Dataset:
             try:
@@ -102,20 +101,18 @@ class OligosetFileColorMapper:
                 moduleStapleCount[row[self.ColorDataKey]] += 1
             except KeyError:
                 start = row["Start"] if "Start" in self.FileFields else "line\n--->" + "\t".join(row[field] for field in self.FileFields)
-                print "mapColorsToModules(): WARNING! Color '{0}' not in map, staple at {1}".format(row[self.ColorDataKey], start)
+                print("mapColorsToModules(): WARNING! Color '{0}' not in map, staple at {1}".format(row[self.ColorDataKey], start))
 
         if self.ModuleclassFieldname not in self.FileFields:
             self.FileFields.append(self.ModuleclassFieldname)
 
         if self.Verboselevel > 1:
-            print "Data transformation completed."
-            print "Color/module stats:"
+            print("Data transformation completed.")
+            print("Color/module stats:")
             for color in self.MapOrder:
-                print "{0} --> {1} ({2} staples)".format(color, self.Map[color], moduleStapleCount[color])
+                print("{0} --> {1} ({2} staples)".format(color, self.Map[color], moduleStapleCount[color]))
             # sorting using sorted: function specified by key is applied to all elements before sorting.
             # usedKeys = sorted(self.UsedMapKeys, key=lambda k:self.Map[k])
-
-
 
     def incrementDict(self, mydict, key, value=1, how='integer-add'):
         """
@@ -128,7 +125,6 @@ class OligosetFileColorMapper:
         c.f. http://stackoverflow.com/questions/101268/hidden-features-of-python#112286
         """
 
-
     def writeNewData(self, newfilename=None,fieldsep=None):
         # Write the current content of self.Dataset (hopefully updated by mapColorsToModules first)
 
@@ -136,12 +132,12 @@ class OligosetFileColorMapper:
             self.CsvDialect.delimiter = fieldsep
 
         if self.Verboselevel > 3:
-            print "\nWriting new data..."
+            print("\nWriting new data...")
 
         if newfilename is None:
             newfilename = self.Oligosetfilename + ".mc"
             if self.Verboselevel > 2:
-                print "writeNewData(): No newfilename given, so using : " + newfilename
+                print("writeNewData(): No newfilename given, so using : " + newfilename)
 
         # Always open as binary ('wb') when dealing with csv files.
         with open(newfilename, 'wb') as f:
@@ -156,8 +152,7 @@ class OligosetFileColorMapper:
             dw.writerows(self.Dataset)
 
         if self.Verboselevel > 2:
-            print "writeNewData(): Done!"
-
+            print("writeNewData(): Done!")
 
 
 if __name__ == "__main__":
@@ -177,7 +172,6 @@ if __name__ == "__main__":
         verboselevel = -1
     else:
         verboselevel = args.verboselevel
-
 
     maptransformer = OligosetFileColorMapper(args.oligosetfilename,
                                             args.colormapfilename,

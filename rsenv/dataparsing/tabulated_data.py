@@ -32,17 +32,22 @@ logger = logging.getLogger(__name__)
 def tabdata_as_dictlist(tabdata, headers=None, sepcands=('\t', ',', ';'), sep=None, stripcells=True):
     """
     Arguments:
-        tab_data : iterable, e.g. lines in a file.
-        header : list of column headers.
+        tabdata: iterable, e.g. lines in a file.
+        headers: list of column names.
             if header is None, the first line is assumed to be the header.
-        sepcands : If sep is None, find the best sep candidate from this sequence.
-        stripcells : If true, will strip whitespace from values after splitting lines to cells.
+        sepcands: If sep is None, find the best sep candidate from this sequence.
+        stripcells: If true, will strip whitespace from values after splitting lines to cells.
         #nskip : skip N number of lines.
     Usage:
         tab_data = "\
 header1, header2\
 333, 55".strip().split('\n')
         tabdata_as_dictlist(tab_data)
+
+    See also:
+    * The built-in csv module. This has a more advanced csv.DictReader
+        class that supports text quotation marks, etc.
+    * pandas.from_csv()
     """
     if sep is None:
         sampleline = next(tabdata)
@@ -66,8 +71,6 @@ header1, header2\
     #    print zip(headers, row)
     dictlist = [dict(list(zip(headers, row))) for row in rows]
     return dictlist
-
-
 
 
 def get_sep_from_line(line, sepcands=('\t', ',', ';'), method='presence'):

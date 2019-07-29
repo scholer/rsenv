@@ -1,10 +1,19 @@
 
+
+
+0.5.0:
+
+* Added `rsenv.labelprint` package with modules for printing zpl labels on Zebra label printer.
+* Added `print-zpl-labels` CLI entry point in `setup.py`.
+
+
 0.2.7:
 
 * Added module `rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file`
   and setup.py CLI `convert_IDT_espec_to_platelibrary_file_cli`.
 * Renamed `click_cli_cmd_utils` module to `cli_cmd_utils` and 
   `create_click_command` function to `create_click_cli_command`.
+
 
 0.2.6:
 

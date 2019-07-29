@@ -73,6 +73,8 @@ zpl_label_template = """
 ^FS
 
 
+^FX[ Lid datamatrix barcode ]^FS
+
 ^BY48,48
 ^FT311,100
 ^BXN,3,200,0,0,1,~,1
@@ -88,13 +90,20 @@ zpl_label_template = """
 ^XZ
 """
 
+DEFAULT_VALUES = {}
+
 
 def format_single_label(values, label_template=None, is_last=True):
 
     if label_template is None:
         label_template = zpl_label_template
 
-    label = label_template.format(XB="" if is_last else "^XB", **values)
+    try:
+        template_vars = DEFAULT_VALUES + values  # Dict addition operator only works for python 3.8+
+    except TypeError:
+        template_vars = DEFAULT_VALUES.copy()
+        template_vars.update(values)
+    label = label_template.format(XB="" if is_last else "^XB", **template_vars)
     return label
 
 
@@ -107,7 +116,8 @@ def generate_zpl(data, label_template=None, printconfig=None):
 
     n_rows = len(data)
     for i, row in enumerate(data, 1):
-        zpl_parts.append(format_single_label(row, is_last=i == n_rows))
+        row.setdefault('label_num', i)
+        zpl_parts.append(format_single_label(row, label_template=label_template, is_last=i == n_rows))
 
     zpl_content = "\n".join(zpl_parts)
-
+    return zpl_content
