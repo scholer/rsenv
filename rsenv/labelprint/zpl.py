@@ -1,14 +1,45 @@
 # Copyright 2019 Rasmus Scholer Sorensen <rasmusscholer@gmail.com>
 """
 
-Printing ZPL:
+Module for generating ZPL labels by interpolating a pre-defined ZPL template with the given data.
+
+
+OBS: Sorry, this module is not for actually generating ZPL labels "from scratch".
+
+If you want to generate ZPL files that you can use as label templates (and for specifying
+the ZPL printer config), you can use the following tools:
+
+* ZebraDesigner or ZebraDesigner Pro (just print the label to file, then replace the text
+    values with `{placeholder_names}`.
+
+* http://labelary.com/viewer.html - this is an excellent and easy way to generate labels.
+
+In the places where you would like to insert variable values, type `{placeholder_name}`.
+For instance, if you would like to print 100 shipping labels, in the place where you
+would like the street name to go, type `{street_name}`.
+When you then
+
+
+When you have a given ZPL label file, you need to do two things:
+
+    * Open the zpl file in a text editor (Notepad++ or Sublime Text).
+        If you are using http://labelary.com/viewer.html, you can opy/paste the ZPL commands
+        to a new file using the text editor.
+    * First, cut off the "printer configuration" part of the label and place it in a
+        separate "printer_config.zpl" file. This part is only sent to the printer
+        once for every job.
+    * Second, replace the text values in the ZPL with `{placeholder_name}`,
+        if you have not already done this when generating the label.
+        (E.g. if you are using a zpl label that someone else made.)
+        The text values are typically placed right after `^FD` or `^FO` commands.
+        Only replace the text! Do no change anything else.
 
 
 
 """
 
 
-zpl_printer_config = """
+DEFAULT_ZPL_PRINTER_CONFIG = """
 
 ^FX[ Printer configuration ]^FS
 
@@ -31,15 +62,17 @@ zpl_printer_config = """
 ^PMN
 
 ^PR2,2
-~SD15
+~SD25
 ^XZ
 
 """
 
 
-zpl_label_template = """
+DEFAULT_ZPL_LABEL_TEMPLATE = """
 
 ^FX[ Label Format ]^FS
+^FX[ PrintWidth is 395 dots = 49.375 mm = 1.944 in ]^FS
+^FX[ LabelLength is 152 dots = 19.125 mm = 0.753 in ]^FS
 
 ^XA
 ^MMT
@@ -47,9 +80,11 @@ zpl_label_template = """
 ^LL0153
 ^LS0
 
-^FO294,28^GE88,88,1^FS
+
+^FX[ Label alignment objects: rectangle and circle ]^FS
 
 ^FO15,9^GB254,126,1^FS
+^FO294,28^GE88,88,1^FS
 
 
 ^FO20,15
@@ -93,10 +128,22 @@ zpl_label_template = """
 DEFAULT_VALUES = {}
 
 
+def check_forbidden_characters_in_data(data, forbidden_chars="^~\\[]", do_raise=True):
+    for i, row in enumerate(data):
+        for key, value in row.items():
+            value = f"{value}"  # Alternatively, only check strings?
+            for c in forbidden_chars:
+                if c in value:
+                    msg = f"ERROR: Forbidden character '{c}' in row {i}, field '{key}': '{value}'."
+                    print(msg)
+                    if do_raise:
+                        raise ValueError(msg)
+
+
 def format_single_label(values, label_template=None, is_last=True):
 
     if label_template is None:
-        label_template = zpl_label_template
+        label_template = DEFAULT_ZPL_LABEL_TEMPLATE
 
     try:
         template_vars = DEFAULT_VALUES + values  # Dict addition operator only works for python 3.8+
@@ -107,10 +154,11 @@ def format_single_label(values, label_template=None, is_last=True):
     return label
 
 
+# TODO: Change this from 'generate_zpl' to a more accurate 'generate_zpl_from_template_and_data'.
 def generate_zpl(data, label_template=None, printconfig=None):
 
     if printconfig is None:
-        printconfig = zpl_printer_config
+        printconfig = DEFAULT_ZPL_PRINTER_CONFIG
 
     zpl_parts = [printconfig]
 

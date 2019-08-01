@@ -8,6 +8,8 @@ Datareader for reading data for printing labels.
 import csv
 import io
 import sys
+from collections import OrderedDict
+from copy import deepcopy
 
 
 def get_clipboard_data():
@@ -15,13 +17,14 @@ def get_clipboard_data():
         import pyperclip
         return pyperclip.paste()
     except ImportError:
-        pass
+        print("get_clipboard_data(): pyperclip not available.", file=sys.stderr)
     try:
         import xerox
         return xerox.paste()
     except ImportError:
-        pass
-    raise RuntimeError("Could not find any way to retrieve clipboard data.")
+        print("get_clipboard_data(): xerox not available.", file=sys.stderr)
+    raise RuntimeError(
+        "Could not find any way to retrieve clipboard data. Please install xerox or pyperclip packages.")
 
 
 def data_from_csv_file(filename, fieldnames=None, sep=None):
@@ -74,8 +77,39 @@ def df_data_from_csv_content(content, fieldnames=None, sep=None):
 
 
 def data_from_clipboard(fieldnames=None, sep=None):
-    content = get_clipboard_data()
-    return data_from_csv_content(content, fieldnames=fieldnames, sep=sep)
+    try:
+        content = get_clipboard_data()
+    except RuntimeError as exc:
+        print(exc)
+        print("Trying to use pandas dataframe instead. "
+              "Loading pandas is slow, so only used as fallback. "
+              "Please install xerox or pyperclip packages for faster performance.", file=sys.stderr)
+        try:
+            import pandas as pd
+        except ImportError:
+            raise RuntimeError(str(exc) + " Could also not import Pandas as fallback.")
+        else:
+            print(f"pd.read_clipboard(names={fieldnames}, header={1 if fieldnames is None else None}) ...",
+                  file=sys.stderr)
+            df = pd.read_clipboard(
+                names=fieldnames,
+                header=1 if fieldnames is None else None,
+                sep=sep
+            )
+            print("\nDataFrame from data in clipboard:\n", file=sys.stderr)
+            print(df, file=sys.stderr)
+            print("\n", file=sys.stderr)
+            # Using a dataframe would generally be okay, but unfortunately DataFrame defaults to
+            # iterating over column names (like a dict), rather than iterating over the rows
+            # (like a list of dict). So we have to convert to list of dicts:
+            # data = [dict(row) for idx, row in df.iterrows()]  # Option 1.
+            # data = list(df.T.to_dict().values())  # Option 2.
+            data = df.to_dict('records')  # Option 3.
+            return data
+    else:
+        print("Read the following content from clipboard:", file=sys.stderr)
+        print(content, file=sys.stderr)
+        return data_from_csv_content(content, fieldnames=fieldnames, sep=sep)
 
 
 def df_data_from_clipboard(fieldnames=None, sep=None):
@@ -156,3 +190,53 @@ def data_from_args(data_args, fieldnames=None, sep="\t", format="key:value", ass
             for row in data_args
         ]
     return data
+
+
+def get_formulas(formulas, sep="\t", format="key=expression"):
+
+    if format == "key=expression":
+        assignment_char = "="
+    elif format == "key:expression":
+        assignment_char = ":"
+    else:
+        raise ValueError(f"Unknown formula spec format {format!r}.")
+
+    formulas = {
+        fieldname.strip(): value
+        for fieldname, value in [keyvaluepair.split(assignment_char, 1) for keyvaluepair in formulas.split(sep)]
+    }
+    return formulas
+
+
+def eval_formulas(formulas, data, combined=True, inplace=False):
+    """ Evaluate formulas for each row in the data.
+
+    Args:
+        formulas: Dict of {key: <expression>} where expression is evaluated using input data.
+        data:
+        combined: If True, return a combined dict with both input data and calculated formula values.
+        inplace: If True (and `combined` is also True), update the input `data` dict object.
+            Otherwise, a new OrderedDict object is created.
+
+    Returns:
+
+    """
+    if combined:
+        if not inplace:
+            data = deepcopy(data)
+        for row in data:
+            for key, expression in formulas.items():
+                # let's set globals to None. Builtins are still available.
+                # However, we don't want e.g. `row` to be an available variable.
+                row[key] = eval(expression, {}, row)
+        return data
+    else:
+        output = []
+        for row in data:
+            out_row = OrderedDict()
+            for key, expression in formulas.items():
+                # eval(source, globals=None, locals=None, /)
+                # Use input data as globals and previously-calculated formula values as locals
+                out_row[key] = eval(expression, row, out_row)
+            output.append(out_row)
+        return output

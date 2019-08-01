@@ -3,7 +3,17 @@
 
 Functions, references, and docs for printing on Windows.
 
+This module includes a range of different functions, each function
+using a different way to print files and content on Windows.
 
+For instance:
+
+    print_file_using_copy_cmd() - uses the `copy` command line command to print a file.
+    print_file_using_print_cmd() - uses the `print.exe` command line program to print a file.
+    print_file_using_lpr_cmd() - uses the `lpr.exe` command line program to print a file.
+    print_file_using_notepad_cmd() - uses `notepad.exe` program to print a file.
+
+    print_raw_win32print() - uses the `win32print` library to start a printing job directly.
 
 
 Ways to communicate with and send print job s to a printer:
@@ -173,7 +183,7 @@ import subprocess
 import tempfile
 
 
-def print_content(content, printer, method='shell-print', job_description=None):
+def print_content(content, printer, method='print-cmd', job_description=None, verbose=0):
     """ Unified function to print content.
 
     Args:
@@ -181,13 +191,46 @@ def print_content(content, printer, method='shell-print', job_description=None):
         printer: The printer to print on.
         method: String used to select the printing method to use.
         job_description: Job description, passed on to the printing method (if available).
+        verbose: If verbose is larger than zero, debug information is printed to stderr.
 
     Returns:
         The result of the sub-function actually used to print.
 
+
+    Examples:
+        >>> print_content("Hej der", printer=)
+
+
+    OBS: To see available printers on Windows from the command prompt, use one of these:
+        `wmic printer get name`
+        `wmic printer list brief`
+        `wmic printer list full`
+
+
     """
 
+    if not printer:
+        raise ValueError("ERROR: `printer` argument must be specified in order to print. "
+                         "You can use `wmic printer get name` to find the name of your label printer.")
+
+    if printer[:2] != r"\\":
+        print(f"\nWARNING: The given printer, {printer!r}, does not use a fully-qualified name. "
+              f"This may not work. \n"
+              r"The printer should typically be specified as '\\hostname\printername', e.g. "
+              r"\\D34669\ZDesigner_ZD420-203dpi_ZPL or \\localhost\usb001_generic_text_printer. "
+              "This typically requires you to share the printer as a network share.\n", file=sys.stderr)
+    if " " in printer:
+        print(f"\nWARNING: The given printer, {printer!r}, includes spaces. This may not work! "
+              "Consider renaming the printer.\n", file=sys.stderr)
+
+    if method is None:
+        # Select good default Windows printing method:
+        method = 'print-cmd'
+
     if method == 'win32print':
+        if verbose:
+            print(f"Printing {len(content)} {'characters' if isinstance(content, str) else 'bytes'} "
+                  f"to printer {printer} using {method!r}...", file=sys.stderr)
         return print_raw_win32print(content, printer_name=printer, job_description=job_description)
 
     # Use a persistent tempfile for methods that require a file to work:
@@ -200,6 +243,9 @@ def print_content(content, printer, method='shell-print', job_description=None):
     file = tempfile.NamedTemporaryFile(mode=mode, delete=False)
     file.write(content)
     file.close()
+    if verbose:
+        print(f"Printing {len(content)} {'chars' if isinstance(content, str) else 'bytes'} "
+              f"in file '{file.name}' to printer '{printer}' using {method!r}...", file=sys.stderr)
     if method == 'print-cmd':
         return print_file_using_print_cmd(filename=file.name, printer_name=printer)
     if method == 'copy-cmd':
@@ -276,14 +322,14 @@ def execute_and_process(cmd_args, capture_output=True, check=True, verbose=1):
 
     """
     if verbose:
-        print("Executing:", " ".join(cmd_args))
+        print("Executing:", " ".join(cmd_args), file=sys.stderr)
 
     proc = subprocess.run(cmd_args, capture_output=capture_output)
     if proc.stderr:
-        print("stderr output:")
+        print("stderr output:", file=sys.stderr)
         print(proc.stderr)
     if proc.stdout:
-        print("stdout output:")
+        print("stdout output:", file=sys.stderr)
         print(proc.stdout)
     if check:
         proc.check_returncode()
@@ -333,7 +379,7 @@ def print_file_using_copy_cmd(
 def print_file_using_print_cmd(
         filename, printer_name, job_description=None,
         check=True, capture_output=True):
-    """ Print file using the Windows `print` command line function.
+    r""" Print file using the Windows `print` command line function.
 
     Args:
         filename: The file to print.
@@ -348,9 +394,31 @@ def print_file_using_print_cmd(
     Examples of using print command (confirmed working):
 
         print /D:"\\D34669\ZDesigner_ZD420-203dpi_ZPL" latest_label.zpl
+        print latest_label.zpl /D:"\\D34669\ZDesigner_ZD420-203dpi_ZPL"
+        print latest_label.zpl /D:"\\D34669\usb001_generic_text_printer"
+        print latest_label.zpl /D:"\\localhost\usb001_generic_text_printer"
+
+    Examples that did not work:
+
+        print latest_label.zpl /D:"\\D34669\ZDesigner ZD420-203dpi ZPL"
+
+    Conclusions:
+        * It doesn't seem to matter if /d:printer is before or after the filename.
+        * Printer name should not contain any spaces.
+        * Printer should be shared, and you should specify fully qualified name including computer.
+
+
+
+    Hmm, I'm getting errors:
+        Unable to initialize device usb001_generic_text_printer
+        Unable to initialize device ZDesigner ZD420-203dpi ZPL
+    This is AFTER I've tried to send one print job (that didn't print).
+        > print /d:"ZDesigner ZD420-203dpi ZPL" C:\Users\au206270\AppData\Local\Temp\tmpg78ojwv9
+        C:\Users\au206270\AppData\Local\Temp\tmpg78ojwv9 is currently being printed
+
 
     """
-    cmd_args = ["print", filename, f"/d:{printer_name}"]
+    cmd_args = ["print", f"/d:{printer_name}", filename]
     return execute_and_process(cmd_args, check=check, capture_output=capture_output)
 
 
@@ -384,7 +452,7 @@ def print_file_using_lpr_cmd(
 
     """
     if len(filename) >= 127:
-        print("WARNING: filename is longer than 127 characters - lpr may not work on Windows.")
+        print("WARNING: filename is longer than 127 characters - lpr may not work on Windows.", file=sys.stderr)
     cmd_args = ["rlpr"] if use_rlpr else ["lpr"]
     if server:
         cmd_args.extend(["-S", server])
