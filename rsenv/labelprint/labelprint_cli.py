@@ -167,7 +167,7 @@ def print_zpl_labels(
     """
 
     if sep == "\\t" or sep == "TAB":
-        print("Converting escaped sep={sep!r} to regular tab character '\t'.", file=sys.stderr)
+        print(f"Converting escaped sep={sep!r} to regular tab character '\t'.", file=sys.stderr)
         sep = "\t"
 
     # 1. Read input data
