@@ -241,8 +241,9 @@ def print_zpl_labels(
             print("Writing zpl content to stdout...", file=sys.stderr)
             sys.stdout.write(zpl_content)
         else:
-            with open(save_to_file, 'wb') as f:
-                print(f"Writing zpl content to file {save_to_file} ...", file=sys.stderr)
+            with open(os.path.expanduser(save_to_file), 'w') as f:
+                print(f"Writing zpl content to file {os.path.expanduser(save_to_file)} ...",
+                      file=sys.stderr)
                 f.write(zpl_content)
 
     if do_print:
