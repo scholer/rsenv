@@ -144,7 +144,7 @@ import git
 
 
 def repo_has_uncommitted_staged_changes(path):
-    completed_proc = subprocess.run(shlex.split('git diff --quiet --exit-code --cached'))
+    completed_proc = subprocess.run(shlex.split('git --no-pager diff --quiet --exit-code --cached'))
     # A non-zero exit code means it has staged, uncommitted changes:
     return completed_proc.returncode != 0
 
@@ -282,7 +282,7 @@ def git_add_and_commit_script(
             # Use `git diff --cached` to see difference between index and HEAD;
             # Use `git diff HEAD` to see difference between worktree and HEAD;
             print(f"\nCompact-summary diff between working directory and HEAD of branch '{branch}'", file=sys.stderr)
-            subprocess.run(['git', 'diff', '--compact-summary', 'HEAD'], shell=True, check=True)
+            subprocess.run(['git', '--no-pager', 'diff', '--compact-summary', 'HEAD'], shell=True, check=True)
 
         if add_all:
             git_add_args.append('--all')
@@ -293,13 +293,13 @@ def git_add_and_commit_script(
             f"\nAdding files to the index of branch '{branch}' in '{absdir}' using args `{' '.join(git_add_args)}`.",
             file=sys.stderr
         )
-        subprocess.run(['git', 'add'] + git_add_args, shell=True, check=True)
+        subprocess.run(['git', '--no-pager', 'add'] + git_add_args, shell=True, check=True)
 
         if show_status:
             # --untracked-files=all can also be written -uall.
             # git status --verbose also does a diff on staged files.
             print("\nStatus:", file=sys.stderr)
-            subprocess.run(['git', 'status', '--untracked-files=all'], shell=True, check=True)
+            subprocess.run(['git', '--no-pager', 'status', '--untracked-files=all'], shell=True, check=True)
 
         # OBS: We should check if there actually is anything to commit,
         # otherwise, `git-commit will yield an error.
@@ -311,7 +311,7 @@ def git_add_and_commit_script(
         # if repo.index.diff('HEAD'):
         if repo_has_uncommitted_staged_changes(absdir):
             print(f"\nCommitting to branch '{branch}' in {absdir}: \"{commit_msg}\".", file=sys.stderr)
-            subprocess.run(['git', 'commit']+git_commit_args, shell=True, check=True)
+            subprocess.run(['git', '--no-pager', 'commit']+git_commit_args, shell=True, check=True)
         else:
             print("\nNo changes staged for commit on the index; skipping commit.", file=sys.stderr)
 
