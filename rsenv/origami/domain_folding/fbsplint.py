@@ -38,7 +38,7 @@ Examples:
 from math import floor, ceil
 import numpy as np
 
-from .sequtil import rcompl
+from rsenv.seq.sequtil import rcompl
 
 
 def generate_fbsplint_seq(template, domain_sizes=(10, 10, 11, 11), mid=0.5, sep='-', check_lengths=True, debug=False):
