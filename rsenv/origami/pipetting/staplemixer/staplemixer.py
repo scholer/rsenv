@@ -125,13 +125,13 @@ Remember to refer to oligomanager/oligomanager/biz/EpMotion.py for labware info.
 
 """
 
-
+import sys
 import csv
 import os
 import glob
 import operator
 from datetime import datetime
-import StringIO
+import io
 from collections import OrderedDict
 #try:
 #    import simplejson as json
@@ -147,9 +147,9 @@ logger = logging.getLogger(__name__)
 if __package__ is None or __name__ is '__main__':
     import sys
     fp = os.path.abspath(os.path.realpath(__file__))
-    print "__file__ = %s" % fp
+    print("__file__ = %s" % fp)
     packagedir = os.path.dirname(os.path.dirname(fp))
-    print "Adding dir to sys.path: %s" % packagedir
+    print("Adding dir to sys.path: %s" % packagedir)
     sys.path.append(packagedir)
     # Note: The above does not always work, e.g. for py2exe or other environments.
     # Alternatives, to obtain dir/path of executable:
@@ -159,10 +159,9 @@ if __package__ is None or __name__ is '__main__':
     # os.path.abspath(inspect.getsourcefile(lambda _: None))
 
 
-
-from rspyutilslib.filedatalib import fileutils
-from rspyutilslib.oligodatalib.plateutils import indexToPos, indexToRowColTup, posToRowColTup
-from epmotionvalet import EpmotionValet
+from rsenv.origami.oligomanager_lib.filedatalib import fileutils
+from rsenv.origami.oligomanager_lib.oligodatalib.plateutils import indexToPos, indexToRowColTup, posToRowColTup
+from .epmotionvalet import EpmotionValet
 
 
 class StapleMixer(object):
@@ -307,7 +306,7 @@ class StapleMixer(object):
         """
         try:
             cfg = yaml.load(open(robotcmdtemplatefile,'rU'))
-            print "Using config/template file: {}".format(robotcmdtemplatefile)
+            print("Using config/template file: {}".format(robotcmdtemplatefile))
             # config is NOT updated with Self.Configpars; I only update the config once, right before writing.
         except IOError as e:
             # No longer falling back!
@@ -320,7 +319,7 @@ class StapleMixer(object):
         """
         parse config (recursively for dict and lists) and modify strings with pars.
         """
-        if isinstance(config, basestring):
+        if isinstance(config, str):
             logger.debug("Interpolating config string '%s' with pars: %s", config, pars)
             config = config % pars
             logger.debug("Result is: %s", config)
@@ -334,8 +333,8 @@ class StapleMixer(object):
                 logger.debug("inserting for item %s", item)
                 config[i] = self.insertPlaceholders(item, pars)
         else:
-            print "insertPlaceholders: Unknown config."
-            print config
+            print("insertPlaceholders: Unknown config.")
+            print(config)
         logger.debug("Returning config: %s", config)
         return config
 
@@ -375,13 +374,13 @@ class StapleMixer(object):
             ext = ".rack.csv"
             #rackfilenames = [fname for fname in os.listdir(os.getcwd()) if fname[len(fname)-len(ext):] == ext] # filter
             rackfilenames = sorted(glob.glob("*"+ext))
-            print "Autodetected rackfiles:" + str(rackfilenames)
+            print("Autodetected rackfiles:" + str(rackfilenames))
         self.Racknames = [fileutils.removeFileExt(rackfilename, (".rack.csv", ".csv")) for rackfilename in rackfilenames]
-        print "Racknames: {}".format(self.Racknames)
+        print("Racknames: {}".format(self.Racknames))
         if any(len(name)>21 for name in self.Racknames):
-            print "WARNING! Some racknames might be longer than what is supported by EpMotion!"
+            print("WARNING! Some racknames might be longer than what is supported by EpMotion!")
             for longrackname in (name for name in self.Rackname if len(name)>21):
-                print "Rack: %s (%s chars)" % (longrackname, len(longrackname))
+                print("Rack: %s (%s chars)" % (longrackname, len(longrackname)))
         self.Rackdata = OrderedDict() # keys are rackfilename
 
         for rackfilename in rackfilenames:
@@ -391,13 +390,13 @@ class StapleMixer(object):
         self.RackStaples = dict()
         # Note: "Modulename", "Sequence", etc is assumed. You may want to add functionality to grab alternative cases, but...
         # Also see new function compareDesignVsRackFiles where I add more functional rack_oligos data structure:
-        for rackfilename, rackdata in self.Rackdata.items():
+        for rackfilename, rackdata in list(self.Rackdata.items()):
             # The sequence field could be different in different rack datasets/files.
             # For each rack file, first find sequence field, and then make sure the sequence is properly written.
             if forcerackfileseqfield:
                 rackfileseqfield = forcerackfileseqfield
             else:
-                rackfileseqfield = fileutils.findFieldByHint(rackdata[0].keys(), "seq")
+                rackfileseqfield = fileutils.findFieldByHint(list(rackdata[0].keys()), "seq")
             #self.Rackseqfield = rackseqfield = "Sequence" # Override
             # Trim sequence (well, ensure you have a proper sequence in the "Sequence" field.
             for i, row in enumerate(rackdata):
@@ -408,13 +407,13 @@ class StapleMixer(object):
                     logger.info("Notice: Empty sequence field in %s line %s", row["rackname"], i)
                 else:
                     if row["Sequence"] in self.RackStaples:
-                        print """
+                        print("""
 WARNING! Staple sequence for row {row} in rackdataset
     {rackname}
 already present in self.RackStaples.
 This indicates redundancy, which is not gracefully supported.
-Row:""".format(row=i, rackname=rackfilename)
-                        print row
+Row:""".format(row=i, rackname=rackfilename))
+                        print(row)
                     self.RackStaples[row["Sequence"]] = row
 
         return self.Rackdata
@@ -433,7 +432,7 @@ Row:""".format(row=i, rackname=rackfilename)
         # modulestopipet is a simple reference list with modulename (string) and amount. Refer to self.DesignModules
         if modulestopipetfile is None:
             # If modulestopipetfile is not specified, use all modules from .smmc file with hard-coded volume...
-            modulestopipet = [{"Modulename":modulename, "ul":"5"} for modulename in self.DesignModules.keys()]
+            modulestopipet = [{"Modulename":modulename, "ul":"5"} for modulename in list(self.DesignModules.keys())]
         else:
             # I want to specify which oligos to pipet. But not implemented yet.
             # This file is also the place to specify how much to pipet. But that is also not implemented..
@@ -445,7 +444,7 @@ Row:""".format(row=i, rackname=rackfilename)
                     filelist =  glob.glob(pat)
                     if filelist:
                         modulestopipetfile = filelist[0]
-            print "Using modulestopipet file: "+ modulestopipetfile
+            print("Using modulestopipet file: "+ modulestopipetfile)
             if modulestopipetfile is None:
                 raise ValueError("No modulestopipet file found, aborting!")
             try:
@@ -454,10 +453,10 @@ Row:""".format(row=i, rackname=rackfilename)
                             for fields in [line.strip().split() for line in pfh] if len(fields)>0 and fields[0][0] != "#" ] # I used to split by '\t', but I now do like automapper and split by whitespace.
             except IOError as e:
                 logger.error("Error '%s' while reading modulestopipetfile '%s', os.getcwd()='%s', sys.path=%s", e, modulestopipetfile, os.getcwd(), sys.path)
-        print "modulestopipet:"
+        print("modulestopipet:")
         #width = max(map(len, self.DesignModules.keys())) + 3
-        width = max(len(x) for x in self.DesignModules.keys()) + 3
-        print "\n".join(["{i[Modulename]:<{width}}{i[ul]} ul".format(i=item, width=width) for item in modulestopipet])
+        width = max(len(x) for x in list(self.DesignModules.keys())) + 3
+        print("\n".join(["{i[Modulename]:<{width}}{i[ul]} ul".format(i=item, width=width) for item in modulestopipet]))
         #                       self.Modulestopipet = modulestopipet
         return modulestopipet
 
@@ -474,9 +473,9 @@ Row:""".format(row=i, rackname=rackfilename)
             ext = ".smmc"
             dirlist = glob.glob("*"+ext)
             designfilename = dirlist[0]
-            print "Designfilename: " + designfilename
+            print("Designfilename: " + designfilename)
             if len(dirlist) > 1:
-                print "Notice: There were multiple options for designfilename. (%s). I choose: %s" % (dirlist, designfilename)
+                print("Notice: There were multiple options for designfilename. (%s). I choose: %s" % (dirlist, designfilename))
         with open(designfilename, 'rU') as oligosetfile:
             # First do some sniffing (ps: you should only change dialect attributes if writing.)
             snif = csv.Sniffer()
@@ -486,15 +485,15 @@ Row:""".format(row=i, rackname=rackfilename)
             setreader = csv.DictReader(oligosetfile, dialect=self.CsvDialect)
             self.DesignFields = setreader.fieldnames # Save for a rainy day?
             self.DesignDataset = [row for row in setreader if len(row)>0]
-        self.DesignSequenceFieldName = fileutils.findFieldByHint(self.DesignDataset[0].keys(), ("seq", "sequence"))
-        self.DesignModuleFieldName = modulefield = fileutils.findFieldByHint(self.DesignDataset[0].keys(), ("Modulename", "moduleclass", "module", "class"))
+        self.DesignSequenceFieldName = fileutils.findFieldByHint(list(self.DesignDataset[0].keys()), ("seq", "sequence"))
+        self.DesignModuleFieldName = modulefield = fileutils.findFieldByHint(list(self.DesignDataset[0].keys()), ("Modulename", "moduleclass", "module", "class"))
         self.DesignModules = dict()
         # datastructure: self.DesignModules[<modulename>] = [list of row-dicts, one row per staple in the module]
         for row in self.DesignDataset:
             try:
                 self.DesignModules.setdefault(row[modulefield], list()).append(row)
             except KeyError as e:
-                print "KeyError %s while doing self.DesignModules.setdefault(row[modulefield], list()).append(row), row=%s, modulefield=%s" %(e, row, modulefield)
+                print("KeyError %s while doing self.DesignModules.setdefault(row[modulefield], list()).append(row), row=%s, modulefield=%s" %(e, row, modulefield))
                 raise e
         return (self.DesignDataset, self.DesignModules)
 
@@ -531,13 +530,13 @@ Row:""".format(row=i, rackname=rackfilename)
         # initialize rackstats structure (dict of dicts)
         rackstats = { rackname : { modulename : 0 for modulename in modulenames } for rackname in self.Racknames }
         rackstats["not-found"] = { moduletopipet["Modulename"] : 0 for moduletopipet in modulestopipet }
-        print """
+        print("""
 TODO: Mix staples in one rack first, then the next rack, then the next.
 However, if oligos are sorted by modules in the order, this is probably not a big issue.
 Also, the user might frequently prefer to pipet the modules in sequence,
 finishing one module completely before starting on the next. That also
 makes a fun more fail-safe, as it is easier to re-start the program after a failure.
-"""
+""")
         logger.debug( "moduletopipet: %s", modulestopipet)
         for destindex, moduletopipet in enumerate(modulestopipet):
             volume = moduletopipet["ul"]
@@ -545,27 +544,27 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
             logger.debug("self.DesignModules[%s] : %s", modulename, self.DesignModules[modulename] )
             for modulerow in self.DesignModules[modulename]:
                 pipetrow += 1
-                logger.debug("self.RackStaples[%s]: %s", self.RackStaples.keys()[0], self.RackStaples[self.RackStaples.keys()[0]])
+                logger.debug("self.RackStaples[%s]: %s", list(self.RackStaples.keys())[0], self.RackStaples[list(self.RackStaples.keys())[0]])
                 try:
                     rackrow = self.RackStaples[modulerow[self.DesignSequenceFieldName]] # lookup the rackrow info using staple sequence.
                     # rackname stored as rackrow["rackname"]; other fields in the rackfile is stored as they appear in the *.rack.csv file.
-                    sourcepos = rackrow[fileutils.findFieldByHint(rackrow.keys(), "pos")] # Can possibly be optimized by storing the field name for later ref.
-                    pipetdataset.append(dict(zip(
+                    sourcepos = rackrow[fileutils.findFieldByHint(list(rackrow.keys()), "pos")] # Can possibly be optimized by storing the field name for later ref.
+                    pipetdataset.append(dict(list(zip(
                         self.PipDataFields, #["row","source-rackname","source-pos","destin-rackname","destin-index","volume","comment"]
                         [pipetrow, rackrow["rackname"], sourcepos, destrackname, str(destindex), str(volume),
                             "".join([modulename,": ", rackrow["rackname"],":",sourcepos,"->",destrackname,":",str(destindex)])
-                        ])))
+                        ]))))
                     rackstats[rackrow["rackname"]][modulename] += 1
                     ncorrect += 1
                     #comment is formatted like <module-name> : source-rackname:source-pos -> destin-rackname:destin-pos
-                except KeyError, e:
-                    print " - \nKEY ERROR for module %s, oligo '%s' (keyed as %s) not found in rackdata. Modulerow: %s\n - " % \
-                            (modulename, modulerow[self.DesignSequenceFieldName], e, modulerow)
+                except KeyError as e:
+                    print(" - \nKEY ERROR for module %s, oligo '%s' (keyed as %s) not found in rackdata. Modulerow: %s\n - " % \
+                            (modulename, modulerow[self.DesignSequenceFieldName], e, modulerow))
                     nnotfound += 1
                     rackstats["not-found"][modulename] += 1
         self.PipetDataset = pipetdataset
-        print "Staples found: " + str(ncorrect)
-        print "Staples not found: " + str(nnotfound)
+        print("Staples found: " + str(ncorrect))
+        print("Staples not found: " + str(nnotfound))
 
         ## ------ Write pipet data to file ----- ###
         pipdatafilename = pipdatafilenameformat.format(rundatetimestr=self.RunDateHourStr)
@@ -606,8 +605,8 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
                                         modulename="".join((self.Modulenameprefix, module["Modulename"]))[-15:], # no reason, slices can go out of bounds.
                                         nstaps=len(self.DesignModules[module["Modulename"]]))
                                   for i, module in enumerate(modulestopipet) ))
-        print "destposnames: (truncated to 20 char)"
-        print destposnames
+        print("destposnames: (truncated to 20 char)")
+        print(destposnames)
         #self.Configpars["dest-pos-names"] = destposnames
         self.ConstParams["dest-pos-names"] = destposnames
 
@@ -641,8 +640,8 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
             modulereport.write(modulespipetted)
             # Write a table with modules and how many oligos each module use from each plate
             modulereport.write("\n\nPlate usage statistics:\n")
-            print rackstatsstrhead
-            print rackstatsstr
+            print(rackstatsstrhead)
+            print(rackstatsstr)
             modulereport.write(rackstatsstrhead+'\n'+rackstatsstr)
 
         #self.Config["robot"]["method-prefix"]=self.insertPlaceholders(self.Config["robot"]["method-prefix"], self.Configpars)
@@ -657,7 +656,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         """
         reportconc = None
         try:
-            reportconc = raw_input("Specify source concentration (for report; optional): ")
+            reportconc = input("Specify source concentration (for report; optional): ")
         except KeyboardInterrupt:
             pass
         return reportconc
@@ -677,7 +676,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
             else:
                 dw.write(self.CsvDialect.delimiter.join(self.FileFields) + "\n") # Just as quick...
             dw.writerows(self.PipetDataset)
-        print "Pipetdata written to file: "+ pipdatafilename
+        print("Pipetdata written to file: "+ pipdatafilename)
 
 
     def getPipetdataFromFiles(self, pipetfiles, onefileonly):
@@ -766,7 +765,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         #with StringIO.StringIO() as robotfile:
         # 'with' statement not supported for StringIO in python2.7 (only 3.3+), c.f. http://bugs.python.org/issue1286
         # Eliminating the "with" wrapper:
-        robotfile = StringIO.StringIO()
+        robotfile = io.StringIO()
         # Initial, constant cmds:
         #robotfile.write(self.Config["robot"]["method-prefix"])
         pars = self.ConstParams.copy() # Shallow copy only; I do not think deep is required.
@@ -794,7 +793,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         for sourcerack in sourceracks:
             slotnr = robotvalet.valet("sourcerack")
             if slotnr is None:
-                print "ERROR! Slot no is None! (sourcerack " + sourcerack + ")"
+                print("ERROR! Slot no is None! (sourcerack " + sourcerack + ")")
             #robotfile.write(self.Config["robot"]["cmd-placeit-rack"] % {"cmdindex":cmdnum, "slotnr":slotnr, "sourcerack":sourcerack})
             #print "self.ConstParams:"
             #print self.ConstParams
@@ -812,7 +811,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
             slotnr = robotvalet.valet("tips")
             if slotnr is None:
                 # This can happen if we have more sampletransfers than there is room for tips, and is not a big deal.
-                print "Notice: Slot nr is None! (ntiprack" + str(ntipracks) + ")"
+                print("Notice: Slot nr is None! (ntiprack" + str(ntipracks) + ")")
                 continue
 #                robotfile.write(self.Config["robot"]["cmd-placeit-tips"] % {"cmdindex":cmdnum, "slotnr":slotnr})
             #pars = self.ConstParams.copy()
@@ -865,7 +864,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
                 pars["tub_no"] = tub_no
                 if tub_vol_used > 25000:
                     tub_no += 1
-                    print "BufferTub tub_no increased to {}".format(tub_no)
+                    print("BufferTub tub_no increased to {}".format(tub_no))
                     tub_vol_used = 0
                     if tub_no > 3:
                         raise NotImplementedError("Method not implemented for volumes larger than 3 x 25 ml!")
@@ -892,9 +891,9 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         # Write the StringIO object to filesystem:
         self._writeStringIOtoFile(robotfile, filepath)
 
-        print "Robot method/program/application written to file: " + filepath # robotcmdfilename
-        print " -- total instructions: " + str(cmdnum)
-        print " -- sample transfers: " + str(len(pipetdataset))
+        print("Robot method/program/application written to file: " + filepath) # robotcmdfilename
+        print(" -- total instructions: " + str(cmdnum))
+        print(" -- sample transfers: " + str(len(pipetdataset)))
 
         return filepath
     # end def generateRobotFile()
@@ -933,7 +932,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
 
         # FIRST, adjust self.Configpars and calculate the concentrations for each well:
         self.Configpars['destin-rackname'] = 'destination-plate'
-        if isinstance(destformat, basestring):
+        if isinstance(destformat, str):
             destformat = self.Plateformats[destformat]
 
         self.gen_resuspend_plate_vol(target_conc = resuspendconc, raiseErrorAbove=None)
@@ -956,7 +955,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         # Writing part to DWS:
         #################################
         #with open(filepath, 'wb') as robotfile:
-        robotfile = StringIO.StringIO()
+        robotfile = io.StringIO()
         # -------------------------------------
         # Write first, constant part of DWS:
         #--------------------------------------
@@ -975,7 +974,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
             logger.error("Could not find command template 'cmd-placeit-tub' in CmdTemplates. \
                          Perhaps your epmotion-cmd-templates.yml does not contain this?\
                          self.CmdTemplate.keys() is: %s\
-                         and os.getcwd() is: %s", self.CmdTemplates.keys(), os.getcwd())
+                         and os.getcwd() is: %s", list(self.CmdTemplates.keys()), os.getcwd())
             raise e
         # edit: robotvalet does use slot 159, but Tub cannot be there either.
         # On the other hand, I have been getting errors if I just place the tub n B3 directly (these errors was due to a missing pre-run cmd.)
@@ -991,7 +990,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         for sourcerack in self.Racknames:
             slotnr = robotvalet.valet("sourcerack")
             if slotnr is None:
-                print "ERROR! Slot no is None! (sourcerack " + sourcerack + ")"
+                print("ERROR! Slot no is None! (sourcerack " + sourcerack + ")")
             pars = dict(self.ConstParams, **{"cmdindex":cmdnum, "slotnr":str(slotnr), "sourcerack":sourcerack})
             robotfile.write(self.CmdTemplates["cmd-placeit-rack"] % pars)
             cmdnum += 1
@@ -999,17 +998,17 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         ntipsneeded = dict(tip50f=0, tip300f=0, tip1000f=0, tip50=0, tip300=0, tip1000=0)
         def tiptypefromvolume(vol):
             return "tip{}{}".format(50 if vol <= 50 else 300 if vol <= 300 else 1000, "f" if self.Usefiltertips else "")
-        for rackname, rackentries in self.ResuspendPlateVol.items():
-            for pos, vol in rackentries.items():
+        for rackname, rackentries in list(self.ResuspendPlateVol.items()):
+            for pos, vol in list(rackentries.items()):
                 ntipsneeded[tiptypefromvolume(vol)] += 1
         logger.info( "ntipsneeded: %s", ntipsneeded )
         # Fill with tips, but no more than needed.
-        for tipsize, tipsizecount in ntipsneeded.items():
+        for tipsize, tipsizecount in list(ntipsneeded.items()):
             for ntipracks in range((tipsizecount-1)/96+1): # python2 is doing floor division; change for python3.
                 slotnr = robotvalet.valet("tips")
                 if slotnr is None:
                     # This can happen if we have more sampletransfers than there is room for tips, and is not a big deal.
-                    print "Notice: Slot nr is None! (ntiprack" + str(ntipracks) + ")"
+                    print("Notice: Slot nr is None! (ntiprack" + str(ntipracks) + ")")
                     continue
                 pars = dict(self.ConstParams, cmdindex=cmdnum, slotnr=slotnr, tiptype=tipsize)
                 robotfile.write(self.CmdTemplates["cmd-placeit-tips"] % pars)
@@ -1031,13 +1030,13 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         aliquot_transfer_volsum = 0
         destin_index = transferDestStartIndex
         logger.debug("Creating sampletransfer cmds, sorted by %s, i.e. itemgetter(%s)", sortby, 1 if sortby=='volume' else 0)
-        for rackname, rackentries in self.ResuspendPlateVol.items():
+        for rackname, rackentries in list(self.ResuspendPlateVol.items()):
             # self.ResuspendPlateVol[rackname][pos]
             # rackentries[pos]=resuspendvol
             # Re: sorting a dict: http://stackoverflow.com/questions/613183/python-sort-a-dictionary-by-value
             # rackentries.items() returns a sequence of two-item tuples.(key,value)
             # after key=operator.itemgetter(1), invoking key(kvtuple) will yield kvtuple[1]
-            for pos, vol in sorted(rackentries.items(), key=operator.itemgetter(1 if sortby=='volume' else 0), reverse=True if sortby=='volume' else False):
+            for pos, vol in sorted(list(rackentries.items()), key=operator.itemgetter(1 if sortby=='volume' else 0), reverse=True if sortby=='volume' else False):
                 vardict = {"cmdheader":cmdnum, "cmdindex":cmdnum}
                 pars = dict(self.ConstParams, **vardict)
                 # standard parsvars include: cmdindex,
@@ -1058,7 +1057,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
                 pars["cmd-comment"] = "{}:{} (rack:pos) resuspending with {} ul.".format(rackname, pos, vol)
                 if tub_vol_used > 25000:
                     tub_no += 1
-                    print "BufferTub tub_no increased to {}".format(tub_no)
+                    print("BufferTub tub_no increased to {}".format(tub_no))
                     tub_vol_used = 0
                     if tub_no > 3:
                         raise NotImplementedError("Method not implemented for volumes larger than 3 x 25 ml!")
@@ -1108,15 +1107,15 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         # Edit: throwing robotfile StringIO to _writeStringIOtoFile
         self._writeStringIOtoFile(robotfile, filepath)
 
-        print "Robot method/program/application written to file: " + filepath # robotcmdfilename
-        print " -- total instructions: {}".format(cmdnum)
-        print " -- number of resuspensions: {}".format(vol_resuspend_count)
-        print " -- total resuspend vol: {}".format( sum( sum(rackentries.values()) for rackentries in self.ResuspendPlateVol.values() ) )
-        print " -- minimum resuspend vol: {}".format( min( min(rackentries.values()) for rackentries in self.ResuspendPlateVol.values() ) )
-        print " -- maximum resuspend vol: {}".format( max( max(rackentries.values()) for rackentries in self.ResuspendPlateVol.values() ) )
-        print " -- instructions sotred by: rack, then {}".format(sortby)
-        print " -- number of aliquot transfers: {}".format(aliquot_transfer_count)
-        print " -- total aliquot transfers vol: {}".format( aliquot_transfer_volsum )
+        print("Robot method/program/application written to file: " + filepath) # robotcmdfilename
+        print(" -- total instructions: {}".format(cmdnum))
+        print(" -- number of resuspensions: {}".format(vol_resuspend_count))
+        print(" -- total resuspend vol: {}".format( sum( sum(rackentries.values()) for rackentries in list(self.ResuspendPlateVol.values()) ) ))
+        print(" -- minimum resuspend vol: {}".format( min( min(rackentries.values()) for rackentries in list(self.ResuspendPlateVol.values()) ) ))
+        print(" -- maximum resuspend vol: {}".format( max( max(rackentries.values()) for rackentries in list(self.ResuspendPlateVol.values()) ) ))
+        print(" -- instructions sotred by: rack, then {}".format(sortby))
+        print(" -- number of aliquot transfers: {}".format(aliquot_transfer_count))
+        print(" -- total aliquot transfers vol: {}".format( aliquot_transfer_volsum ))
 
         return filepath
 
@@ -1131,11 +1130,11 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         This can (in theory) be implemented as a per-robot basis...
         """
         # Make sure source-pos is converted to source-row and source-col.
-        if not ("source-row" in instruction.keys()) and not ("source-col" in instruction.keys()):
+        if not ("source-row" in list(instruction.keys())) and not ("source-col" in list(instruction.keys())):
             (instruction["source-row"], instruction["source-col"]) = posToRowColTup(instruction["source-pos"])
         # Same for destin-pos
-        if not ("destin-row" in instruction.keys()) and not ("destin-col" in instruction.keys()):
-            if "destin-pos" in instruction.keys():
+        if not ("destin-row" in list(instruction.keys())) and not ("destin-col" in list(instruction.keys())):
+            if "destin-pos" in list(instruction.keys()):
                 (instruction["destin-row"], instruction["destin-col"]) = posToRowColTup(instruction["destin-pos"])
             else:
                 # Remember that destination is in a 4 by 6 tube rack.
@@ -1162,7 +1161,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
         self.ResuspendPlateVol = OrderedDict() # dict[plate][pos] = vol
         # self.Rackdata[rackfilename] = [list of rows in rackfile] - no, wait; I used DictReader, so it is a list of dicts :)
         # use Rackdata[rackfilename][idx]["rackname"] for rackname without file extension.
-        for rackdata in self.Rackdata.values():
+        for rackdata in list(self.Rackdata.values()):
 #            print "rackfilename: {}\nrowdict: {}".format(rackfilename,rowdict)
             try:
                 for rowdict in rackdata:
@@ -1171,7 +1170,7 @@ makes a fun more fail-safe, as it is easier to re-start the program after a fail
                         raise ValueError("gen_resuspend_plate_vol: volume too large ({} ul".format(vol))
                     rowdict["final_vol_ul"] = self.ResuspendPlateVol.setdefault(rowdict["rackname"], dict())[rowdict["Pos"]] = vol
             except KeyError:
-                logger.error("KeyError, rowdict.keys=%s, rowdict=%s", rowdict.keys(), rowdict)
+                logger.error("KeyError, rowdict.keys=%s, rowdict=%s", list(rowdict.keys()), rowdict)
         logger.debug("Calculated field 'final_vol_ul' for all rows in self.Rackdata. This is also available specifically in self.ResuspendPlateVol.")
 
 
@@ -1268,19 +1267,19 @@ if __name__ == "__main__":
         # init_resuspend is used to first re-dissolve oligos and then perform standard pipetting.
         try:
             logger.debug("Calculating field 'final_vol_ul' for all rows in sm.Rackdata. This is also available specifically in sm.ResuspendPlateVol.")
-            print "Adding redissolve steps to {} uM.".format(argsns.init_resuspend)
+            print("Adding redissolve steps to {} uM.".format(argsns.init_resuspend))
             sm.gen_resuspend_plate_vol(int(argsns.init_resuspend))
         except TypeError as e:
-            print "init_resuspend: ERROR. You must now provide the target concentration in uM after the parameter"
-            print e
+            print("init_resuspend: ERROR. You must now provide the target concentration in uM after the parameter")
+            print(e)
     if argsns.resuspend_only:
         # resuspend_only is used if you want to make a robot method that *only* does resuspension to a
         # specific concentration (calculating volume) and nothing else.
         # Note: the rack file should include positions for each entry.
         # This means that there is no reason to specify plate format for the source rack!
         # Other note: Currently not catching e.g. TypeErrors. If it fails, I want the whole script to fail.
-        print "Adding redissolve steps to {} uM.".format(argsns.resuspend_only)
-        print "Will redissolve racks by rack then volume, but not perform any pipetting."
+        print("Adding redissolve steps to {} uM.".format(argsns.resuspend_only))
+        print("Will redissolve racks by rack then volume, but not perform any pipetting.")
         #sm.gen_resuspend_plate_vol(int(argsns.resuspend_only)) # is handles by the generateResuspendDws method.
 
         robotfilepath = sm.generateResuspendDws(int(argsns.resuspend_only), sortby=argsns.resuspend_sortby,

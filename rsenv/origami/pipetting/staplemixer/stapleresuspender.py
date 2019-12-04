@@ -17,7 +17,7 @@
 
 
 
-from staplemixer import StapleMixer
+from .staplemixer import StapleMixer
 
 
 class StapleResuspender(StapleMixer):
@@ -55,25 +55,25 @@ class StapleResuspender(StapleMixer):
     Edit: This is currently implemented directly into the main staplemixer script.
     """
 
-    def generateResuspendInstructions(self):
-
-
-    for rack in self.Rackdata:
-
-                        # old:
-                        pipetdataset.append(dict(zip(
-                        self.PipDataFields, #["row","source-rackname","source-pos","destin-rackname","destin-index","volume","comment"]
-                        [pipetrow, rackrow["rackname"], sourcepos, destrackname, str(destindex), str(volume),
-                            "".join([modulename,": ", rackrow["rackname"],":",sourcepos,"->",destrackname,":",str(destindex)])
-                        ])))
-
-
-                        # New
-                        self.PipDataFields = ["row","source-rackname","source-pos","destin-rackname","destin-pos","volume","comment"]
-                        sourcepos=rackrow[self.findFieldByHint(rackrow.keys(), "pos")]
-                        pipetdataset.append(dict(zip(
-                        self.PipDataFields,
-                        #["row","source-rackname","source-pos","destin-rackname","destin-index","volume","comment"]
-                        [pipetrow, "BufferTub", "A01", rackrow["rackname"], sourcepos, destrackname, str(destindex), str(volume),
-                            "{}: {}:{}->{}:{}".format(modulename,rackrow["rackname"],sourcepos,destrackname,destindex)
-                        ])))
+    # def generateResuspendInstructions(self):
+    #
+    #
+    #     for rack in self.Rackdata:
+    #
+    #         # old:
+    #         pipetdataset.append(dict(zip(
+    #         self.PipDataFields, #["row","source-rackname","source-pos","destin-rackname","destin-index","volume","comment"]
+    #         [pipetrow, rackrow["rackname"], sourcepos, destrackname, str(destindex), str(volume),
+    #             "".join([modulename,": ", rackrow["rackname"],":",sourcepos,"->",destrackname,":",str(destindex)])
+    #         ])))
+    #
+    #
+    #         # New
+    #         self.PipDataFields = ["row","source-rackname","source-pos","destin-rackname","destin-pos","volume","comment"]
+    #         sourcepos=rackrow[self.findFieldByHint(rackrow.keys(), "pos")]
+    #         pipetdataset.append(dict(zip(
+    #         self.PipDataFields,
+    #         #["row","source-rackname","source-pos","destin-rackname","destin-index","volume","comment"]
+    #         [pipetrow, "BufferTub", "A01", rackrow["rackname"], sourcepos, destrackname, str(destindex), str(volume),
+    #             "{}: {}:{}->{}:{}".format(modulename,rackrow["rackname"],sourcepos,destrackname,destindex)
+    #         ])))

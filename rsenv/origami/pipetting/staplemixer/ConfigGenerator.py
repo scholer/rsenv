@@ -16,13 +16,12 @@
 ##    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-try: import simplejson as json
-except ImportError: import json
+import json
 import yaml
+
 
 class ConfigGenerator():
 
-    #self.Config = dict()
     def __init__(self):
         # Semantics: method, procedure, program, application, protocol - same same
         # Define what you want here. Use variable-placeholders for things that
@@ -232,7 +231,7 @@ Destination_Pat_Vorhanden=1
         # Just realized how shitty JSON is for storing configs: NO LINE BREAKS...
         format = format.lower()
         if not format in ("yaml", "json"):
-            print "Format: " + string(format) + " is not supported. Falling back to yaml."
+            print(f"Format: '{format}' is not supported. Falling back to yaml.")
             format = "yaml"
         if config is None:
             config = self.Config
@@ -248,7 +247,7 @@ Destination_Pat_Vorhanden=1
         elif format == "json":
             self.saveJson(config, filename)
         else:
-            print "WHAT"
+            print("WHAT")
 
     def saveJson(self, config, filename):
         with open(filename, 'wb') as cfgfile:
