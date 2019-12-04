@@ -30,12 +30,12 @@ class Helper:
 
     def getRowFromPos(self, pos):
         if not pos:
-            print "EpMotion:getRowFromPos(): Unexpected event: No pos..."
+            print("EpMotion:getRowFromPos(): Unexpected event: No pos...")
             return None
         return ord(pos[0].lower()) - ord('a') + 1
     def getColFromPos(self, pos):
         if not pos:
-            print "EpMotion:getColFromPos(): Unexpected event: No pos..."
+            print("EpMotion:getColFromPos(): Unexpected event: No pos...")
             return None
         return int(pos[1:])
 
@@ -221,7 +221,7 @@ if __name__ == "__main__":
     h = Helper()
     csvreader =  csv.reader(open('IcoKyle.csv', 'rU'), delimiter='\t')
 
-    print h.InitStr
+    print(h.InitStr)
     i = h.InitCmdCount
 
     for row in csvreader:
@@ -234,18 +234,18 @@ if __name__ == "__main__":
             continue
         i += 1
         # row is a list of the (column) entries in the file's line.
-        print h.STcmd % dict(cmdnum=i,
+        print(h.STcmd % dict(cmdnum=i,
                              srcrack=row[1],
                              srcrowindex=h.getRowFromPos(row[2]),
                              srccolindex=h.getColFromPos(row[2]),
                              dstrowindex=h.getRowFromPos(row[0]),
                              dstcolindex=h.getColFromPos(row[0]),
-                             )
+                             ))
 
     i += 1
-    print h.PostRunCmd % i
+    print(h.PostRunCmd % i)
     i += 1
-    print h.EndCmd % i
+    print(h.EndCmd % i)
 
 
 

@@ -17,7 +17,7 @@
 # pylint: disable-msg=W0612,R0903
 """
 Module with various file-related utility functions.
-Brutally taken from the old staplemixer.FileHelper object and
+Brutally taken from the old epmotion_staplemixer.FileHelper object and
 split into functions rather than having an unnessecary class helper.
 
 This contains all functions relevant to (csv) files.
@@ -262,7 +262,7 @@ def gen_xls_data(fd):
     ws = wb.sheets()[0]
     logger.info("Using worksheet: '%s'", ws.name)
     fieldheaders = ws.row_values(0)
-    data = ( dict(zip(fieldheaders, ws.row_values(i))) for i in xrange(1, ws.nrows) )
+    data = ( dict(list(zip(fieldheaders, ws.row_values(i)))) for i in range(1, ws.nrows) )
     return data
 
 
@@ -303,9 +303,9 @@ def writecsvdata(filehandle, data, dialect=None):
     firstrow = True
     for row in data:
         if firstrow:
-            filehandle.write( dialect.delimiter.join(row.keys()))
+            filehandle.write( dialect.delimiter.join(list(row.keys())))
         firstrow = False
-        filehandle.write(dialect.newline+dialect.delimiter.join(str(val) for val in row.values()))
+        filehandle.write(dialect.newline+dialect.delimiter.join(str(val) for val in list(row.values())))
 
 
 class Csvdialect(csv.excel_tab):

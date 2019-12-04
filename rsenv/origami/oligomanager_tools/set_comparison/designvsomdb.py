@@ -26,7 +26,7 @@ import csv, getpass
 #from compareoligosets import OligosetComparator
 #import * from compareoligosets
 # Import into current/main/global namespace:
-from compareoligosets import *
+from .compareoligosets import *
 
 
 if __name__ == "__main__":

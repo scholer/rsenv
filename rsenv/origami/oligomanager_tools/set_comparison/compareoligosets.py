@@ -55,12 +55,12 @@ class Design:
     def make_fieldsmap(self):
         """
         See also:
-            staplemixer/staplemixer.py
-            staplemixer/fileutils.py:findFieldsByHint()
+            epmotion_staplemixer/epmotion_staplemixer.py
+            epmotion_staplemixer/fileutils.py:findFieldsByHint()
         """
         searchfields = dict(moduleclass=('moduleclass', 'module', 'color'),
                             sequence=('sequence', 'seq'))
-        for searchfield, lookitems in searchfields.items():
+        for searchfield, lookitems in list(searchfields.items()):
             self.Fields[searchfield] = None
             for candidate in lookitems:
                 if self.Fields[searchfield] is not None:
@@ -71,10 +71,10 @@ class Design:
                         self.Fields[searchfield] = filefield
                         break
             if self.Fields[searchfield] is None:
-                print "Error, could not find any columns specifying the " + searchfield + " for filename: " + self.Filepath
+                print("Error, could not find any columns specifying the " + searchfield + " for filename: " + self.Filepath)
                 self.AllOK = False # Flag not to continue... Not used?
             if self.Verboselevel > 3:
-                print "self.Fields: %s" % self.Fields
+                print("self.Fields: %s" % self.Fields)
 
 
     def parse_csvfile(self, filepath=None):
@@ -88,15 +88,15 @@ class Design:
             self.Filepath = filepath
             self.Filename = os.path.dirname(filepath)
         if not filepath:
-            print "No filepath provided, aborting..:!"
+            print("No filepath provided, aborting..:!")
             return False
         dataset, filefields = self._read_csvfile_from_file(self.Filepath)
         self.FileFields = filefields
         self.Dataset = dataset
 
         if self.Verboselevel > 6:
-            print "Dataset from file: " + designfilename
-            print self.Dataset
+            print("Dataset from file: " + designfilename)
+            print(self.Dataset)
         # Find the key specifying the module... (first 'module', then if no 'module' field, search for 'color').
         self.make_fieldsmap()
 
@@ -111,15 +111,15 @@ class Design:
             self.Modulesets[row[self.Fields['moduleclass']]].add(row[self.Fields['sequence']])
             # It should also be easy to find the module of a particular sequence without looping further:
             if row[self.Fields['sequence']] in self.OligoModules:
-                print "WARNING: sequence " + row[self.Fields['sequence']] + " is present multiple times."
+                print("WARNING: sequence " + row[self.Fields['sequence']] + " is present multiple times.")
                 if self.OligoModules[row[self.Fields['sequence']]] != row[self.Fields['moduleclass']]:
-                    print "--> AND THE SEQUENCE IS PRESENT IN TWO DIFFERENT MODULES, " + self.OligoModules[row[self.Fields['sequence']]] + " and " + row[self.Fields['moduleclass']]
+                    print("--> AND THE SEQUENCE IS PRESENT IN TWO DIFFERENT MODULES, " + self.OligoModules[row[self.Fields['sequence']]] + " and " + row[self.Fields['moduleclass']])
             self.OligoModules[row[self.Fields['sequence']]] = row[self.Fields['moduleclass']]
             self.OligoInfo[row[self.Fields['sequence']]] = row
         if self.Verboselevel > 5:
-            print "Design and module-sets for designfile: " + designfilename
-            print self.Designset
-            print self.Modulesets
+            print("Design and module-sets for designfile: " + designfilename)
+            print(self.Designset)
+            print(self.Modulesets)
 
         return self
 
@@ -203,10 +203,10 @@ class OligosetComparator:
         Compares self.Designs[0] against self.Designs[1].
         """
         if len(self.Designs) < 2:
-            print "compareDesigns() ERROR: self.Designs < 2 - aborting !"
+            print("compareDesigns() ERROR: self.Designs < 2 - aborting !")
             return
         # Finished parsing the designs, let's do some initial comparison:
-        print self.Designs
+        print(self.Designs)
         self.DesignsetIntersection = self.Designs[0].Designset & self.Designs[1].Designset # set.intersection(other_set)
         self.DesignsetSymmetricDifference = self.Designs[0].Designset ^ self.Designs[1].Designset # set.symmetric_difference(other_set)
 
@@ -223,19 +223,19 @@ class OligosetComparator:
             design.UnchangedModules = set()
             design.ChangedModules = set()
             other_design = self.Designs[1] if i == 0 else self.Designs[0]
-            print "\n----" + '-'*len("Report for " + design.Filename) + "-"*6
-            print "--- Report for " + design.Filename + " " + "-"*5
-            print "----" + '-'*len("Report for " + design.Filename) + "-"*6
-            print "Compared against: " + other_design.Filename
-            print "Modules in this design: " + ", ".join(sorted(list(design.Modulesets.keys())))
-            print "COMMON/SHARED MODULES (modules found in both designs): {}".format(
-                ", ".join(sorted(list(self.CommonModuleNames))) if self.CommonModuleNames else '<none>')
-            print "ADDED MODULES (modules unique to this design, not found in the other design): {}".format(
-                sorted(design.UniqueModules) if design.UniqueModules else '<none>')
-            print "REMOVED MODULES (modules in other design not found in this design): {}".format(
-                sorted(other_design.UniqueModules) if other_design.UniqueModules else '<none>')
+            print("\n----" + '-'*len("Report for " + design.Filename) + "-"*6)
+            print("--- Report for " + design.Filename + " " + "-"*5)
+            print("----" + '-'*len("Report for " + design.Filename) + "-"*6)
+            print("Compared against: " + other_design.Filename)
+            print("Modules in this design: " + ", ".join(sorted(list(design.Modulesets.keys()))))
+            print("COMMON/SHARED MODULES (modules found in both designs): {}".format(
+                ", ".join(sorted(list(self.CommonModuleNames))) if self.CommonModuleNames else '<none>'))
+            print("ADDED MODULES (modules unique to this design, not found in the other design): {}".format(
+                sorted(design.UniqueModules) if design.UniqueModules else '<none>'))
+            print("REMOVED MODULES (modules in other design not found in this design): {}".format(
+                sorted(other_design.UniqueModules) if other_design.UniqueModules else '<none>'))
 
-            print "\nPer oligo sequence changes for common/shared modules:"
+            print("\nPer oligo sequence changes for common/shared modules:")
             for module in self.CommonModuleNames: # (set(design.Modulesets.keys()) - design.UniqueModules())
                 if len(design.Modulesets[module] ^ other_design.Modulesets[module]) == 0:
                     # Edit: Now using symmetric_difference (^) instead of difference (-)
@@ -243,32 +243,32 @@ class OligosetComparator:
                 else:
                     design.ChangedModules.add(module)
             if (not design.UniqueModules) and (not design.ChangedModules):
-                print "( And all modules in the two designs include identical sets of oligos. Bye! )"
+                print("( And all modules in the two designs include identical sets of oligos. Bye! )")
                 return
-            print "Common/shared modules that are completely unchanged: {}".format(
-                ", ".join(sorted(list(design.UnchangedModules))) if design.UnchangedModules else "<none>")
-            print "Common/shared modules with changed oligos in this design: " + ", ".join(sorted(list(design.ChangedModules)))
+            print("Common/shared modules that are completely unchanged: {}".format(
+                ", ".join(sorted(list(design.UnchangedModules))) if design.UnchangedModules else "<none>"))
+            print("Common/shared modules with changed oligos in this design: " + ", ".join(sorted(list(design.ChangedModules))))
             #if design.UniqueModules:
             #    print "New (unique) module names/classes in this design:      " + ", ".join(design.UniqueModules)
             #    print "(Removed module classes in this design:                " + ", ".join(other_design.UniqueModules) + ")"
             for module in design.ChangedModules:
-                print "+New oligos in module\t" + module + "\t\t (Start pos noted afterwards)"
-                print "++ " + "\n++ ".join([oligo +
+                print("+New oligos in module\t" + module + "\t\t (Start pos noted afterwards)")
+                print("++ " + "\n++ ".join([oligo +
                     ("\t\t" + "-".join([design.OligoInfo[oligo]['Start'] if 'Start' in design.OligoInfo[oligo] else '',
                                         design.OligoInfo[oligo]['End'] if 'End' in design.OligoInfo[oligo] else '(no-end-info)']))
-                    for oligo in (design.Modulesets[module] - other_design.Modulesets[module])])
-                print "-Oligos removed from module: " + module
-                print "-- " + "\n-- ".join([oligo +
+                    for oligo in (design.Modulesets[module] - other_design.Modulesets[module])]))
+                print("-Oligos removed from module: " + module)
+                print("-- " + "\n-- ".join([oligo +
                     ("\t\t" + "-".join([other_design.OligoInfo[oligo]['Start'] if 'Start' in other_design.OligoInfo[oligo] else '',
                                         other_design.OligoInfo[oligo]['End'] if 'End' in other_design.OligoInfo[oligo] else '(no-end-info)']))
-                    for oligo in (other_design.Modulesets[module] - design.Modulesets[module])])
-            print ""
+                    for oligo in (other_design.Modulesets[module] - design.Modulesets[module])]))
+            print("")
             if design.UniqueModules:
-                print "Further details for the new/unique module-classes in this design:"
+                print("Further details for the new/unique module-classes in this design:")
             #print "Per oligo sequence changes (unique module classes):"
             for module in design.UniqueModules:
                 if module is None:
-                    print "Error: module is None. design.UniqueModules is: {}".format(design.UniqueModules.keys())
+                    print("Error: module is None. design.UniqueModules is: {}".format(list(design.UniqueModules.keys())))
                     continue
                 similar_module = None
                 n_best = 0
@@ -278,16 +278,16 @@ class OligosetComparator:
                         n_best = n_common_oligos
                         similar_module = other_module
                 if n_best == len(design.Modulesets[module]) and len(design.Modulesets[module]) == len(other_design.Modulesets[other_module]):
-                    print "".join(["Module ", module, " is IDENTICAL TO ", similar_module, " (", str(n_best), " of ", str(len(design.Modulesets[module])), " in common)"])
+                    print("".join(["Module ", module, " is IDENTICAL TO ", similar_module, " (", str(n_best), " of ", str(len(design.Modulesets[module])), " in common)"]))
                     continue
                 if similar_module:
-                    print "Module %s is similar to %s (%s of %s in common)" % (module, similar_module, n_best, len(design.Modulesets[module]) )
+                    print("Module %s is similar to %s (%s of %s in common)" % (module, similar_module, n_best, len(design.Modulesets[module]) ))
                     #print "".join(["Module ", module, " is similar to ", similar_module, " (", str(n_best), " of ", str(len(design.Modulesets[module])), " in common)"])
-                    print "+New oligos (%s minus %s):" % (module, similar_module)
+                    print("+New oligos (%s minus %s):" % (module, similar_module))
                     #print "+New oligos: (" + module + " minus " + similar_module + ")"
-                    print "++" + "\n++".join(design.Modulesets[module] - other_design.Modulesets[similar_module])
-                    print "-Removed oligos: ({} minus {})\n--{}\n".format(similar_module,
-                            module, "\n--".join(other_design.Modulesets[similar_module] - design.Modulesets[module]))
+                    print("++" + "\n++".join(design.Modulesets[module] - other_design.Modulesets[similar_module]))
+                    print("-Removed oligos: ({} minus {})\n--{}\n".format(similar_module,
+                            module, "\n--".join(other_design.Modulesets[similar_module] - design.Modulesets[module])))
                 #print "-Removed oligos: (" + similar_module + " minus " + module + ")"
                 #print "--" +
                 #print ""
@@ -365,13 +365,13 @@ JOIN om.containers c ON c.id = s.rack_id;"""
         for design in self.Designs:
             modulefield = design.Fields['moduleclass']
             sequencefield = design.Fields['sequence']
-            print "\ncompareDesignVsOligosOld():\nComparing design " + design.Filename + " against oligomanager database..."
-            print "The following rows were not detected in the database:"
-            print "\t".join(design.FileFields) # print headers:
+            print("\ncompareDesignVsOligosOld():\nComparing design " + design.Filename + " against oligomanager database...")
+            print("The following rows were not detected in the database:")
+            print("\t".join(design.FileFields)) # print headers:
             for row in design.Dataset: # list of dicts...
                 if row[sequencefield] not in db_oligos:
                     #print " - " + "\t".join(row.values()) # Random order...
-                    print " - " + "\t".join([row[field] for field in design.FileFields]) # Same order as the file...
+                    print(" - " + "\t".join([row[field] for field in design.FileFields])) # Same order as the file...
                 else:
                     oligo_rack = db_oligos[row[sequencefield]][0] # Just take the first rack in the rack tuple.
                     racks.add(oligo_rack)
@@ -379,8 +379,8 @@ JOIN om.containers c ON c.id = s.rack_id;"""
                         rack_oligo_count[oligo_rack] += 1
                     else:
                         rack_oligo_count[oligo_rack] = 1
-        print "The rest of the oligos in the design were found in the following racks:"
-        print "\n".join([key + " (" + str(val) + ")" for key,val in rack_oligo_count.items()])
+        print("The rest of the oligos in the design were found in the following racks:")
+        print("\n".join([key + " (" + str(val) + ")" for key,val in list(rack_oligo_count.items())]))
 
 
 
@@ -394,12 +394,12 @@ JOIN om.containers c ON c.id = s.rack_id;"""
         """
 
         # 1) READ RACK DATA and make oligo_racks DATASTRUCTURE:
-        # Copy/paste a lot from staplemixer:
+        # Copy/paste a lot from epmotion_staplemixer:
         if rackfilenames is None:
             ext = ".rack.csv"
             #rackfilenames = [fname for fname in os.listdir(os.getcwd()) if fname[len(fname)-len(ext):] == ext] # filter
             rackfilenames = glob.glob("*.rack.csv")
-            print "Rackfiles: {0}".format(rackfilenames)
+            print("Rackfiles: {0}".format(rackfilenames))
         # Make rackdata structure:
         # keys are rackfilename, e.g. Rackdata["IDT_2013_1-96"]= [ list where each entry is a list of values in for every line in the rack file ]
         self.Rackdata = dict()
@@ -416,7 +416,7 @@ JOIN om.containers c ON c.id = s.rack_id;"""
                 # Import data
                 # Note: Dataset is a list of dicts.
                 self.Rackdata[rackfilename] = [row for row in setreader if len(row)>0]
-                rackfileseqfield = self.findFieldByHint(self.Rackdata[rackfilename][0].keys(), "seq")
+                rackfileseqfield = self.findFieldByHint(list(self.Rackdata[rackfilename][0].keys()), "seq")
                 for row in self.Rackdata[rackfilename]:
                     # Create new field or override existing:
                     row["Sequence"] = row[rackfileseqfield].strip().replace(" ", "")
@@ -425,10 +425,10 @@ JOIN om.containers c ON c.id = s.rack_id;"""
         # oligo_racks[<oligo seq>] = dict(<rack name>=[<list with datarows>])
         # e.g. oligo_racks['ATCGTTC'] = {"IDT_1":[datarowdict1,datarowdict2],"DNAtech2":[...] }
 
-        # Also based on staplemixer code:
+        # Also based on epmotion_staplemixer code:
         oligo_racks = dict()
         seqs_present_in_multiple_racks = set() # Keeping track of special oligos
-        for rackname,rackdata in self.Rackdata.items():
+        for rackname,rackdata in list(self.Rackdata.items()):
             rackname = self.removeFileExt(rackname, (".rack.csv", ".csv")) # Nice to have...
             seqfield = "Sequence" # C.f. the row["Sequence"] hardcoded definition above.
             for row in rackdata:
@@ -478,7 +478,7 @@ JOIN om.containers c ON c.id = s.rack_id;"""
         if racknames is None:
             # From: http://stackoverflow.com/questions/952914/making-a-flat-list-out-of-list-of-lists-in-python
             # There is also a faster alternative using itertools.chain.from_iterable()
-            racknames = set([rackname for k,entry in oligo_racks.items() for rackname in entry.keys()])
+            racknames = set([rackname for k,entry in list(oligo_racks.items()) for rackname in list(entry.keys())])
 
         for design in designs:
             # rack_oligo_count is used to keep track of how many oligos were used from each rack.
@@ -489,11 +489,11 @@ JOIN om.containers c ON c.id = s.rack_id;"""
             flag_beSilent = False
             modulefield = design.Fields['moduleclass']
             sequencefield = design.Fields['sequence']
-            print "\nComparing design '{0}' against oligos in racks: {1}".format(
-                design.Filename, racknames)
+            print("\nComparing design '{0}' against oligos in racks: {1}".format(
+                design.Filename, racknames))
 #                design.Filename, rackfiles=", ".join(racknames))
-            print "1) The following rows in the design file were not found in the racks:"
-            print "\t".join(design.FileFields) # print headers:
+            print("1) The following rows in the design file were not found in the racks:")
+            print("\t".join(design.FileFields)) # print headers:
             # The actual parsing here is a little different from compareDesignVsDbSols:
             # because there I expected a sequence to be in one and only one rack.
             # Here I take into account that each sequence might be in several racks
@@ -504,10 +504,10 @@ JOIN om.containers c ON c.id = s.rack_id;"""
                 if seq not in oligo_racks:
                     #print " - " + "\t".join(row.values()) # Random order...
                     oligos_not_found += 1
-                    print " - " + "\t".join([row[field] for field in design.FileFields]) # Same order as the file...
+                    print(" - " + "\t".join([row[field] for field in design.FileFields])) # Same order as the file...
                 else:
                     # For this purpose, I just want to keep count of how many oligos were used from each rack:
-                    racks_for_present_seq = oligo_racks[seq].keys()
+                    racks_for_present_seq = list(oligo_racks[seq].keys())
                     if len(racks_for_present_seq) > 1:
                         seqs_present_in_multiple_racks.add(seq)
                         for rackname in racks_for_present_seq:
@@ -521,32 +521,32 @@ JOIN om.containers c ON c.id = s.rack_id;"""
                         else:
                             # Rack not counted before. Rackname must be added to counter and value set to 1.
                             rack_oligo_count[rackname] = 1
-            print "Totalling {0} oligos that were not found.".format(oligos_not_found)
-            print "2a) The following oligo sequences are found in multiple racks: {0}".format(
-                "(none)" if len(seqs_present_in_multiple_racks) < 1 else "")
+            print("Totalling {0} oligos that were not found.".format(oligos_not_found))
+            print("2a) The following oligo sequences are found in multiple racks: {0}".format(
+                "(none)" if len(seqs_present_in_multiple_racks) < 1 else ""))
 #            if len(seqs_present_in_multiple_racks) < 1:
 #                print " (none of the oligos in the design are found in multiple racks)"
             #print "\n".join([key + " (" + str(val) + ")" for key,val in rack_oligo_count.items()])
             for seq in seqs_present_in_multiple_racks:
-                print " - {0} : [{1}]".format(seq,
+                print(" - {0} : [{1}]".format(seq,
                     ["{0} ({1})".format(rackname,len(rackdatarows))
-                    for rackname,rackdatarows in oligo_racks[seq].items()])
+                    for rackname,rackdatarows in list(oligo_racks[seq].items())]))
                 #for rackname,rackdatarows in oligo_racks[seq].items():
                 #    print "{0}: {1}".format(rackname, rackdatarows)
-            print "2b) The rest of the oligos in the design were found in the following racks:"
+            print("2b) The rest of the oligos in the design were found in the following racks:")
             # Which code line is more readable: (last line is oldest;
             # when I really wanted to minimalize my code. At present, I prefer readability.
-            for rackname,count in rack_oligo_count.items():
-                print "{0} ({1})".format(rackname,count)
+            for rackname,count in list(rack_oligo_count.items()):
+                print("{0} ({1})".format(rackname,count))
             #print "\n".join(["{0} ({1})".format(rackname,count) for rackname,count in rack_oligo_count.items()])
             #print "\n".join([key + " (" + str(val) + ")" for key,val in rack_oligo_count.items()])
 
 
 
 
-    # Copy/paste helper methods from staplemixer:
+    # Copy/paste helper methods from epmotion_staplemixer:
     def findFieldByHint(self, candidates, hints):
-        """ From staplemixer.py
+        """ From epmotion_staplemixer.py
             Used to select a particular candidate determined from a hint,
             e.g. hint "seq" will find "Sequence" in candidates ("Rack","Sequence","Start")
         """
@@ -575,17 +575,17 @@ JOIN om.containers c ON c.id = s.rack_id;"""
 def comparedesignfiles(designfilenames):
     oc = OligosetComparator([designfilenames], verboselevel=0)
     if not oc.AllOK:
-        print "oc.AllOK is false, aborting..."
+        print("oc.AllOK is false, aborting...")
         return
-    print "{0}: doing OligosetComparator.compareDesigns() with designfiles: {1}, {2}".format(
-      "compareoligosets.py",args.design1filename, args.design2filename)
+    print("{0}: doing OligosetComparator.compareDesigns() with designfiles: {1}, {2}".format(
+      "compareoligosets.py",args.design1filename, args.design2filename))
     oc.compareDesigns()
 
 def compareDesignVsDb(designfilename, conn_string):
     import getpass
     oc  = OligosetComparator([designfilename])
     if not oc.AllOK:
-        print "oc.AllOK is false, aborting..."
+        print("oc.AllOK is false, aborting...")
         return
     #conn_string = "host=10.14.40.243 user=postgres dbname=oligomanager"
     # getpass is a more proper alternative to python 2's input_raw(<prompt>) function.
@@ -597,7 +597,7 @@ def compareDesignVsDb(designfilename, conn_string):
 def compareDesignVsRackfiles(designfilename, rackfiles=None):
     oc  = OligosetComparator([designfilename])
     if not oc.AllOK:
-        print "oc.AllOK is false, aborting..."
+        print("oc.AllOK is false, aborting...")
         return
     oc.compareDesignVsRackfiles()
 
@@ -629,8 +629,8 @@ if __name__ == "__main__":
 
     oc  = OligosetComparator([args.design1filename, args.design2filename], verboselevel=6)
     if oc.AllOK:
-        print "{0}: doing OligosetComparator.compareDesigns() with designfiles: {1}, {2}".format(
-          "compareoligosets.py",args.design1filename, args.design2filename)
+        print("{0}: doing OligosetComparator.compareDesigns() with designfiles: {1}, {2}".format(
+          "compareoligosets.py",args.design1filename, args.design2filename))
         oc.compareDesigns()
     else:
-        print "oc.AllOK is false, aborting..."
+        print("oc.AllOK is false, aborting...")

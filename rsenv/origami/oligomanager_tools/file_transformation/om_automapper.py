@@ -29,8 +29,8 @@ Created on Mon Aug  8 17:45:12 2011
 
 import argparse
 import os
-from sequencemapper import OligosetFileSequenceMapper
-from modulecolormapper import OligosetFileColorMapper
+from .sequencemapper import OligosetFileSequenceMapper
+from .modulecolormapper import OligosetFileColorMapper
 
 #from pprint import pprint
 #from StringCompareLimit import StringCompareLimit
@@ -65,7 +65,7 @@ def findmostsimilar(designname, ext):
     dirlist = [fname for fname in os.listdir(os.getcwd()) if fname[len(fname)-len(ext):] == ext] # filter
     # Need to make sure that we have candidates. dirlist might be empty.
     if not dirlist:
-        print "WARNING: No map-file candidates were found with extension %s" % ext
+        print("WARNING: No map-file candidates were found with extension %s" % ext)
         # just return None and it will be dealt with properly. Do not return "".
         return None
     best_score = 0
@@ -101,21 +101,21 @@ if __name__ == "__main__":
 
     mapfile = mapfiles[0]
     if mapfile is None:
-        print "Could not find any proper sequence maps."
-        print "However, I will still run the list through the sequencemap, replacing up to 16 '" + args.mapchar + "' with the same number of 'T's."
+        print("Could not find any proper sequence maps.")
+        print("However, I will still run the list through the sequencemap, replacing up to 16 '" + args.mapchar + "' with the same number of 'T's.")
         initialDict = dict([(i, 'T'*i) for i in range(20)])
     else:
         initialDict = dict([(i, 'T'*i) for i in range(8)])
-        print "Using sequence map file: " + mapfile
-        print "--Also replacing up to 6 {0} with the same number of 'T's.".format(args.mapchar)
+        print("Using sequence map file: " + mapfile)
+        print("--Also replacing up to 6 {0} with the same number of 'T's.".format(args.mapchar))
 
 
-    print "Using file: '{}'".format(filename)
-    print "Current working directory: '{}'".format(os.getcwd())
-    print "Does file exists? {}".format(os.path.exists(filename))
+    print("Using file: '{}'".format(filename))
+    print("Current working directory: '{}'".format(os.getcwd()))
+    print("Does file exists? {}".format(os.path.exists(filename)))
     fullpath = os.path.join(os.getcwd(), filename)
-    print "Fullpath: '{}'".format(fullpath)
-    print "Does cwd+filename exists? {}".format(os.path.exists(fullpath))
+    print("Fullpath: '{}'".format(fullpath))
+    print("Does cwd+filename exists? {}".format(os.path.exists(fullpath)))
 
     maptransformer = OligosetFileSequenceMapper(filename,
                                                 mapfile,
@@ -124,18 +124,18 @@ if __name__ == "__main__":
                                                 verboselevel=2)
     maptransformer.transformData()
     filename += ".smmc"
-    print "Writing file: " + filename
+    print("Writing file: " + filename)
     maptransformer.writeNewData(filename)
 
     mapfile = mapfiles[1]
     if mapfile is None:
-        print "\nCould not find any proper module color maps, skipping."
+        print("\nCould not find any proper module color maps, skipping.")
     else:
-        print "\nUsing module color map file: " + mapfile
+        print("\nUsing module color map file: " + mapfile)
         maptransformer = OligosetFileColorMapper(filename,
                                                 mapfile,
                                                 verboselevel=2)
         maptransformer.mapColorsToModules()
         #filename += ".mc"
-        print "Writing file: " + filename
+        print("Writing file: " + filename)
         maptransformer.writeNewData(filename)#,fieldsep='\t')

@@ -22,7 +22,7 @@ Note: This code implements two paradigms/idioms:
 
 This is a helper script, aimed to solve the following scenario:
     You have a specsheet from IDT which includes oligos for multiple racks.
-    The staplemixer assumes one-file-per-plate.
+    The epmotion_staplemixer assumes one-file-per-plate.
 
 Solution:
     1) Find a *.allracks.csv file or take one as first command line argument
@@ -51,7 +51,7 @@ sys.path.append(os.path.dirname(scriptdir))
 sys.path.append(os.path.dirname(os.path.dirname(scriptdir)))
 logger.debug("sys.path is: %s", sys.path)
 # The module might also change...
-from rspyutilslib.oligodatalib.rackfileutils import read_monolithic_rackfile, writerackdatastructstofiles, filter_racksdata
+from rsenv.origami.oligomanager_lib.oligodatalib.rackfileutils import read_monolithic_rackfile, writerackdatastructstofiles, filter_racksdata
 
 
 def find_default_inputfilename():
@@ -71,7 +71,7 @@ if __name__ == '__main__':
 
     logging.getLogger("__main__").setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
-    logging.getLogger("staplemixer.staplemixer").setLevel(logging.DEBUG)
+    logging.getLogger("epmotion_staplemixer.epmotion_staplemixer").setLevel(logging.DEBUG)
     logfmt = "%(levelname)s:%(name)s:%(lineno)s %(funcName)s(): %(message)s"
     logging.basicConfig(level=logging.INFO, format=logfmt)
 
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="""
 This is a helper script, aimed to solve the following scenario:
     You have a specsheet from IDT which includes oligos for multiple racks.
-    The staplemixer assumes one-file-per-plate.
+    The epmotion_staplemixer assumes one-file-per-plate.
 """ )
     #parser.add_argument('-f', '--designfilename', help="The exported cadnano sequence list, comma-separated file (*.csv).")
     # default is dictated by gen_input_filenames().

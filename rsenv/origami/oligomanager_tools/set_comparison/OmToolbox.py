@@ -43,29 +43,29 @@ and not hidden as class functions or object methods.
 
 
 import csv, re
-from StringCompareLimit import StringCompareLimit
+from .StringCompareLimit import StringCompareLimit
 
 class OmToolbox:
     def printSetDiff(self, org, new):
         myset = org & new
-        print 'Common to both sets: ' + str(len(myset)) + ' elements'
+        print('Common to both sets: ' + str(len(myset)) + ' elements')
         for elem in myset: # Same as org.intersection(new)
-            print elem
-        print
+            print(elem)
+        print()
         myset = org - new # Same as org.difference(new)
-        print 'Removed (org set minus new set): ' + str(len(myset)) + ' elements'
+        print('Removed (org set minus new set): ' + str(len(myset)) + ' elements')
         for elem in myset:
-            print elem
-        print
+            print(elem)
+        print()
         myset = new - org
-        print 'Added (new set minus org set): ' + str(len(myset)) + ' elements'
+        print('Added (new set minus org set): ' + str(len(myset)) + ' elements')
         for elem in myset: # Same as new.difference(old)
-            print elem
+            print(elem)
 
     def compareOligoSets(self, org, new):
-        print "1) Extract oligos and just compare the two sets:"
-        print "2) Compare full set (adding annotations, etc)"
-        wtd = input_raw('What to do')
+        print("1) Extract oligos and just compare the two sets:")
+        print("2) Compare full set (adding annotations, etc)")
+        wtd = input('What to do')
 
 
     def compareSetAgainstMany(self, existing_sets, new):
@@ -92,24 +92,24 @@ class OmToolbox:
         comparator = StringCompareLimit(limit=limit)
         myset = org & new
 
-        print 'Common to both sets: ' + str(len(myset)) + ' elements'
+        print('Common to both sets: ' + str(len(myset)) + ' elements')
         for elem in myset: # Same as org.intersection(new)
             eleminfo = ''
             if not orgseqdict is None:
                 if elem in orgseqdict: eleminfo = " " + str(newseqdict[elem])
             else: eleminfo = " (no info-)"
-            print elem + eleminfo
-        print
+            print(elem + eleminfo)
+        print()
         myset = org - new # Same as org.difference(new)
-        print "Removed: (oligos which were present in %s set but not in %s set) %s elements'" % ("old", "new", str(len(myset)))
-        print "limit = " + str(limit)
+        print("Removed: (oligos which were present in %s set but not in %s set) %s elements'" % ("old", "new", str(len(myset))))
+        print("limit = " + str(limit))
         similarCount = 0
         for elem in myset:
             eleminfo = ''
             if not orgseqdict is None:
                 if elem in orgseqdict: eleminfo = " " + str(orgseqdict[elem])
             else: eleminfo = " (no info-)"
-            print "Removed from org set: " + elem + eleminfo
+            print("Removed from org set: " + elem + eleminfo)
             similarOligos = list()
             for oligo in new:
                 similarity = comparator.recalculate(elem, oligo)
@@ -119,23 +119,23 @@ class OmToolbox:
                 if similarity > limit:
                     similarOligos.append(oligo)
                     #self.printSimilar(oligo, len("Removed from org set: "), newseqdict[oligo])
-                    print "\- - Similar to:           "[0:len("Removed from org set: ")] + oligo + oligoinfo
+                    print("\- - Similar to:           "[0:len("Removed from org set: ")] + oligo + oligoinfo)
             if len(similarOligos) > 0: similarCount += 1
             #print "".join(['-Similar to '] + similarOligos)
-        print "Summary: "+str(len(myset))+" oligos removed, "+str(similarCount)+" of these are similar to oligos in the new set."
+        print("Summary: "+str(len(myset))+" oligos removed, "+str(similarCount)+" of these are similar to oligos in the new set.")
 
 
         myset = new - org # Same as new.difference(old)
-        print ""
-        print 'Added (new set minus org set): ' + str(len(myset)) + ' elements'
-        print "limit = " + str(limit)
+        print("")
+        print('Added (new set minus org set): ' + str(len(myset)) + ' elements')
+        print("limit = " + str(limit))
         similarCount = 0
         for elem in myset:
             eleminfo = ''
             if not newseqdict is None:
                 if elem in newseqdict: eleminfo = " " + str(newseqdict[elem])
             else: eleminfo = " (no info-)"
-            print "Added to new set: " + elem + eleminfo
+            print("Added to new set: " + elem + eleminfo)
             similarOligos = list()
             for oligo in org:
                 similarity = comparator.recalculate(elem, oligo)
@@ -144,10 +144,10 @@ class OmToolbox:
                     if not orgseqdict is None:
                         if oligo in orgseqdict: oligoinfo = " " + str(orgseqdict[oligo])
                     else: oligoinfo = " (no info)"
-                    print "\- - Similar to:           "[0:len("Added to new set: ")] + oligo + oligoinfo
+                    print("\- - Similar to:           "[0:len("Added to new set: ")] + oligo + oligoinfo)
             if len(similarOligos) > 0: similarCount += 1
             #print "".join(['-Similar to '] + similarOligos)
-        print "Summary: "+str(len(myset))+" oligos removed, "+str(similarCount)+" of these are similar to oligos in the old set."
+        print("Summary: "+str(len(myset))+" oligos removed, "+str(similarCount)+" of these are similar to oligos in the old set.")
 
     def printSimilar(self, oligo, prefixlength, seqdict):
         if seqdict==None:
@@ -170,7 +170,7 @@ class OmToolbox:
                 fp = open(cadnanofile, "rU")
                 #print "Opened " + cadnanofile
             except csv.Error:
-                print "Could not open <str> cadnanofile: " + cadnanofile
+                print("Could not open <str> cadnanofile: " + cadnanofile)
         else: fp = cadnanofile
 
         reader = csv.reader(fp, delimiter='\t')
@@ -184,21 +184,21 @@ class OmToolbox:
             if lineisheader:
                 lineisheader=False
                 header = line
-                print "\t".join(["Alias", "\t".join(line[2:3])])
+                print("\t".join(["Alias", "\t".join(line[2:3])]))
             elif len(line) > 2:
                 line[2] = self.mapseq(line[2], '\?', map)
                 uniqueflag = True
                 for previousline in data:
                     if line[2] == previousline[2]:
                         uniqueflag = False
-                        if line == previousline: print "The following sequence was already added:"
+                        if line == previousline: print("The following sequence was already added:")
                         else:
-                            print "WARNING: The following sequence was already added, but the two lines were not completely identical:"
-                            print "previous line: " + previousline
-                        print "line: " + line
+                            print("WARNING: The following sequence was already added, but the two lines were not completely identical:")
+                            print("previous line: " + previousline)
+                        print("line: " + line)
                 if uniqueflag:
                     data.append(line)
-                    print "".join([groupalias, ":", line[0], "-", "\t".join(line[1:3])])
+                    print("".join([groupalias, ":", line[0], "-", "\t".join(line[1:3])]))
             else:
                 #print "Short (possibly empty) line: " + "\t".join(line)
                 pass

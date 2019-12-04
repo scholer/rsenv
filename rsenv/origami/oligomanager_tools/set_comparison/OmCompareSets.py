@@ -16,22 +16,22 @@ Has largely been superseeded by compareoligosets.py module.
 
 import os
 import sys
-from OmToolbox import OmToolbox
-from OmSetReader import OmSetReader
+from .OmToolbox import OmToolbox
+from .OmSetReader import OmSetReader
 
 
 
 if __name__ == '__main__':
     # sys.argv is a list where the first element is the name of the invoked script (command-line), the rest is the arguments passed.
     designs = list()
-    print sys.argv
+    print(sys.argv)
     for filepath in sys.argv[1:]:
         # OmSetReader init takes filepath, mismap file, csv delimitor.
         designs.append(OmSetReader(filepath, 'allT')) # Basically just insert 'T' instead of '?'.
 
-    print "Start script..."
+    print("Start script...")
     cwd = os.getcwd()
-    print "Working directory: %s" % cwd
+    print("Working directory: %s" % cwd)
 
     tbx = OmToolbox()
 
@@ -45,4 +45,4 @@ if __name__ == '__main__':
 
     #tbx.PrintOrderListFromCadnanoSet('example_files/Box.Closed.jan09_c208_syncing.set')
 
-    print "done"
+    print("done")

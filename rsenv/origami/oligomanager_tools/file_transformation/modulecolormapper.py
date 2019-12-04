@@ -26,8 +26,8 @@ Created on Thu Aug  4 10:45:45 2011
 ### The length of undefined bases does not have to correspond to the replaced sequence.
 ### Based on sequencemapper.py
 
-import re, csv
-import sys, os, binascii
+import csv
+
 
 class OligosetFileColorMapper:
 
@@ -59,8 +59,8 @@ class OligosetFileColorMapper:
             self.FileFields = setreader.fieldnames
             self.Dataset = [row for row in setreader if len(row)>0]
             if self.Verboselevel > 6:
-                print("Dataset from file: " + oligosetfilename)
-                print(self.Dataset)
+                print(("Dataset from file: " + oligosetfilename))
+                print((self.Dataset))
 
         # Load the modulecolormap from file
         with open(colormapfilename, 'rU') as colormapfile:
@@ -72,13 +72,13 @@ class OligosetFileColorMapper:
             #mapreader = csv.reader(colormapfile, delimiter='\t')
             #colormap = dict([(row[0],row[1]) for row in mapreader if len(row)>1])
             if self.Verboselevel > 5:
-                print("\nMap from file: " + colormapfilename)
+                print(("\nMap from file: " + colormapfilename))
                 print(colormap)
             self.Map.update(colormap)
 
         # Find 'seq' header in the dataset:
         self.ColorDataKey = None
-        for key in self.Dataset[0].keys():
+        for key in list(self.Dataset[0].keys()):
             # I really do assume keys to be strings...
             if 'color' in key.lower():
                 self.ColorDataKey = key
@@ -101,7 +101,7 @@ class OligosetFileColorMapper:
                 moduleStapleCount[row[self.ColorDataKey]] += 1
             except KeyError:
                 start = row["Start"] if "Start" in self.FileFields else "line\n--->" + "\t".join(row[field] for field in self.FileFields)
-                print("mapColorsToModules(): WARNING! Color '{0}' not in map, staple at {1}".format(row[self.ColorDataKey], start))
+                print(("mapColorsToModules(): WARNING! Color '{0}' not in map, staple at {1}".format(row[self.ColorDataKey], start)))
 
         if self.ModuleclassFieldname not in self.FileFields:
             self.FileFields.append(self.ModuleclassFieldname)
@@ -110,7 +110,7 @@ class OligosetFileColorMapper:
             print("Data transformation completed.")
             print("Color/module stats:")
             for color in self.MapOrder:
-                print("{0} --> {1} ({2} staples)".format(color, self.Map[color], moduleStapleCount[color]))
+                print(("{0} --> {1} ({2} staples)".format(color, self.Map[color], moduleStapleCount[color])))
             # sorting using sorted: function specified by key is applied to all elements before sorting.
             # usedKeys = sorted(self.UsedMapKeys, key=lambda k:self.Map[k])
 
@@ -137,7 +137,7 @@ class OligosetFileColorMapper:
         if newfilename is None:
             newfilename = self.Oligosetfilename + ".mc"
             if self.Verboselevel > 2:
-                print("writeNewData(): No newfilename given, so using : " + newfilename)
+                print(("writeNewData(): No newfilename given, so using : " + newfilename))
 
         # Always open as binary ('wb') when dealing with csv files.
         with open(newfilename, 'wb') as f:

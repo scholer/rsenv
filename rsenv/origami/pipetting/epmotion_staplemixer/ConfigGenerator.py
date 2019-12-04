@@ -238,9 +238,9 @@ Destination_Pat_Vorhanden=1
         if str(config) == "robot":
             config = self.Config["robot"]
             if filename is None:
-                filename = "staplemixer-robot.cfg"
+                filename = "epmotion_staplemixer-robot.cfg"
         if filename is None:
-            filename = "staplemixer.cfg"
+            filename = "epmotion_staplemixer.cfg"
 
         if format == "yaml":
             self.saveYaml(config, filename)

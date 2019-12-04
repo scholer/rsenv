@@ -41,8 +41,8 @@ logger = logging.getLogger(__name__)
 from xlrd.biffh import XLRDError
 
 
-from filedatalib.csvfileutils import gen_csv_data, findFieldByHint
-from filedatalib.xlsutils import gen_xls_data
+from rsenv.origami.oligomanager_lib.filedatalib.csvfileutils import gen_csv_data, findFieldByHint
+from rsenv.origami.oligomanager_lib.filedatalib.xlsutils import gen_xls_data
 
 
 
@@ -60,14 +60,14 @@ def seqs_gen(datagen, fp=None):
         logger.error("csv.Error encountered while reading first row [ABORTING] [filepath: %s] [ERROR msg: %s]",
                      fp, e)
         raise StopIteration
-    seqfield = findFieldByHint(firstrow.keys(), ("oligo sequence", "sequence", "seq", "oligo") )
-    namefield = findFieldByHint(firstrow.keys(),
+    seqfield = findFieldByHint(list(firstrow.keys()), ("oligo sequence", "sequence", "seq", "oligo") )
+    namefield = findFieldByHint(list(firstrow.keys()),
                                 ("oligo name", "oligo_name", "sequence name", "order name", "name"),
                                 scorebar=0.7, require="name")
     if seqfield is None:
-        yield (",".join(firstrow.values()), rowidx, None)
+        yield (",".join(list(firstrow.values())), rowidx, None)
         for rowidx, data in enumerate(datagen, rowidx+1):
-            yield (",".join(str(v) for v in data.values()), rowidx, None)
+            yield (",".join(str(v) for v in list(data.values())), rowidx, None)
     else:
         logger.debug("Using seqfield: %s", seqfield)
         yield (firstrow[seqfield].strip().replace(' ', ''), rowidx, firstrow[namefield] if namefield else None)
@@ -105,12 +105,12 @@ def print_matching(matching, fn, args):
     Prints matching.
     """
     if args.reportall:
-        print "File {}: {} matches{}".format(fn, len(matching), ":" if matching else ".")
-        print "\n".join("> line {:4} :  {}   \t   {}".format(row, seq, name)
-                        for (seq, row, name) in matching )
+        print("File {}: {} matches{}".format(fn, len(matching), ":" if matching else "."))
+        print("\n".join("> line {:4} :  {}   \t   {}".format(row, seq, name)
+                        for (seq, row, name) in matching ))
     elif matching:
-        print "\n".join("{}:{} :  {}   \t   {}".format(fn, row, seq, name)
-                        for (seq, row, name) in matching )
+        print("\n".join("{}:{} :  {}   \t   {}".format(fn, row, seq, name)
+                        for (seq, row, name) in matching ))
 
 
 

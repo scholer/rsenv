@@ -23,23 +23,23 @@ file that can be loaded into the epmotion robot.
 
 General workflow:
 1) Use automapper on your exported staple-list (*.csv) to produce a *.smmc file
-2) Use staplemixer to produce a robot method file (*.dws) file by combining
+2) Use epmotion_staplemixer to produce a robot method file (*.dws) file by combining
    the *.smmc file with rack/plate information lists (*.rack.csv files).
 
 Quick start guide:
 automapper.py is found in oligomanager/tools/file_transformations/, and
-staplemixer.py is found in oligomanager/staplemixer/ -- but I recommend making
-a symlink to these (named automapper and staplemixer) and put these somewhere
+epmotion_staplemixer.py is found in oligomanager/epmotion_staplemixer/ -- but I recommend making
+a symlink to these (named automapper and epmotion_staplemixer) and put these somewhere
 in your local $PATH$, e.g. ~/bin
 Navigate to the directory where you have your design. Copy the *.rack.csv files
 for the oligo racks/plates that you want to use, making them if neccesary.
 Also place *.colormap and *.seqmap files here for automapper.
 Run the commands:
     automapper <staple-list>.csv
-    staplemixer
+    epmotion_staplemixer
 
-Yes, staplemixer does not currently take any arguments. Configuration is done
-with either a yaml file or by editing staplemixer.py and/or ConfigGenerator.py
+Yes, epmotion_staplemixer does not currently take any arguments. Configuration is done
+with either a yaml file or by editing epmotion_staplemixer.py and/or ConfigGenerator.py
 
 
 Using automapper, details:
@@ -50,8 +50,8 @@ Then you need to place the oligo plate/rack information as csv/tdl.
 Plates should be specified with one csv file per plate, with the fields:
     Sequence, Pos
 
-Using staplemixer, details:
-The staplemixer script is currently (2012) programmed to automatically find
+Using epmotion_staplemixer, details:
+The epmotion_staplemixer script is currently (2012) programmed to automatically find
 the files it needs. It does not take any commandline arguments.
 (Yaml-based configuration is not fully tested, but should be fairly straight-
 forward, as long as the yaml data looks like the data from ConfigGenerator).
@@ -78,7 +78,7 @@ StapleMixer vs main OligoManager:
 # Staplemixer is created to be a light-weight alternative that allows faster
     output, providing configuration only by editing text-files. No GUI.
     Generally, the user should not be required to run anything but
-    automapper and then staplemixer to get a robot instructions file.
+    automapper and then epmotion_staplemixer to get a robot instructions file.
 
 
 
@@ -239,7 +239,7 @@ class StapleMixer(object):
 
 #            """ (which consists of first getting default config from ConfigGenerator,
 #                 then mixing in self.Configpars, and finally trying to load a
-#                 staplemixer-robot.cfg file and mix that in.)
+#                 epmotion_staplemixer-robot.cfg file and mix that in.)
 #            """
 #            """ Notice:
 #            Because it is so problematic to insert placeholders multiple times, (for cmdheader in particular),
@@ -277,13 +277,13 @@ class StapleMixer(object):
 
         self.CmdTemplates = self.loadRobotCmdTemplate(robotcmdtemplatefile)
 
-#            print "Failed to load staplemixer-robot.yml config file, falling back to standard config template. "
+#            print "Failed to load epmotion_staplemixer-robot.yml config file, falling back to standard config template. "
 #            # Get basic config "template".
 #            self.CmdTemplates = self.ConfigGenerator.getCmdTemplates()
 #            cfg = self.ConfigGenerator.getConfig() # I use a getter so I have the option to modify if I want...
 #            self.Robotcmdtemplatefile = "< generated with ConfigGenerator! > (deprechated)"
 ##            yaml.dump(cfg,
-#                      open('staplemixer-config-before-placeholderinsertion.yml','wb'),
+#                      open('epmotion_staplemixer-config-before-placeholderinsertion.yml','wb'),
 #                      default_flow_style=False, default_style='|')
             # Update basic config with dynamic values (timestamps in filename)
         #self.Config = self.insertPlaceholders(cfg, self.Configpars)
@@ -291,9 +291,9 @@ class StapleMixer(object):
         # writing the cmd to file. Instead, self.ConstParams is updated as the
         # script initializes.
 
-        #print "Printing the used config to file: staplemixer-config-after-placeholderinsertion.yml"
+        #print "Printing the used config to file: epmotion_staplemixer-config-after-placeholderinsertion.yml"
 #        yaml.dump(self.Config,
-#                  open('staplemixer-config-after-placeholderinsertion.yml','wb'),
+#                  open('epmotion_staplemixer-config-after-placeholderinsertion.yml','wb'),
 #                  default_flow_style=False, default_style='|')
 
         self.read_rackfiles(rackfilenames)
@@ -515,7 +515,7 @@ Row:""".format(row=i, rackname=rackfilename))
         logger.debug("Reading modulestopipet file: %s", modulestopipetfile)
         modulestopipet = self.read_modulestopipetfile(modulestopipetfile)
 
-        # NB: Reading rack files has been refactored out in separate function, invoked upon staplemixer object initialization.
+        # NB: Reading rack files has been refactored out in separate function, invoked upon epmotion_staplemixer object initialization.
 
         ## -------- Create pipet data ---------------#
         # Note: If you want to implement sorting and multi-key sorting (e.g. to pipet first by rack then by module), see
@@ -1198,7 +1198,7 @@ if __name__ == "__main__":
                         Default is false (= do use filter tips)")
     parser.add_argument('-r', '--rackfiles', nargs='*', help="Specify which rackfiles to use. \
                         If not specified, all files ending with *.rack.csv will be used. This arguments will \
-                        take all following arguments, and can thus be used as staplemixer -r *.racks")
+                        take all following arguments, and can thus be used as epmotion_staplemixer -r *.racks")
 
 
     parser.add_argument('--init_resuspend', metavar='<conc_in_uM>', type=int, help="Perform an initial resuspension of \

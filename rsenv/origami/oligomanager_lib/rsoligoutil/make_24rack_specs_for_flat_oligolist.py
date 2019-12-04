@@ -27,7 +27,7 @@ This is a helper script, aimed to solve the following scenario:
 Solution:
 1) List all oligos from manufacturer in a flat list, with a field 'nmoles'.
 2) Input the list to this program.
-3) Use the output *.rack.csv files as regular rack files for the main staplemixer script using --resuspend_only argument.
+3) Use the output *.rack.csv files as regular rack files for the main epmotion_staplemixer script using --resuspend_only argument.
 
 Implementation:
 - Implemented as a series of generators :-)
@@ -59,15 +59,15 @@ Changes:
 
 #import os
 #import csv
-from itertools import izip_longest
+from itertools import zip_longest
 
 
 ## Logging:
 import logging
 logger = logging.getLogger(__name__)
 
-from rspyutilslib.oligodatalib.plateutils import indexToPos
-from rspyutilslib.filedatalib.fileutils import gen_input_filehandles, gen_csv_datasets, writecsvdatasetstofiles
+from rsenv.origami.oligomanager_lib.oligodatalib.plateutils import indexToPos
+from rsenv.origami.oligomanager_lib.filedatalib.fileutils import gen_input_filehandles, gen_csv_datasets, writecsvdatasetstofiles
 
 
 
@@ -158,7 +158,7 @@ def split_data(dataset, maxsize=24, generator_input=False):
     if not generator_input:
         # if dataset is a generator, this should still be the exact same as above,
         # so this is arguably the safer default:
-        return izip_longest(*[(row for row in dataset)]*maxsize)
+        return zip_longest(*[(row for row in dataset)]*maxsize)
     else:
         # Optimization, but probably not worth it; generating new generators
         # should be a really fast and light-weight operation...
@@ -168,7 +168,7 @@ def split_data(dataset, maxsize=24, generator_input=False):
         # 100000 loops, best of 3: 12 us per loop
         # (However, increasing 100 to 10000 means that adding an outer generator
         # makes the code run 50 percent slower!)
-        return izip_longest(*[dataset]*maxsize)
+        return zip_longest(*[dataset]*maxsize)
 
 
 
@@ -189,7 +189,7 @@ if __name__ == '__main__':
     """
     logging.getLogger("__main__").setLevel(logging.DEBUG)
     logger.setLevel(logging.DEBUG)
-    logging.getLogger("staplemixer.staplemixer").setLevel(logging.DEBUG)
+    logging.getLogger("epmotion_staplemixer.epmotion_staplemixer").setLevel(logging.DEBUG)
     logfmt = "%(levelname)s:%(name)s:%(lineno)s %(funcName)s(): %(message)s\n"
     logging.basicConfig(level=logging.INFO, format=logfmt)
 

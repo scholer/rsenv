@@ -18,14 +18,14 @@
 
 
 import os
-from StringIO import StringIO
+from io import StringIO
 
 ## Logging:
 import logging
 logger = logging.getLogger(__name__)
 #logging.getLogger("__main__").setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
-logging.getLogger("staplemixer.utils.make_24rack_specs_for_flat_oligolist").setLevel(logging.DEBUG)
+logging.getLogger("epmotion_staplemixer.utils.make_24rack_specs_for_flat_oligolist").setLevel(logging.DEBUG)
 logfmt = "%(levelname)s:%(name)s:%(lineno)s %(funcName)s(): %(message)s\n"
 logging.basicConfig(level=logging.INFO, format=logfmt)
 
@@ -34,7 +34,7 @@ logging.basicConfig(level=logging.INFO, format=logfmt)
 ### System Under Test ###
 #########################
 
-from rspyutilslib.filedatalib.fileutils import gen_input_filehandles, \
+from rsenv.origami.oligomanager_lib.filedatalib.fileutils import gen_input_filehandles, \
             gen_csv_data, gen_csv_datasets, \
             findFieldByHint, removeFileExt, natural_sort
 
@@ -98,18 +98,18 @@ oligo_name,Sequence,nmoles
 dscM13v1:32->55,GATAACTATGCTGAATGTTGACAG,30
 """
     filehandles = [StringIO(buff) for buff in (testdata1, testdata2) ]
-    print filehandles
+    print(filehandles)
     csv_datasets = gen_csv_datasets(filehandles)
     filedata = next(csv_datasets)
     row = next(filedata)
-    print ", ".join(i for i in row)
+    print(", ".join(i for i in row))
     assert row['oligo_name'] == 'dscM13v1:0->31'
     assert row['Sequence'] == 'GAAAGCGAAAGGAGCGGGCGCTAGGGCGCTGG'
     assert row['nmoles'] == '26.27'
     assert float(row['nmoles']) == 26.27
     filedata = next(csv_datasets)
     row = next(filedata)
-    print ", ".join(i for i in row)
+    print(", ".join(i for i in row))
     assert row['oligo_name'] == 'dscM13v1:32->55'
     assert row['Sequence'] == 'GATAACTATGCTGAATGTTGACAG'
     assert row['nmoles'] == '30'

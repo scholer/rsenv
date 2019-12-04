@@ -8,7 +8,7 @@ Based on FilenameCompare java program (developed by Rasmus Sorensen)
  * Optimering 2: Løbende vurdering af om sammenligningen kan nå limit ( ca. 30% optimering )
  * 
  """
-from Paper import Paper
+from .paper import Paper
 #import random
 
 class StringCompareLimit:
@@ -142,4 +142,4 @@ class StringCompareLimit:
         #if ( self.resToGoodness(self.getMaxRes(currentRes, i, j)) < self.limit ): # // Vi kan ikke nå limit
         if (currentRes + max(self.n - i, self.m - j) +1 < self.minimumres):
             self.isPossible = False;
-            print "Cannot reach"
+            print("Cannot reach")

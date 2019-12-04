@@ -43,5 +43,5 @@ def gen_xls_data(fd):
     ws = wb.sheets()[0]
     logger.debug("Using worksheet: '%s'", ws.name)
     fieldheaders = ws.row_values(0)
-    data = ( dict(zip(fieldheaders, ws.row_values(i))) for i in xrange(1, ws.nrows) )
+    data = ( dict(list(zip(fieldheaders, ws.row_values(i)))) for i in range(1, ws.nrows) )
     return data

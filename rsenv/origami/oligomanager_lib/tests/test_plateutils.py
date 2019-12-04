@@ -19,7 +19,7 @@
 
 
 
-from rspyutilslib.oligodatalib.plateutils import *
+from rsenv.origami.oligomanager_lib.oligodatalib.plateutils import *
 
 
 

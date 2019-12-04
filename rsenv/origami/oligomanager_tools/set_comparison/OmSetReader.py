@@ -31,7 +31,7 @@ class OmSetReader:
                     try:
                         delimiter = csv.Sniffer().sniff(fp.read(1024)).delimiter
                     except csv.Error:
-                        print "csv.Sniffer could not determine file delimiter. Using ','."
+                        print("csv.Sniffer could not determine file delimiter. Using ','.")
                         delimiter = ','
 
 
@@ -51,7 +51,7 @@ class OmSetReader:
         for row in dictlist:
             header_seq = self.getSeqHeader(row)
             if header_seq == 0:
-                print "header_seq == 0"
+                print("header_seq == 0")
                 pass
             elif mismapper is None:
                 #print row[header_seq] + " --> mismapper is none"
@@ -71,7 +71,7 @@ class OmSetReader:
         for row in dictlist:
             header_seq = self.getSeqHeader(row)
             if header_seq == 0:
-                print "header_seq == 0"
+                print("header_seq == 0")
                 pass
             elif mismapper is None:
                 #print row[header_seq] + " --> mismapper is none"
@@ -104,10 +104,10 @@ class OmSetReader:
 
     def getSeqHeader(self, rowdict):
         bestHeaders = ['sequence_mod', 'sequence']
-        for key in rowdict.keys():
+        for key in list(rowdict.keys()):
             if key.lower() in bestHeaders:
                 return key
-        for key in rowdict.keys():
+        for key in list(rowdict.keys()):
             if key.lower().find('sequence')>=0:
                 return key
         return 0

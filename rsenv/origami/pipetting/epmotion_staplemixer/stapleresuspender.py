@@ -38,7 +38,7 @@ class StapleResuspender(StapleMixer):
        requirement, it would be easier to simply programme the robot manually.
 
     Function:
-    1) Read rackfiles (inherited from staplemixer)
+    1) Read rackfiles (inherited from epmotion_staplemixer)
     2) Generate pipet data
         This is maybe not needed?
         On the other hand, if I just generate this, I can use the generateRobotFile inherited from StapleMixer
@@ -52,7 +52,7 @@ class StapleResuspender(StapleMixer):
     Concrete:
     - for plate in rackdata
     -
-    Edit: This is currently implemented directly into the main staplemixer script.
+    Edit: This is currently implemented directly into the main epmotion_staplemixer script.
     """
 
     # def generateResuspendInstructions(self):

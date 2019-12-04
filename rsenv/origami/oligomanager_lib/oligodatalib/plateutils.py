@@ -21,8 +21,6 @@ Contains various functions used to e.g. convert plate indices to string position
 """
 
 
-
-
 def posToRowColTup(pos):
     """
     Convert a alphanumeric position "A02" to row-column tuple (1,2),
@@ -35,7 +33,8 @@ def posToRowColTup(pos):
     """
     rownum = ord(pos[0].lower())-ord('a')+1 # "B04" should give a rownum of 2.
     colnum = int(pos[1:]) # "B04" should give rownum of 4;
-    return (rownum, colnum)
+    return rownum, colnum
+
 
 def indexToRowColTup(index, ncols=12, nrowmax=8):
     """ Convert a linear index integer to row-column tuple, e.g. 8 -> (1,2)
@@ -51,12 +50,14 @@ def indexToRowColTup(index, ncols=12, nrowmax=8):
     """
     # destindex is defined by "for destindex, moduletopipet in enumerate(modulestopipet):"
     # index = 0 should return (1,1), index = 1 return (1,2), index 11 return (1,12), index 12 return (2,1).
-    index = int(index) # Doing cast is ok, but adding or subtracting anything just causes confusion.
-    col = (index % ncols) +1 # Watch out for modulus, returns from 0 to N-1.
-    row = (index/ncols) +1 # NOTE: Python 2 specific. Use floor (math module) for python3
+    index = int(index)  # Doing cast is ok, but adding or subtracting anything just causes confusion.
+    col = (index % ncols) + 1  # Watch out for modulus, returns from 0 to N-1.
+    row = (index // ncols) + 1  # NOTE: Python 2 specific. Use floor (math module) for python3
     if row > nrowmax:
-        print "indexToRowColTup() WARNING > index {0} with ncols={1}, nrowmax={2} will return a row of {3}, exceeding the limit!".format(index, ncols, nrowmax, row)
-    return (row, col)
+        print(f"indexToRowColTup() WARNING > index {index} with ncols={ncols}, nrowmax={nrowmax} "
+              f"will return a row of {row}, exceeding the limit!")
+    return row, col
+
 
 def indexToPos(index, ncols=12, nrowmax=8):
     """

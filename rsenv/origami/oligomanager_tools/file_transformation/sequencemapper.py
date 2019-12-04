@@ -73,8 +73,8 @@ class OligosetFileSequenceMapper:
 
                 self.Dataset = [row for row in setreader if len(row)>0]
                 if self.Verboselevel > 6:
-                    print "Dataset from file: " + oligosetfilename
-                    print self.Dataset
+                    print("Dataset from file: " + oligosetfilename)
+                    print(self.Dataset)
 
         # Load the sequencemap from file (if a file is given)
         if seqmapfilename is not None:
@@ -86,7 +86,7 @@ class OligosetFileSequenceMapper:
                     filerows = (line.strip().split() for line in seqmapfile if line and line[0] != '#')
                     seqmap = {int(row[0]) : row[1] for row in filerows} # Make sure you read *before* closing the file.
                 except IOError as e:
-                    print e
+                    print(e)
                     return
                 else:
                     #seqmap = {int(row[0]) : row[1] for row in mapreader if len(row)>1}
@@ -98,13 +98,13 @@ class OligosetFileSequenceMapper:
 
         # Find 'seq' header in the dataset:
         self.SeqDataKey = None
-        for key in self.Dataset[0].keys():
+        for key in list(self.Dataset[0].keys()):
             # I really do assume keys to be strings...
             if 'seq' in key.lower():
                 self.SeqDataKey = key
                 break
         if self.SeqDataKey is None:
-            print "Error, could not find any columns in the oligoset file containing 'seq'."
+            print("Error, could not find any columns in the oligoset file containing 'seq'.")
             self.AllOK = False # Flag not to continue...
 
     def transformData(self, mapchar=None):
@@ -118,34 +118,34 @@ class OligosetFileSequenceMapper:
             else:
                 mapchar = self.Mapchar
         if self.Verboselevel > 1:
-            print "OligosetFileSequenceMapper: Transforming data..."
+            print("OligosetFileSequenceMapper: Transforming data...")
         for row in self.Dataset:
             if self.Verboselevel == 5:
-                print "old sequence:     " + row[self.SeqDataKey]
+                print("old sequence:     " + row[self.SeqDataKey])
             row[self.SeqDataKey] = self.mapSeq(row[self.SeqDataKey], mapchar, self.Map)
             if self.Verboselevel == 5:
-                print "-- transformed -->"  + row[self.SeqDataKey]
+                print("-- transformed -->"  + row[self.SeqDataKey])
 
         if self.Verboselevel > 1:
-            print "Data transformation completed."
-            print "Used sequence maps:"
+            print("Data transformation completed.")
+            print("Used sequence maps:")
             usedKeys = list(self.UsedMapKeys) # Produce a list from the set.
             usedKeys.sort() # Sort the list
 
             for key in usedKeys:
                 # ey.zfill(3), ": ",
-                print "".join(["%03d" % key, ": ", self.Mapchar.replace("\\", "")*key, " --> ", self.Map[key] ])
+                print("".join(["%03d" % key, ": ", self.Mapchar.replace("\\", "")*key, " --> ", self.Map[key] ]))
 
 
     def writeNewData(self, newfilename=None):
 
         if self.Verboselevel > 2:
-            print "\nWriting new data:"
+            print("\nWriting new data:")
 
         if newfilename is None:
             newfilename = self.Oligosetfilename + ".sm"
             if self.Verboselevel > 2:
-                print "writeNewData(): No newfilename given, so using : " + newfilename
+                print("writeNewData(): No newfilename given, so using : " + newfilename)
 
         # Always open as binary ('wb') when dealing with csv files.
         with open(newfilename, 'wb') as f:
@@ -160,7 +160,7 @@ class OligosetFileSequenceMapper:
             dw.writerows(self.Dataset)
 
         if self.Verboselevel > 2:
-            print "writeNewData(): Done!"
+            print("writeNewData(): Done!")
 
 
     def mapSeq(self, seq, mapchar=None, map=None):
@@ -169,10 +169,10 @@ class OligosetFileSequenceMapper:
         _current_fun = self.mapSeq
 
         if mapchar is None:
-            print "mapSeq() Warning: no mapchar provided, using '\?' !!"
+            print("mapSeq() Warning: no mapchar provided, using '\?' !!")
             mapchar = '\?'
         if map is None:
-            print "mapSeq() Warning: no map provided, using '?->T' !!"
+            print("mapSeq() Warning: no map provided, using '?->T' !!")
             map = dict()
             for i in range(20): map[i]='T'*i
 
@@ -188,9 +188,9 @@ class OligosetFileSequenceMapper:
                     ])
                 self.UsedMapKeys.add(len(match.group())) # Add the match-length to the list of used keys in the map.
             except KeyError:
-                print "Unknownbase-mapping :: mapSeq() ERROR: Could not map unumber ", len(match.group())
-                print "  sequence: ", seq
-                print ""
+                print("Unknownbase-mapping :: mapSeq() ERROR: Could not map unumber ", len(match.group()))
+                print("  sequence: ", seq)
+                print("")
                 ret = "".join([
                     seq[0:match.start()], # Part before match
                     '?'*len(match.group()), # the match, which could not be mapped...
@@ -206,7 +206,7 @@ def mapseq(seq, mapchar, seqmap, usedkeyset=None):
     """
     if usedkeyset is None:
         usedkeyset = set()
-    print "mapchar: ", mapchar
+    print("mapchar: ", mapchar)
     match = re.search(mapchar+'+', seq)
     if match is None:
         return seq
@@ -219,9 +219,9 @@ def mapseq(seq, mapchar, seqmap, usedkeyset=None):
                 ])
             usedkeyset.add(len(match.group())) # Add the match-length to the list of used keys in the map.
         except KeyError:
-            print "Unknownbase-mapping :: mapSeq() ERROR: Could not map unumber ", len(match.group())
-            print "  sequence: ", seq
-            print ""
+            print("Unknownbase-mapping :: mapSeq() ERROR: Could not map unumber ", len(match.group()))
+            print("  sequence: ", seq)
+            print("")
             ret = "".join([
                 seq[0:match.start()], # Part before match
                 '?'*len(match.group()), # the match, which could not be mapped...

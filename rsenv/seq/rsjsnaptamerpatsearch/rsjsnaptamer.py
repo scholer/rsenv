@@ -279,17 +279,17 @@ def findPatternB_with_generator(infile=None):
     results = open("N35_pat2_results_2_generator1.txt", "wb")
     resultsdata = list()
     seqgenhp4 = ("{a1}{a2}{a3}{a4}.*?{b1}{b2}{b3}{b4}".format(a1=a1, a2=a2, a3=a3, a4=a4, b1=bc[a1], b2=bc[a2], b3=bc[a3], b4=bc[a4])
-                for a1 in bases for a2 in bases for a3 in bases)
+                for a1 in bases for a2 in bases for a3 in bases for a4 in bases)
     # optimization: insert constant stuff:
     regextemplate = "{part1}{constseq1}{part2}.*?{part1rc}{constseq2}{part2rc}".format(part1="{part1}",
         constseq1=constseq1, part2="{part2}", part1rc="{part1rc}", constseq2=constseq2, part2rc="{part2rc}")
 
-    seqgenhp4 = ("{stem1}{constseq1}{stem2}.*?{stem2rc}{constseq2}{stem1rc}".format(\
+    seqgenhp4 = ("{stem1}{constseq1}{stem2}.*?{stem2rc}{constseq2}{stem1rc}".format(
         constseq1=constseq1, constseq2=constseq2,
         stem1="".join([a1, a2, a3, a4]), stem2="".join([b1, b2, b3, b4]),
-        stem1rc="".join([bc[a4], bc[a3], bc[a2], bc[a1]]), stem2rc="".join([bc[b4], bc[b3], bc[b2], bc[b1]])) \
-        for a1 in bases for a2 in bases for a3 in bases for a4 in bases \
-        for b1 in bases for b2 in bases for b3 in bases for b4 in bases )
+        stem1rc="".join([bc[a4], bc[a3], bc[a2], bc[a1]]), stem2rc="".join([bc[b4], bc[b3], bc[b2], bc[b1]]))
+        for a1 in bases for a2 in bases for a3 in bases for a4 in bases
+        for b1 in bases for b2 in bases for b3 in bases for b4 in bases)
 #    seqgenhp4m = ("{part1rc}{constseq2}{part2rc}.*?{part1}{constseq1}{part2}".format(\
 #        constseq1=constseq1, constseq2=constseq2,
 #        part1="".join([a1,a2,a3,a4]), part2="".join([b1,b2,b3,b4]),
@@ -404,22 +404,22 @@ def findPatternB_with_forLoops():
 #    json.dump(resultsdata, f)
 
 
-def makepat():
-    """
-    Not used at this moment.
-    """
-    # Various search pattern options, stored for later use.
-    seqpat = "".join([part1, constseq, part2])
-    # search only for NNNN.*?GCTGTTA.*?NNNN
-    search_pat1 = ".*?".join([
-        part1,
-        constseq,
-        part2])
-    # Search for "NNNNGCTGTTANNNN.*?"+dnarcomp(NNNNGCTGTTANNNN)
-    search_pat2 = ".*?".join([seqpat, dnarcomp(seqpat)])
-    seqpat2 = dnarcomp(part2)+constseq2+dnarcomp(part1)
-    search_pat3 = ".*?".join([seqpat, seqpat2])
-    search_pat=search_pat3
+# def makepat():
+#     """
+#     Not used at this moment.
+#     """
+#     # Various search pattern options, stored for later use.
+#     seqpat = "".join([part1, constseq, part2])
+#     # search only for NNNN.*?GCTGTTA.*?NNNN
+#     search_pat1 = ".*?".join([
+#         part1,
+#         constseq,
+#         part2])
+#     # Search for "NNNNGCTGTTANNNN.*?"+dnarcomp(NNNNGCTGTTANNNN)
+#     search_pat2 = ".*?".join([seqpat, dnarcomp(seqpat)])
+#     seqpat2 = dnarcomp(part2)+constseq2+dnarcomp(part1)
+#     search_pat3 = ".*?".join([seqpat, seqpat2])
+#     search_pat=search_pat3
 
 
 

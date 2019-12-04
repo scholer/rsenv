@@ -23,14 +23,14 @@ import os
 ############################
 ## System under test: SUT ##
 ############################
-from rspyutilslib.rsoligoutil.make_24rack_specs_for_flat_oligolist import \
+from rsenv.origami.oligomanager_lib.rsoligoutil.make_24rack_specs_for_flat_oligolist import \
         gen_calculated_resuspend_data, gen_calculated_resuspend_datasets, \
         split_data, gen_input_filenames
 
 #######################
 ## Dependent modules ##
 #######################
-from rspyutilslib.filedatalib.fileutils import gen_input_filehandles, gen_csv_datasets, writecsvdatasetstofiles
+from rsenv.origami.oligomanager_lib.filedatalib.fileutils import gen_input_filehandles, gen_csv_datasets, writecsvdatasetstofiles
 
 
 ## Logging:
@@ -38,7 +38,7 @@ import logging
 logger = logging.getLogger(__name__)
 #logging.getLogger("__main__").setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
-logging.getLogger("staplemixer.utils.make_24rack_specs_for_flat_oligolist").setLevel(logging.DEBUG)
+logging.getLogger("epmotion_staplemixer.utils.make_24rack_specs_for_flat_oligolist").setLevel(logging.DEBUG)
 logfmt = "%(levelname)s:%(name)s:%(lineno)s %(funcName)s(): %(message)s\n"
 logging.basicConfig(level=logging.INFO, format=logfmt)
 

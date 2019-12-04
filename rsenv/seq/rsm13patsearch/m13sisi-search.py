@@ -30,7 +30,7 @@ import itertools
 #import json
 #import time
 
-from dnasequences import sequences
+from ..dnasequences import cadnanoseqs
 
 dnacomplementmap = string.maketrans('ACGTacgt ','TGCATGCA ')
 def dnarcomp(seqStr):
@@ -82,7 +82,7 @@ class Myseq:
 antihandle_seq = "CAlCGTClTGTlTG"[::-1].replace("l","") # written in 3' to 5'; l prefix denotes LNA nucleotide.
 
 ah_seq = Myseq("CAlCGTClTGTlTG", True)
-print ah_seq
+print(ah_seq)
 
 handle_seq = dnarcomp(antihandle_seq)
 
@@ -129,7 +129,7 @@ def refindallmatches(repattern, haystackstr):
         res.append(match)
         nmatch += 1
         if nmatch > 50:
-            print "refindallmatches(): Ending prematurely at 10 matches to avoid memory crash."
+            print("refindallmatches(): Ending prematurely at 10 matches to avoid memory crash.")
             break
     return res
 
@@ -145,7 +145,7 @@ def findallwithpermuts(seqtofind, haystackstr, Noverhang, wobble=None, verbose=0
     (?P<first_name>\w+) (?P<last_name>\w+)", "Malcolm Reynolds")
     """
     if verbose > 2:
-        print "findallwithpermuts(): started with seq={}".format(seqtofind)
+        print("findallwithpermuts(): started with seq={}".format(seqtofind))
     res = list()
     permuts = list()
     patfmt = "(?P<before>{before})(?P<first>{first})(?P<wobble>{wobble})(?P<second>{second})(?P<after>{after})"
@@ -172,14 +172,14 @@ def findallwithpermuts(seqtofind, haystackstr, Noverhang, wobble=None, verbose=0
             break # the rest will be the same, I think.
     #ret = r"|".join(permuts)
     if verbose > 0:
-        print "findallwithpermuts with {} completed with {} number of results".format(seq, len(res))
+        print("findallwithpermuts with {} completed with {} number of results".format(seq, len(res)))
     return res
 
 
 def findmatchesofvariablelength(search_str, haystackstr, matchlen, Noverhang, wobble=None):
     res = list()
     nruns = 0
-    for i in reversed(range(matchlen,len(search_str))):
+    for i in reversed(list(range(matchlen,len(search_str)))):
         for j in range(0,len(search_str)-i+1): # fixed: added +1 to get the full last char included.
             #res += re.findall(r"([ATGC]{{0,{1}}})({0})([ATGC]{{0,{1}}})".format(mkregexseqpermuts(search_str[j:j+i]),Noverhang), m13seq)
             #repat = re.compile(r"([ATGC]{{0,{1}}})({0})([ATGC]{{0,{1}}})".format(mkregexseqpermuts(search_str[j:j+i]),Noverhang))
@@ -188,7 +188,7 @@ def findmatchesofvariablelength(search_str, haystackstr, matchlen, Noverhang, wo
             #print "findmatchesofvariablelength(): {} number of res found for findallwithpermuts={}".format(len(res),search_str[j:j+i])
             nruns += 1
             if nruns > 30:
-                print "findmatchesofvariablelength(): Ending prematurely at nruns {} to avoid memory crash...".format(nruns)
+                print("findmatchesofvariablelength(): Ending prematurely at nruns {} to avoid memory crash...".format(nruns))
                 return res
     return res
 
@@ -256,7 +256,7 @@ def printmatchaligned(match, otherseq, Noverhang):
 #    print "Searching for {}\nin     '{}'".format(match.re.pattern, otherseq_rcomp_patted)
     other_match = re.search(match.re.pattern, otherseq_rcomp_patted)
     if not other_match:
-        print "Failed to find match for\n{}\nin otherseq_rcomp_patted={}".format(match.re.pattern, otherseq_rcomp_patted)
+        print("Failed to find match for\n{}\nin otherseq_rcomp_patted={}".format(match.re.pattern, otherseq_rcomp_patted))
 #    print "other_match: {}".format(other_match)
 #    if other_match:
 #        print "spans for groups: {}".format(" - ".join(["{}={}".format(group, other_match.span(group)) 
@@ -297,7 +297,7 @@ def printmatchaligned(match, otherseq, Noverhang):
            strparts['after'] == "{0:<{1}}".format(seq[j+len(gd['second']):],Noverhang)[:Noverhang] or \
            strparts['first'] == seq[i:i+len(gd['first'])] or \
            strparts['second'] == seq[j:j+len(gd['second'])]):
-        print "ERROR, not the same."
+        print("ERROR, not the same.")
 
     #print strparts
     handle_line = linefmtnamed.format(**strparts)
@@ -320,51 +320,51 @@ search_str = dnarcomp(antihandle_seq)
 m13seq = open('TR-M13.seq').read(100000)
 matchlevel = 6 # make it easy to adjust matchlen for all three.
 
-print """\n\n --- EXACT search ---"""
+print("""\n\n --- EXACT search ---""")
 Noverhang = 6
 matchlen = matchlevel
 wobble='match-exact'
 myres = findmatchesofvariablelength(search_str, m13seq, matchlen, Noverhang, wobble=wobble)
 #printstr = "\n-\n".join(["{0[0]}-{0[1]}[0[2]]{0[3]}-{0[4]} (M13)\n{1[0]}-{1[1]}-{1[2]} (sisi)".format(itm.groups(), mkalign(antihandle_seq, itm, Noverhang)) for itm in res])
-print "Results: {}".format(len(myres))
-print "(params: matchlen={},wobble={})".format(matchlen,wobble)
+print("Results: {}".format(len(myres)))
+print("(params: matchlen={},wobble={})".format(matchlen,wobble))
 #print map(lambda x: x.groups(), myres)
-print "antihandle_seq is {}".format(antihandle_seq)
-print ah_seq
-print "search_str is  :  {}".format(search_str)
+print("antihandle_seq is {}".format(antihandle_seq))
+print(ah_seq)
+print("search_str is  :  {}".format(search_str))
 if myres or False:
-    printstr = "\n-\n".join(map(lambda x: printmatchaligned(x, antihandle_seq, Noverhang), myres))
+    printstr = "\n-\n".join([printmatchaligned(x, antihandle_seq, Noverhang) for x in myres])
     #printstr = "\n-\n".join(["{0[0]}-{0[1]}[0[2]]{0[3]}-{0[4]} (M13)\n{1[0]}-{1[1]}-{1[2]} (sisi)".format(
     #            itm.groups(), mkalign2(antihandle_seq, itm.groups(), Noverhang)) for itm in myres])
-    print printstr
+    print(printstr)
 
-print """\n\n --- SINGLE MISMATCH search ---"""
+print("""\n\n --- SINGLE MISMATCH search ---""")
 #Noverhang = 6
 matchlen = matchlevel +2
 wobble=None
 myres = findmatchesofvariablelength(search_str, m13seq, matchlen, Noverhang, wobble=wobble)
 #printstr = "\n-\n".join(["{0[0]}-{0[1]}[0[2]]{0[3]}-{0[4]} (M13)\n{1[0]}-{1[1]}-{1[2]} (sisi)".format(itm.groups(), mkalign(antihandle_seq, itm, Noverhang)) for itm in res])
-print "Results: {}".format(len(myres))
-print "(params: matchlen={},wobble={})".format(matchlen,wobble)
+print("Results: {}".format(len(myres)))
+print("(params: matchlen={},wobble={})".format(matchlen,wobble))
 #print map(lambda x: x.groups(), myres)
 #print "antihandle_seq is {}".format(antihandle_seq)
 #print ah_seq
 #print "search_str is  :  {}".format(search_str)
 if myres or False:
-    print "\n-\n".join(map(lambda x: printmatchaligned(x, antihandle_seq, Noverhang), myres))
+    print("\n-\n".join([printmatchaligned(x, antihandle_seq, Noverhang) for x in myres]))
 
 
-print """\n\n --- WOBBLE/BULGE search ---"""
+print("""\n\n --- WOBBLE/BULGE search ---""")
 #Noverhang = 6
 matchlen = matchlevel +2
 wobble=(0,8)
 myres = findmatchesofvariablelength(search_str, m13seq, matchlen, Noverhang, wobble=wobble)
-print "Results: {}".format(len(myres))
-print "(params: matchlen={},wobble={})".format(matchlen,wobble)
+print("Results: {}".format(len(myres)))
+print("(params: matchlen={},wobble={})".format(matchlen,wobble))
 #print map(lambda x: x.groups(), myres)
 #print "antihandle_seq is {}".format(antihandle_seq)
 #print ah_seq
 #print "search_str is  :  {}".format(search_str)
 if myres or False:
-    print "\n-\n".join(map(lambda x: printmatchaligned(x, antihandle_seq, Noverhang), myres))
+    print("\n-\n".join([printmatchaligned(x, antihandle_seq, Noverhang) for x in myres]))
 

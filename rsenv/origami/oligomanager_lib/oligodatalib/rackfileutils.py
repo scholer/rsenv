@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 #logging.getLogger("__main__").setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
 
-from rspyutilslib.filedatalib.fileutils import gen_csv_data, gen_xls_data, writecsvdata
-from rspyutilslib.filedatalib.fileutils import findFieldByHint
+from rsenv.origami.oligomanager_lib.filedatalib.fileutils import gen_csv_data, gen_xls_data, writecsvdata
+from rsenv.origami.oligomanager_lib.filedatalib.fileutils import findFieldByHint
 
 
 

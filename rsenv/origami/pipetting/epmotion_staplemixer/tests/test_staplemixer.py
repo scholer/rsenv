@@ -27,7 +27,7 @@ import StringIO
 
 ## SUT:
 from staplemixer.staplemixer import StapleMixer
-#from staplemixer import staplemixer
+#from epmotion_staplemixer import epmotion_staplemixer
 
 
 ## Logging:
@@ -35,7 +35,7 @@ import logging
 logger = logging.getLogger(__name__)
 #logging.getLogger("__main__").setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
-logging.getLogger("staplemixer.staplemixer").setLevel(logging.DEBUG)
+logging.getLogger("epmotion_staplemixer.epmotion_staplemixer").setLevel(logging.DEBUG)
 logfmt = "%(levelname)s:%(name)s:%(lineno)s %(funcName)s(): %(message)s\n"
 logging.basicConfig(level=logging.INFO, format=logfmt)
 
@@ -78,14 +78,14 @@ def tempfilefile():
 @pytest.fixture
 def staplemixer_patched(monkeypatch, epmotion_test_config):
     """
-    Returns a staplemixer with chdir to the default test_data directory
+    Returns a epmotion_staplemixer with chdir to the default test_data directory
     and the following patched methods.
      -
     """
     testconfig_filepath = os.path.join(os.path.dirname(__file__), "test_data", "epmotion-cmd-templates.yml")
-    #monkeypatch.setattr(staplemixer.staplemixer.yaml, 'load', epmotion_test_config)
+    #monkeypatch.setattr(epmotion_staplemixer.epmotion_staplemixer.yaml, 'load', epmotion_test_config)
     #monkeypatch.setattr(StapleMixer, 'load', epmotion_test_config)
-    monkeypatch.chdir(os.path.dirname(testconfig_filepath)) # Indeed, this is applied for all staplemixer calls, I believe.
+    monkeypatch.chdir(os.path.dirname(testconfig_filepath)) # Indeed, this is applied for all epmotion_staplemixer calls, I believe.
     sm = StapleMixer()
     monkeypatch.setattr(StapleMixer, '_getReportConcUserInput', lambda *x: '100')
     def fake_write_pipetdata_to_file(*args):
@@ -98,12 +98,12 @@ def staplemixer_patched(monkeypatch, epmotion_test_config):
 @pytest.fixture
 def staplemixer_patchedAll_resuspendtestdir(monkeypatch, epmotion_test_config):
     """
-    Returns a staplemixer with chdir to the default test_data directory
+    Returns a epmotion_staplemixer with chdir to the default test_data directory
     and the following patched methods.
      -
     """
     testdir = os.path.join(os.path.dirname(__file__), "test_data", "resuspend_test")
-    monkeypatch.chdir(testdir) # Indeed, this is applied for all staplemixer calls, I believe.
+    monkeypatch.chdir(testdir) # Indeed, this is applied for all epmotion_staplemixer calls, I believe.
     sm = StapleMixer()
     monkeypatch.setattr(StapleMixer, '_getReportConcUserInput', lambda *x: '100')
     def fake_write_pipetdata_to_file(*args):
@@ -123,7 +123,7 @@ def staplemixer_patchedAll_resuspendtestdir(monkeypatch, epmotion_test_config):
 #    Uses the request object to instrospect the "requesting" test function,
 #    c.f. http://pytest.org/latest/fixture.html
 #    Unfortunately, I cannot get this to work at the function level...
-#    Returns a staplemixer with no chdir, but with all file access methods patched:
+#    Returns a epmotion_staplemixer with no chdir, but with all file access methods patched:
 #    - _getReportConcUserInput
 #    - write_pipetdata_to_file
 #    - _writeStringIOtoFile

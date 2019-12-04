@@ -62,7 +62,7 @@ class YamlLoader:
         import yaml
 
     def loadParams(self, filepath):
-        # You should refer to the oligomanager/staplemixer ConfigGenerator.py script in Dropbox/Dev/Projects/OligoManager2/oligomanager/staplemixer
+        # You should refer to the oligomanager/epmotion_staplemixer ConfigGenerator.py script in Dropbox/Dev/Projects/OligoManager2/oligomanager/epmotion_staplemixer
         # One thing I found was that JSON does have the oppertunity to print line breaks in strings when dumping.
         # It might be able to do a little formatting, but I honestly prefer to practice using YAML for configs.
         # Thus: YAML for configs (human readable/editable), JSON for serial data, and xml for structured documents.

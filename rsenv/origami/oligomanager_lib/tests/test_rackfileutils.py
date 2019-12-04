@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+    #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 ##    Copyright 2012 Rasmus Scholer Sorensen, rasmusscholer@gmail.com
 ##
@@ -18,7 +18,7 @@
 
 
 import pytest
-from StringIO import StringIO
+from io import StringIO
 import os
 import glob
 
@@ -27,7 +27,7 @@ import logging
 logger = logging.getLogger(__name__)
 #logging.getLogger("__main__").setLevel(logging.DEBUG)
 logger.setLevel(logging.DEBUG)
-logging.getLogger("staplemixer.utils.make_24rack_specs_for_flat_oligolist").setLevel(logging.DEBUG)
+logging.getLogger("epmotion_staplemixer.utils.make_24rack_specs_for_flat_oligolist").setLevel(logging.DEBUG)
 logfmt = "%(levelname)s:%(name)s:%(lineno)s %(funcName)s(): %(message)s\n"
 logging.basicConfig(level=logging.INFO, format=logfmt)
 
@@ -36,9 +36,9 @@ logging.basicConfig(level=logging.INFO, format=logfmt)
 ### System Under Test ###
 #########################
 
-#import staplemixer.utils.rackfileutils as rackfileutils
-from rspyutilslib.oligodatalib import rackfileutils
-#from staplemixer.utils.rackfileutils import \
+#import epmotion_staplemixer.utils.rackfileutils as rackfileutils
+from rsenv.origami.oligomanager_lib.oligodatalib import rackfileutils
+#from epmotion_staplemixer.utils.rackfileutils import \
 #        read_monolithic_rackfile, read_rackfilehandle
 
 
@@ -99,31 +99,31 @@ def monolithic_rackdata():
 def racksdata_sample():
     racksdata = {'TRPJ-Dec2013_1_1-96': [{'Plate Name': 'TRPJ-Dec2013_1_1-96',
    'Sequence': 'TAT AAG TAT AGC CCG GAA TAG GTG TAT CAC CG',
-   'Sequence Name': 'TRPJ:col07v6:0[135]', 'nmoles':'30', u'Final Volume µL ': '200',
+   'Sequence Name': 'TRPJ:col07v6:0[135]', 'nmoles':'30', 'Final Volume µL ': '200',
    'Well Position': 'A01'},
   {'Plate Name': 'TRPJ-Dec2013_1_1-96',
    'Sequence': 'CCT CAA GAT GAA AGT ATT AAG AGG CTT TCC AG',
-   'Sequence Name': 'TRPJ:col07v6:1[128]', 'nmoles':'30', u'Final Volume µL ': '200',
+   'Sequence Name': 'TRPJ:col07v6:1[128]', 'nmoles':'30', 'Final Volume µL ': '200',
    'Well Position': 'B01'},
   {'Plate Name': 'TRPJ-Dec2013_1_1-96',
    'Sequence': 'GTC TGT CCA TCA CGC ACA ATA TTA C',
-   'Sequence Name': 'TRPJ:col14-21v6:31[296]', 'nmoles':'30', u'Final Volume µL ': '200',
+   'Sequence Name': 'TRPJ:col14-21v6:31[296]', 'nmoles':'30', 'Final Volume µL ': '200',
    'Well Position': 'C12'},
   {'Plate Name': 'TRPJ-Dec2013_1_1-96',
    'Sequence': 'AAT ACT TCT TTG ATT ACA AAC TAT',
-   'Sequence Name': 'TRPJ:col14-21v6:31[328]', 'nmoles':'30', u'Final Volume µL ': '200',
+   'Sequence Name': 'TRPJ:col14-21v6:31[328]', 'nmoles':'30', 'Final Volume µL ': '200',
    'Well Position': 'D12'}],
  'TRPJ_Dec2013_02_97-192': [{'Plate Name': 'TRPJ_Dec2013_02_97-192',
-   'Sequence': 'GTA GCA CCA TTA CCA TGC CAG CAA', 'nmoles':'30', u'Final Volume µL ': '200',
+   'Sequence': 'GTA GCA CCA TTA CCA TGC CAG CAA', 'nmoles':'30', 'Final Volume µL ': '200',
    'Sequence Name': 'TRPJ:col1011v6:12[199]',
    'Well Position': 'A01'},
   {'Plate Name': 'TRPJ_Dec2013_02_97-192',
    'Sequence': 'AAT CAC CAT TTT AAT AGA AAA TTC ATA TTT ATT TTG',
-   'Sequence Name': 'TRPJ:col1011v6:13[192]', 'nmoles':'30', u'Final Volume µL ': '200',
+   'Sequence Name': 'TRPJ:col1011v6:13[192]', 'nmoles':'30', 'Final Volume µL ': '200',
    'Well Position': 'B01'},
   {'Plate Name': 'TRPJ_Dec2013_02_97-192',
    'Sequence': 'CTA AAC AGG AGG CCG AAT TCA CCA',
-   'Sequence Name': 'TRPJ:col1213v6:31[200]', 'nmoles':'30', u'Final Volume µL ': '200',
+   'Sequence Name': 'TRPJ:col1213v6:31[200]', 'nmoles':'30', 'Final Volume µL ': '200',
    'Well Position': 'D05'}]}
     return racksdata
 
@@ -161,11 +161,11 @@ def test_read_rackfilehandle(monkeypatch, monolithic_rackdata, monolithic_rackfi
     racks = {row['Plate Name'] for row in monolithic_rackdata}
     #teststruct =
     #print "rackdata: %s" % rackdata
-    print "rackdata.keys(): %s" % rackdata.keys()
+    print("rackdata.keys(): %s" % list(rackdata.keys()))
     #print "monolithic_rackdata[0].keys(): %s" % monolithic_rackdata[0].keys()
     assert set(rackdata.keys()) == {'TRPJ_Dec2013_02_97-192', 'TRPJ-Dec2013_1_1-96'}
     assert set(rackdata.keys()) == racks
-    print rackdata['TRPJ-Dec2013_1_1-96']
+    print(rackdata['TRPJ-Dec2013_1_1-96'])
     assert set(rackdata['TRPJ-Dec2013_1_1-96'][0].keys()) == set(monolithic_rackdata[0].keys())
     assert rackdata['TRPJ-Dec2013_1_1-96'][0]['Sequence'] == 'TAT AAG TAT AGC CCG GAA TAG GTG TAT CAC CG'
 
@@ -190,14 +190,14 @@ def test_write_rackdata(racksdata_sample):
     """
     filehandle = StringIO()
     rackfileutils.write_rackdata(filehandle, racksdata_sample['TRPJ-Dec2013_1_1-96'])
-    print filehandle.tell()
+    print(filehandle.tell())
     assert filehandle.tell() == 435
 
 def test_filter_racksdata(racksdata_sample):
     racksdata = rackfileutils.filter_racksdata(racksdata_sample)
-    rackdata = next(iter(racksdata.values()))
+    rackdata = next(iter(list(racksdata.values())))
     row = next(iter(rackdata))
     assert set(row.keys()) == set( ('Pos', 'Name', 'Sequence', 'nmoles') )
     assert ' ' not in row['Sequence']
-    print row['Sequence']
+    print(row['Sequence'])
     assert all(x.upper() in 'ATGC' for x in row['Sequence'])

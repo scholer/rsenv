@@ -58,7 +58,7 @@ def convertfiles(args):
                             fields[i] = fields[i].replace(' ', '')
                     out = outputdelim.join(fields)
                     fout.write(out+args.eolmarker)
-        print "{} reformatted and written to file: {}".format(fn, outputfn)
+        print("{} reformatted and written to file: {}".format(fn, outputfn))
 
 
 def guessdelim(line, default=','):

@@ -46,7 +46,7 @@ def generate_orderfile(designfilename):
         # if os.file.isfile('design_order_name_format.txt'):
         with open('order_name_format.txt') as format_file:
             order_name_format = "\n"+format_file.readline().strip()
-            print "order name format is: {0}".format(order_name_format)
+            print("order name format is: {0}".format(order_name_format))
     except IOError:
         order_name_format = "\n{designgroup}:{modulename}:{start}"
 
@@ -61,7 +61,7 @@ def generate_orderfile(designfilename):
                 row["Length"] if int(row["Length"])==len(row["Sequence"]) else "designfile length is {0} but len(seq) is {1}".format(row["Length"],len(row["Sequence"]))
                 ])
             for row in design["Dataset"]])
-        print "\ngenerate_orderfile() : Order info written to file {}".format(orderfilename)
+        print("\ngenerate_orderfile() : Order info written to file {}".format(orderfilename))
 
 
 def generate_pos(maxrow='H',maxcol=12):
@@ -77,7 +77,7 @@ def generate_pos(maxrow='H',maxcol=12):
             for col in range(1,maxcol+1):
                 for row in range(ord('A'),ord(maxrow)+1):
                     fp.write("\n{0}{1}".format(chr(row),col))
-        print "{0} : generic positions written to file: {1}".format("generate_pos()", filename)
+        print("{0} : generic positions written to file: {1}".format("generate_pos()", filename))
 
 
 if __name__ == "__main__":

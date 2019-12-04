@@ -17,7 +17,7 @@
 # pylint: disable-msg=W0612,R0903
 """
 Module with various file-related utility functions.
-Brutally taken from the old staplemixer.FileHelper object and
+Brutally taken from the old epmotion_staplemixer.FileHelper object and
 split into functions rather than having an unnessecary class helper.
 
 This contains all functions relevant to (csv) files.

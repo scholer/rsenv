@@ -58,7 +58,7 @@ class Paper:
             
             strArr += "\n"
         
-        print strArr #System.out.println(strArr)
+        print(strArr) #System.out.println(strArr)
     
     def printPaperFull(self, strA, strB, tegnPerPlads):
         if (len(strA) < 1 or len(strB) < 1): 
