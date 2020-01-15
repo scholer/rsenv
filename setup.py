@@ -27,7 +27,7 @@ setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    version='0.5.0',  # Update for each new version
+    version='0.6.1dev1',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     download_url='https://github.com/scholer/rsenv/archive/master.zip',
@@ -46,11 +46,13 @@ setup(
     # Automatic script creation using entry points has largely super-seeded the "scripts" keyword.
     # you specify: name-of-executable-script: [package.]module:function
     # When the package is installed with pip, a script is automatically created (.exe for Windows).
-    # The entry points are stored in ./gelutils.egg-info/entry_points.txt, which is used by pkg_resources.
+    # The entry points are stored in ./<dist-name>.egg-info/entry_points.txt, which is used by pkg_resources.
     entry_points={
         'console_scripts': [
             # console_scripts should all be lower-case, else you may get an error when uninstalling:
             # Remember to copy changes to `rsenv.rsenv_cli.py` to keep `rsenv-help` command up to date.
+
+            # Instrument data analysis and conversion:
             'nanodrop-cli=rsenv.dataanalysis.nanodrop.nanodrop_cli:cli',
             'hplc-cli=rsenv.hplcutils.cli:hplc_cli',
             'hplc-cdf-to-csv=rsenv.hplcutils.cdf_csv:cdf_csv_cli',
@@ -63,6 +65,9 @@ setup(
             'hdf5-to-csv=rsenv.fileconverters.hdf5csv:hdf5_to_csv_cli',
             'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
 
+            # File and data comparison CLIs:
+            'oil-diff=rsnev.diffutils.linesetdiff_cli:order_independent_line_diff_cli',
+
             # `sha256sum` is used by UNIX sha256sum.exe distributed with e.g. Git
             'sha256sumsum=rsenv.utils.hash_utils:file_sha256sumsum_cli',
             'sha256setsum=rsenv.utils.hash_utils:file_sha256setsum_cli',
@@ -73,11 +78,13 @@ setup(
             'generic-batch-downloader=rsenv.web.generic_batch_download:generic_batch_downloader_cli',
 
             # Oligo-management:
-            'convert-IDT-espec-to-platelibrary-file-cli='
-            'rsenv.seq.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
+            'convert-IDT-espec-to-platelibrary-file-cli=rsenv.origami.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
+
+            # Hashing and comparing oligo sets / pools of oligo sequences:
+            'oligoset-file-hasher-cli=rsenv.origami.oligoset_tools.oligoset_hashing_cli:hash_oligoset_file_cli',
 
             # Sequences and cadnano:
-            'cadnano_maptransformer=rsenv.seq.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
+            'cadnano_maptransformer=rsenv.origami.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
 
             # File indexing and duplication finder:
             'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
@@ -97,6 +104,14 @@ setup(
             # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',
             'rsenv=rsenv.rsenv_cli:rsenv_cli',
+
+            # Entry points installed from my other packages:
+            # (listing them here so I remember where they've gone)
+            # todoist-action-cli
+            # git-add-and-commit
+            # git-status-checker
+            # zepto-eln-server
+            # gelannotator CLI, AnnotateGel GUI
 
         ],
         # 'gui_scripts': [

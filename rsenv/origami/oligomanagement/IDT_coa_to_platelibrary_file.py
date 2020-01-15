@@ -55,7 +55,7 @@ import pandas as pd
 import click
 import fire
 
-from rsenv.utils.cli_cmd_utils import create_click_cli_command
+from rsenv.utils.click_cmd_utils import create_click_cli_command
 
 
 IDT_MOD_REGEX = re.compile(r"\/\w*\/")

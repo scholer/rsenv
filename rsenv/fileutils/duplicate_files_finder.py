@@ -50,14 +50,27 @@ New concept: Dynamic read length
     So, after feeding e.g. 1 MB to a hash function, the function has already calculated a "partial hash".
 
 
+TODO: Indexing
+
+* Instead of repeatedly running duplicate-files-finder, it would be much more efficient to have a persistent
+  index, where processed files are stored.
+  The index is used, unless a file has been changed since it was last indexed.
+* See fileindexer.py
+
+
 
 
 Non-comprehensive list of prior art (i.e. other "file duplicates finders):
+
 * https://github.com/hsoft/dupeguru - “Current status: Unmaintained. I haven't worked on dupeGuru for a while and
     frankly, I don't want to. I never had any duplicate problems so I don't even care about the
     raison d'être of this thing.” (Feb 15, 2018)
+* https://github.com/ssokolow/fastdupes
+    This seems nice. Although perhaps a bit unnecessary use of decorators,
+    and using `optparse` instead of `argparse` or `click`.
+    Also: Python 2.7 only, no python3.
+    But: Allows searching multiple roots, e.g. `fastdupes C:\Music D:\Backup\Music` .
 * https://github.com/thorsummoner/duplicate-files - Not liking the code, and only does (size → full-hash) grouping without the intermediate 4kB head grouping.
-* https://github.com/ssokolow/fastdupes - This seems nice. Although perhaps a bit unnecessary use of decorators, and using `optparse` instead of `argparse` or `click`. Also: Python 2.7 only, no python3. But: Allows searching multiple roots, e.g. `fastdupes C:\Music D:\Backup\Music` .
 * https://github.com/cwilper/qdupe - Latest commit ff19a4d on Dec 8, 2010.
 * https://github.com/michaelkrisper/duplicate-file-finder
 * https://github.com/mikecurry74/hoarder (backup tool with file de-duplication)

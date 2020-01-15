@@ -1,5 +1,17 @@
 
 
+0.6.1: 
+
+* Added `oil-diff` (order_independent_line_diff_cli) CLI tool incl. entry point.
+* Added `pdf.pdf_from_jpgs` module with `pdf_from_image_files_cli()` click CLI.
+
+
+0.6.0:
+
+* Large refactoring of modules from `rsenv.seq` to new package `rsenv.origami`.
+* Added `oligoset-file-hasher-cli` CLI tool.
+
+
 
 0.5.0:
 

@@ -14,6 +14,19 @@ See also:
 * oligomanager/tools/file_transformation/om_automapper.py
 
 
+Why the name:
+
+* "cadnano" because it uses the exported CSV file from cadnano.
+* "map" because it combines the exported cadnano CSV with a pool/module color map
+  (and optionally also a sequence map, mapping undefined "???" sequences to actual sequences).
+* "transform" because it uses the maps to transform the data.
+  Although it doesn't so much transform the data as it just joins or injects some information.
+
+
+# TODO: Maybe change name to cadnano_csv_mapper or cadnano_csv_processor,
+# TODO: or cadnano_csv_map_injector, or cadnano_csv_table_joiner
+
+
 
 """
 
@@ -34,7 +47,7 @@ OLIGO_MOD_REGEX = "\[.*?\]"
 OLIGO_MOD_REGEXC = re.compile(OLIGO_MOD_REGEX)
 
 
-@click.command()
+@click.command("Cadnano CSV map processor/injector/joiner.")
 @click.argument("cadnano_csv_filename", type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.option("--colormap-filename")
 @click.option("--seqmap-filename")

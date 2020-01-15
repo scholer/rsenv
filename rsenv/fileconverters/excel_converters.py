@@ -16,6 +16,29 @@
 #    You should have received a copy of the GNU General Public License
 #
 
+"""
+
+Reading/Writing Excel files with Pandas:
+
+* xlrd - read only
+* openpyxl - read + write, xlsx/xlsm/xltx/xltm files.
+* xlsxwriter - write xlsx files.
+
+Other Excel libs:
+
+* xlutils
+* pyexcel
+* pyxll - use python from within Excel.
+* Pandas - read/write excel spreadsheets to DataFrames
+
+OBS: Pandas currently only supports `xlrd` for reading xlsx files.
+
+Refs:
+
+* https://xlsxwriter.readthedocs.io/alternatives.html
+
+
+"""
 
 
 
