@@ -27,7 +27,7 @@ setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    version='0.6.1dev1',  # Update for each new version
+    version='0.6.1dev2',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     download_url='https://github.com/scholer/rsenv/archive/master.zip',
@@ -83,8 +83,14 @@ setup(
             # Hashing and comparing oligo sets / pools of oligo sequences:
             'oligoset-file-hasher-cli=rsenv.origami.oligoset_tools.oligoset_hashing_cli:hash_oligoset_file_cli',
 
-            # Sequences and cadnano:
-            'cadnano_maptransformer=rsenv.origami.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
+            # Hashing cadnano designs (because cadnano adds a time-stamp):
+            '`cadnano-json-vstrands-hashes=rsenv.origami.cadnano.cadnano_json_hashing_cli`:cadnano_json_vstrands_hashes_cli',
+
+            # Cadnano, staple strand mapping, pooling:
+            'cadnano-maptransformer=rsenv.origami.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
+            'cadnano-colorname-mapper=rsenv.origami.staplepooling.cadnano_color_name_mapper:cadnano_color_name_mapper_cli',
+            'oligo-wellplate-mapper=rsenv.origami.staplepooling.oligo_wellplate_mapper:oligo_sequence_wellplate_mapper_cli',
+
 
             # File indexing and duplication finder:
             'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
@@ -108,8 +114,7 @@ setup(
             # Entry points installed from my other packages:
             # (listing them here so I remember where they've gone)
             # todoist-action-cli
-            # git-add-and-commit
-            # git-status-checker
+            # git-status-checker  (git-add-and-commit is still in rsenv)
             # zepto-eln-server
             # gelannotator CLI, AnnotateGel GUI
 

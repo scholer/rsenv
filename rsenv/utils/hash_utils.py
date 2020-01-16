@@ -49,12 +49,12 @@ References:
 * https://stackoverflow.com/questions/47253864/order-independent-hash-in-java
 
 
+# TODO: Maybe use actual C types with integer wrap-around arithmetic ?
+
 """
 import hashlib  # Use `hashlib.algorithms_available` to see available hashes.
 import click
 # import inspect
-
-from rsenv.utils.click_cmd_utils import create_click_cli_command
 
 
 def sha256_digest(s):
@@ -206,7 +206,7 @@ def file_sequencesethash(file, strip_eol=True, strip_whitespace=True, remove_emp
 @click.argument('files', nargs=-1)
 def file_sha256sumsum_cli(files, strip_eol=True, strip_whitespace=True, remove_empty_lines=True):
     for file in files:
-        hex_digest =  file_sha256sumsum(
+        hex_digest = file_sha256sumsum(
             file, strip_eol=strip_eol, strip_whitespace=strip_whitespace, remove_empty_lines=remove_empty_lines)
         print(f"{hex_digest} *{file}")
 
@@ -218,7 +218,7 @@ def file_sha256sumsum_cli(files, strip_eol=True, strip_whitespace=True, remove_e
 @click.argument('files', nargs=-1)
 def file_sha256setsum_cli(files, strip_eol=True, strip_whitespace=True, remove_empty_lines=True):
     for file in files:
-        hex_digest =  file_sha256setsum(
+        hex_digest = file_sha256setsum(
             file, strip_eol=strip_eol, strip_whitespace=strip_whitespace, remove_empty_lines=remove_empty_lines)
         print(f"{hex_digest} *{file}")
 
@@ -230,7 +230,7 @@ def file_sha256setsum_cli(files, strip_eol=True, strip_whitespace=True, remove_e
 @click.argument('files', nargs=-1)
 def file_sequencesethash_cli(files, strip_eol=True, strip_whitespace=True, remove_empty_lines=True):
     for file in files:
-        hex_digest =  file_sequencesethash(
+        hex_digest = file_sequencesethash(
             file, strip_eol=strip_eol, strip_whitespace=strip_whitespace, remove_empty_lines=remove_empty_lines)
         print(f"{hex_digest} *{file}")
 

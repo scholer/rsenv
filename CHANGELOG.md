@@ -1,5 +1,9 @@
 
 
+0.6.2:
+
+* Added `cadnano-json-vstrands-hashes` CLI.
+
 0.6.1: 
 
 * Added `oil-diff` (order_independent_line_diff_cli) CLI tool incl. entry point.

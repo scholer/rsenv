@@ -3,6 +3,15 @@
 
 Module and CLI for doing order-independent comparison of lines in a file.
 
+Alternatively, you can also just sort the lines in each file before sorting:
+
+    > sort file1.txt > file1_sorted.txt
+    > sort file2.txt > file2_sorted.txt
+    > diff file1.txt file2.txt
+
+Or just directly (in Bash shell):
+
+    > diff <(sort file1) <(sort file2)
 
 
 """

@@ -5,9 +5,18 @@ Module for sorting and filtering csv data:
 
 Alternatives:
 
-* The `sort` UNIX program.
-* VisiData
+* I have created a separate `dataframe-action-cli` project for manipulating CSV/data files
+  using Pandas DataFrame.
+* Miller.
+* Awk.
+* `sort` (UNIX program).
+* `jq` (for JSON data).
+* VisiData.
+*
 
+See also:
+
+* https://github.com/dbohdan/structured-text-tools - a list of tools for working with structured text.
 
 
 """

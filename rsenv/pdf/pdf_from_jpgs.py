@@ -4,10 +4,11 @@
 
 Alternative ways of creating a PDF from a list of image files:
 
-1. Windows Photos app -> Select photos -> Print to PDF.
-2. Mac Preview -> Open photos -> Print to PDF.
-3. On Android: Use Images to PDF converter app (Play Store).
-4. Lots of other tools and web-apps - search google.
+* Windows Photos app -> Select photos -> Print to PDF.
+* Mac Preview -> Open photos -> Print to PDF.
+* On Android: Use Images to PDF converter app (Play Store).
+* Adobe Acrobat has a context menu option to directly combine multiple files/images to a single PDF.
+* Lots of other tools and web-apps - search google.
 
 
 

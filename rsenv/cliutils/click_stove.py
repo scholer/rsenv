@@ -3,16 +3,11 @@
 
 """
 
-Some utility functions for creating Click CLI commands from basic functions.
+click-stove - provides boiler-plate Click CLI code and commands from a function.
 
+Functions for creating Click CLI commands from basic functions.
 
-Alternative names:
-
-* fast-click
-* easy-click
-* instant-click
-* speed-click
-* click-stove - provides boiler-plate code and commands from
+Alternative names: fast-click, easy-click, instant-click, speed-click.
 
 
 
@@ -20,20 +15,35 @@ Alternative names:
 Prior art and direct alternatives:
 ----------------------------------
 
-* AutoClick is a direct alternative to this module; creating click CLIs from type-annotated functions.
-* clize is
+This module was mainly created to create a *minimal*, *simplistic* way to quickly generate
+a click CLI after you have written a function that you want to use.
+
+`click_stove` is NOT intended to be feature-rich or provide a lot of different options.
+If that is what you want, you are probably better off either just creating an actual Click CLI,
+or use one of the alternatives below:
+
+* AutoClick is a direct alternative to this module; creating Click CLIs from type-annotated functions.
+* clize - Same approach, write, document, and annotation a function, then create a CLI from that.
 
 
 
-CLI libraries full overview:
+CLI libraries, full overview:
 -----------------------------
 
 * argparse - python's standard CLI argument parsing library.
 
 * click - focussed on making composable and standardized CLIs. Uses function decorators.
     * https://github.com/pallets/click - 7k github stars.
+    * Click deliberately uses a parser based on the old `optparse`,
+      and Click has some very opinionated ideas on how to build proper CLIs.
+    * Click is very advanced, extensible, but also complex.
     * AutoClick - creates Click-based CLIs using type annotations.
         * https://github.com/jdidion/autoclick
+        * The AutoClick package is very similar in purpose to this function
+          (but considerably more advanced and elaborate). Uses type hints.
+          Sadly, it does not provide any documentation or examples on how to use
+          multiple arguments (nargs=-1).
+    * See also: https://github.com/click-contrib for projects that extends click in one way or another.
     * "AsyncClick (Trio-click) ist a fork of Click that works well with trio, asyncio, or curio."
 
 * fire - Python Fire is a very fast way to generate basic CLIs. Similar to clize.
@@ -59,6 +69,9 @@ CLI libraries full overview:
         >>> clize.run(main)
     * Rather old, first release 2011.
     * Still supports Python 2.7 (through decorators, but still).
+    * Unlike many of the other CLI-generation libraries, Clize does not have separate argparser-constructors,
+      instead it has a primary Clize class, which is initialized, called, then use `Clize.read_commandline(args)`
+      to parse the command line arguments, extracting posargs and kwargs, which are then passed to the function.
     * Is giving me an error: "ValueError: path is on mount 'C:', start on mount 'D:'" when I try to use it.
     * https://github.com/epsy/clize/issues/37
     * After fixing the above issue, I'm getting a new error:
@@ -183,42 +196,25 @@ def create_click_cli_command(callback, params=None, help=None, epilog=None, shor
     Returns:
         Click CLI Command
 
-    Note: I think maybe you can also use the `context_settings` click.Command parameter for doing this.
-    http://click.palletsprojects.com/en/7.x/api/#context
-    However, I haven't quite found the right way of doing this yet.
+    Discussion: Supporting *varargs in functions?
+    * >>> def func(arg1, arg2, *args, kwarg1="Apple", **kwargs):
+    * Click does not seem to support functions that uses *args for variadic arguments.
+    * That may be why autoclick decided to drop support for *args and **kwargs in functions.
+        (https://github.com/jdidion/autoclick/commit/08530b87cfe6f0e5acc25721397d4bb1ec634599)
+    * It might still be possible to support functions that uses *args and **kwargs,
+      you just have to wrap that function up, creating a new function, that does something like:
+      # Input func:
+          def func(*args, kwarg1="Apple", **kwargs):
+      # Wrapped func:
+          def newfunc(args, kwarg1="Apple"):
+              func(*args, kwarg1=kwarg1)
+      For **kwargs, you could maybe use Click's ignore_unknown_options?
+      Can you still parse options, even if they are not defined?
+    * Hmm, it might just be too much of a hassle. If I want to support *args and **kwargs,
+      I should use an underlying CLI package that supports that. And Click doesn't.
+    * So, in that case, maybe just use Clize? ALthough I'm not sure Clize supports *args and **kwargs either.
 
-        CONTEXT_SETTINGS = dict(
-            # provide custom defaults:
-            default_map={'runserver': {'port': 5000}},
-            help_option_names=['-h', '--help'],
-            token_normalize_func=lambda x: x.lower(),
-            ignore_unknown_options=True,
-        )
-    Edit: click context_settings is just the parameters forwarded to a specific click.Command.
-
-
-    Alternatives and prior art:
-    ---------------------------
-
-    Alternatively, consider using CLI libraries that were specifically made to easily convert
-    python API function to CLIs without any boilerplate, e.g. `clize` and `fire`.
-
-    Fire:
-        >>> import fire
-        >>> fire.Fire(callback)
-
-    I've also tried to use `defopt` and `clize`, but I never got them to work.
-
-    Click-based packages:
-
-    * The AutoClick package is very similar in purpose to this function
-      (but considerably more advanced and elaborate). Uses type hints.
-      Sadly, it does not provide any documentation or examples on how to use
-      multiple arguments (nargs=-1).
-
-    * See also: https://github.com/click-contrib
-
-
+    On the other hand, maybe it is just easier to create a function that outputs click decorators boilerplate?
     """
     _sig = inspect.signature(callback)
     # _argspec = inspect.getfullargspec(callback)
