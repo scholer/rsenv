@@ -63,7 +63,7 @@ def hash_oligoset_files(
         remove_whitespace: bool = True,
         remove_empty_lines: bool = True,
         normalize_full_line_to_uppercase: bool = True,
-        modifications_pattern=r"\/[^\/]*?\/",
+        mod_regex=r"\/[^\/]*?\/",
         # These only apply to the sequence:
         normalize_seq_to_uppercase: bool = False,
         remove_all_sequence_chars_except="ATGCU",
@@ -91,7 +91,7 @@ def hash_oligoset_files(
         remove_empty_lines: Remove all empty lines from file.
         normalize_full_line_to_uppercase: Normalize full-line to upper-case before hashing.
             (Applies to both `seqhash` AND `modhash`).
-        modifications_pattern: Regex pattern used to find modifications in sequence.
+        mod_regex: Regex pattern used to find modifications in sequence.
         normalize_seq_to_uppercase: Normalize sequence to upper-case before hashing.
             (Applies only to `seqhash`, not `modhash`).
         remove_all_sequence_chars_except: After removing modifications, remove all characters
@@ -129,8 +129,9 @@ def hash_oligoset_files(
         if normalize_full_line_to_uppercase:
             lines = [line.upper() for line in lines]
 
-        if modifications_pattern:
-            mod_regex = re.compile(modifications_pattern)
+        if mod_regex:
+            if isinstance(mod_regex, str):
+                mod_regex = re.compile(mod_regex)
             lines_excl_mods = ["".join(mod_regex.split(line)) for line in lines]
         else:
             lines_excl_mods = lines
@@ -228,7 +229,7 @@ hash_oligoset_file_cli_2 = click_stove.create_click_cli_command(
 @click.option("--remove-whitespace/--no-remove-whitespace", default=True)
 @click.option("--remove-empty-lines/--no-remove-empty-lines", default=True)
 @click.option("--normalize-full-line-to-uppercase/--no-normalize-full-line-to-uppercase", default=True)
-@click.option("--modifications-pattern", default=r"\/[^\/]*?\/")
+@click.option("--mod-regex", default=r"\/[^\/]*?\/")
 @click.option("--normalize-seq-to-uppercase/--no-normalize-seq-to-uppercase", default=True)
 @click.option("--remove-duplicates/--no-remove-duplicates", default=True)
 @click.option("--hash-modulus", type=int, default=2**256)

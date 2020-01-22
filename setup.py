@@ -27,7 +27,7 @@ setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    version='0.6.1dev2',  # Update for each new version
+    version='0.6.3dev',  # Update for each new version
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     download_url='https://github.com/scholer/rsenv/archive/master.zip',
@@ -84,7 +84,14 @@ setup(
             'oligoset-file-hasher-cli=rsenv.origami.oligoset_tools.oligoset_hashing_cli:hash_oligoset_file_cli',
 
             # Hashing cadnano designs (because cadnano adds a time-stamp):
-            '`cadnano-json-vstrands-hashes=rsenv.origami.cadnano.cadnano_json_hashing_cli`:cadnano_json_vstrands_hashes_cli',
+            'cadnano-json-vstrands-hashes=rsenv.origami.cadnano.cadnano_json_hashing_cli:cadnano_json_vstrands_hashes_cli',
+            'cadnano-get-json-name=rsenv.origami.cadnano.cadnano_set_json_name:get_cadnano_json_name_cli',
+            'cadnano-set-json-name=rsenv.origami.cadnano.cadnano_set_json_name:set_cadnano_json_name_cli',
+            'cadnano-reset-json-name=rsenv.origami.cadnano.cadnano_set_json_name:reset_cadnano_json_name_cli',
+
+            # Cadnano diff'ing and pretty-printing:
+            'cadnano-neatprinted-json=rsenv.origami.cadnano.cadnano_prettyprint:cadnano_neatprinted_json_cli',
+            'cadnano-diff-jsondata=rsenv.origami.cadnano.cadnano_diff_cli:cadnano_diff_jsondata_cli',
 
             # Cadnano, staple strand mapping, pooling:
             'cadnano-maptransformer=rsenv.origami.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
@@ -142,6 +149,9 @@ setup(
         # 'pytables',  # For reading HDF5
         'pandas',    # General purpose reading/writing/plotting/manipulation of data.
         'click',     # Easy creation of command line interfaces (CLI).
+        'typer',     # Create Click CLIs even faster!
+        # 'click-completion',  # Command line completions, optional
+        'colorama',  # Good colors, even on Windows.
         # 'openpyxl',  # Excel files package, required for xlsx-to-csv converter.
         'gitpython',  # GitPython, for git add-commit scripts
 
@@ -181,9 +191,6 @@ setup(
         # that you indicate whether you support Python 2, Python 3 or both.
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
-        'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
 

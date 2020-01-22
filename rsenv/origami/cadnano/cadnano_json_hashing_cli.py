@@ -76,6 +76,22 @@ To write the traditional #RRGGBB hex string, make sure each value is zero-padded
     rgb_str = f"#{r:02x}{g:02x}{b:02x}"
 
 
+Data diff'ing alternatives:
+---------------------------
+
+Hashes only shows whether something has changed or not.
+If you need to show the actual differences, here are some options:
+
+* Basic file `diff` - this doesn't work well for cadnano json files.
+* You can use one of the "structured data recursive diff'ing" tools:
+    * The `datadiff` package for showing actual differences between lists and diffs.
+    * The `json_diff` package CLI can be used to show changes to json files.
+        However, the output is not very useful for comparing cadnano json files.
+
+
+
+
+
 Hashing procedure:
 ------------------
 
@@ -119,7 +135,11 @@ Other hashing libraries that may be relevant and/or just interesting?
 import json
 import hashlib
 from pathlib import Path
-from typing import Iterable, Mapping
+from functools import partial
+from datetime import datetime
+from typing import Iterable, Mapping, List, Tuple
+import click
+import typer
 
 
 hashable_types = {
@@ -197,42 +217,56 @@ def recursive_hashing(m, obj):
     # return int.from_bytes(m.digest(), byteorder='big')
 
 
+def str_hash_hexdigest(s, hash_name="sha256"):
+    """ Hash a given string, encoding it to bytes as utf-8, and return hexdigest. """
+    m = hashlib.new(hash_name)
+    m.update(s.encode("utf8"))
+    hexdigest = m.hexdigest()
+    return hexdigest
+
+
 def json_hash_hexdigets(obj, hash_name="sha256"):
     """ Use json to serialize obj, then hash the serialized string. """
     # Does json.dump sort the data (to make the order of sets and dicts order-independent)?
-    json_str_with_colors = json.dumps(obj)
-    m_with_colors = hashlib.new(hash_name)
-    m_with_colors.update(json_str_with_colors.encode("utf8"))
-    hexdigets_with_colors = m_with_colors.hexdigest()
-    return hexdigets_with_colors
+    json_str = json.dumps(obj)
+    return str_hash_hexdigest(json_str)
 
 
-def cadnano_json_vstrands_hashes_cli(
+def cadnano_json_vstrands_hashes(
         jsonfile,
-        design_variant_keys=('row', 'loop', 'col', 'scafLoop', 'stap', 'scaf', 'num', 'skip', 'stapLoop'),
-        coloring_keys=('row', 'loop', 'col', 'scafLoop', 'stap', 'scaf', 'num', 'stap_colors', 'skip', 'stapLoop'),
-        hash_name="sha256",
-        hash_without_colors=True,
-        hash_with_colors=True,
-        save_hashes_to_file=True,
+        # design_variant_keys=('row', 'loop', 'col', 'scafLoop', 'stap', 'scaf', 'num', 'skip', 'stapLoop'),
+        # coloring_keys=('row', 'loop', 'col', 'scafLoop', 'stap', 'scaf', 'num', 'stap_colors', 'skip', 'stapLoop'),
+        del_color_keys: List[str] = None,  # Use typing.List to support multi-arg input.
+        hash_name: str = "sha256",
+        # hash_without_colors: bool = True,
+        # hash_with_colors: bool = True,
+        save_hashes_to_file: bool = True,
 ):
     """
 
     cadnano-json-vstrands-hashes
 
     Args:
-        jsonfile:
-        design_variant_keys:
-        coloring_keys:
-        hash_name:
-        hash_without_colors:
-        hash_with_colors:
+        jsonfile: The cadnano json file to hash ("legacy" cadnano json file format).
+        del_color_keys: The keys to remove when creating the "hash without color".
+        hash_name: The hashing algorithm to use when hashing.
         save_hashes_to_file: Automatically save the calculated hashes to a file next to the jsonfile.
 
+    Removed args:
+        hash_without_colors: Create hash without staple color info.
+        hash_with_colors: Create hash with staple color info.
+
     Returns:
+        tuple with (hash_with_colors, hash_without_colors)
 
     """
-    jsondata = json.load(open(jsonfile))
+    # defaults:
+    if hash_name is None:
+        hash_name = "sha256"
+
+    jsonstr = open(jsonfile).read()
+    hexdigest_full_file = str_hash_hexdigest(jsonstr)
+    jsondata = json.loads(jsonstr)
     vstrands = jsondata['vstrands']
     jsonpath = Path(jsonfile)
 
@@ -246,24 +280,66 @@ def cadnano_json_vstrands_hashes_cli(
 
     # pop 'stap_colors' from all vstrands and repeat:
     for vh in vstrands:
-        del vh['stap_colors']
+        if not del_color_keys:
+            del vh['stap_colors']
+            vh.pop('scaf_colors', None)  # cadnano2.5 supports coloring the scaffold.
+        else:
+            for k in del_color_keys:
+                del vh[k]
 
     hexdigets_no_colors = json_hash_hexdigets(vstrands, hash_name)
 
-    # When printing, we should include the full path to jsonfile:
-    print("\ncadnano-json-vstrands-hashes for file:", jsonfile)
-    print(" * hexdigest with staple colors:   ", hexdigets_with_colors)
-    print(" * hexdigest without staple colors:", hexdigets_no_colors)
+    date = datetime.now()
 
     # The output that we save to file does not have to include the full path,
     # since it is saved to a file next to the jsonfile:
     output = f"""
-cadnano-json-vstrands-hashes for file: {jsonpath.name}
- * hexdigest with staple colors:     {hexdigets_with_colors}
- * hexdigest without staple colors:  {hexdigets_no_colors}
+{date:%Y/%m/%d %H:%M:%S} > cadnano-json-vstrands-hashes --hash-name {hash_name} "{jsonpath.name}"
+ * hexdigest vstrands without staple colors:    {hexdigets_no_colors}
+ * hexdigest vstrands  with   staple colors:    {hexdigets_with_colors}
+ * hexdigest full file contents:                {hexdigest_full_file}
 """
-    # print(output)
+
+    print(output)
+    # When printing, we should include the full path to jsonfile:
+    # print("\ncadnano-json-vstrands-hashes for file:", jsonfile)
+    # print(" * hexdigest without staple colors:   ", hexdigets_no_colors)
+    # print(" * hexdigest with staple colors:      ", hexdigets_with_colors)
 
     if save_hashes_to_file:
         hash_filename = Path(jsonfile).with_suffix(f".{hash_name}-vstrands-hashes.txt")
         hash_filename.write_text(output)
+
+    return hexdigets_with_colors, hexdigets_no_colors
+
+
+# Create a traditional click CLI:
+@click.command("Cadnano JSON['vstrands'] hashing CLI (Click implementation)")
+@click.argument("jsonfile")
+@click.option(
+    "--del-color-keys", "--del-color-key", "-k",
+    multiple=True  # click Options cannot have nargs=-1. Use multiple instead.
+)
+@click.option("--hash-name", default="sha256")
+@click.option("--save-hashes-to-file/--no-save-hashes-to-file", default=True)
+def cadnano_json_vstrands_hashes_click_cli(*args, **kwargs):
+    # click passes all parameters as keyword arguments:
+    # print("args:", args)  # Empty tuple
+    # print("kwargs:", kwargs)  # Has all click args and options.
+    cadnano_json_vstrands_hashes(*args, **kwargs)
+
+
+# Create Typer click CLI:
+def cadnano_json_vstrands_hashes_typer_cli():
+    typer.run(cadnano_json_vstrands_hashes)
+    # typer.run(function) is equivalent to:
+    # app = Typer()
+    # app.command()(function)
+    # app()
+
+
+cadnano_json_vstrands_hashes_typer_cli_2 = partial(typer.run, cadnano_json_vstrands_hashes)
+
+# Select the CLI implementation to use:
+cadnano_json_vstrands_hashes_cli = cadnano_json_vstrands_hashes_typer_cli
+# cadnano_json_vstrands_hashes_cli = cadnano_json_vstrands_hashes_click_cli

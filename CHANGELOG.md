@@ -1,8 +1,21 @@
 
 
+0.6.3:
+
+* Added `cadnano-neatprinted-json` CLI entry point to setup.py,
+  and added `rsenv.origami.cadnano.cadnano_prettyprint` module. 
+* Added `cadnano-diff-jsondata` CLI entry point to setup.py,
+  and added `rsenv.origami.cadnano.cadnano_diff` module.
+
+
 0.6.2:
 
-* Added `cadnano-json-vstrands-hashes` CLI.
+* Added `cadnano-json-vstrands-hashes` CLI - create a hash of the "vstrands" 
+  part of a cadnano JSON file, with and without staple strand colors.
+* Added `cadnano-get-json-name`, `cadnano-set-json-name` and `cadnano-reset-json-name` CLIs, 
+  for setting the "name" attribute of a cadnano file (now that I've created a 
+  cadnano fork that doesn't update this on every save).
+
 
 0.6.1: 
 

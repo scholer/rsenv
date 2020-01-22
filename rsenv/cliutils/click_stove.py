@@ -22,6 +22,12 @@ a click CLI after you have written a function that you want to use.
 If that is what you want, you are probably better off either just creating an actual Click CLI,
 or use one of the alternatives below:
 
+
+* Typer - Just discovered this (Thanks Python Bytes!). This basically does exactly what I want,
+  just use Typer from now on.
+  * https://typer.tiangolo.com/
+  * https://github.com/tiangolo/typer
+  * pip install typer
 * AutoClick is a direct alternative to this module; creating Click CLIs from type-annotated functions.
 * clize - Same approach, write, document, and annotation a function, then create a CLI from that.
 
@@ -152,8 +158,7 @@ Old/deprecated projects:
 * aaargh -- Deprecated in favor of click
 
 
-
-Other interesting things:
+Other interesting refs regarding CLIs and Python CLI packages:
 
 * http://xion.io/post/programming/python-dont-use-click.html - says click is too simple and supports an
     unfortunate use case of just "slap some decorators on our top-level functions and call it a day".
@@ -167,7 +172,26 @@ Other interesting things:
 * https://news.ycombinator.com/item?id=17785168
 * https://github.com/chriskiehl/Gooey - turn CLIs into GUIs.
 * https://github.com/spotify/luigi
-*
+
+
+Docstring-parsing libraries:
+----------------------------
+
+* pyment:
+    * https://github.com/dadadel/pyment  - 446 github stars (Jan 2020)
+* sphinx.ext.napoleon
+    * https://github.com/sphinx-contrib/napoleon  - 72 github stars (Jan 2020)
+* docstring-parser:
+    * https://github.com/rr-/docstring_parser  - 29 github stars (Jan 2020)
+    * No dependencies.
+* mydocstring:
+    * https://github.com/ooreilly/mydocstring  - 10 github stars (Jan 2020)
+    * Dependencies: Mako, docopt.
+* docopt
+    * http://docopt.org/
+    *
+
+
 
 """
 
