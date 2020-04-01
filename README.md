@@ -81,4 +81,140 @@ rsenv --help
 ```
 
 
+Brief description of the various CLI tools provided by this package:
+--------------------------------------------------------------------
+
+
+
+### Instrument data analysis and conversion:
+
+**`nanodrop-cli`**: Plot data from the "Nanodrop" or "Denovix" line of spectrophotometers.
+
+**`hplc-cli`**: Plot HPLC chromatograms (Agilent series HPLCs).
+
+**`hplc-cdf-to-csv`**: Convert CDF files to CSV (CDF files exported from Agilent series HPLCs).
+
+**`hplc-rename-cdf-files`**: Rename CDF according to the sample name contained within the CDF file metadata (CDF files exported from Agilent series HPLCs).
+
+
+### File converters and clipboard utils:
+
+**`json-redump-fixer`**: Correct badly-formatted "JSON" files (e.g. created by dumping a Python object representation to file) by loading the file and saving it with the proper json module.
+
+**`json-to-yaml`**: Convert JSON files to YAML, which is often easier to read.
+
+**`csv-to-hdf5`**: Convert CSV file to HDF5.
+
+**`hdf5-to-csv`**: Convert HDF5 file to CSV.
+
+**`clipboard-image-to-file`**: Save clipboard image data to file. Alternatively, use ImageMagick.
+
+
+### File and data comparison CLIs:
+
+**`oil-diff`**: Order-independent line diff program. Report which lines in a file have been added/removed/changed, but ignore the specific order of the lines.
+
+**`sha256sumsum`**: Calculate 
+**`sha256setsum`**:
+**`sequencesethash`**:
+
+
+(OBS: `sha256sum` is used by UNIX sha256sum.exe distributed with e.g. Git.)
+
+
+### Text extraction and web batch downloader:
+
+**`generic-text-extractor`**:
+**`generic-batch-downloader`**:
+
+
+### Oligo-management:
+
+**`convert-IDT-espec-to-platelibrary-file-cli`**:
+
+
+### Hashing and comparing oligo sets / pools of oligo sequences:
+**`oligoset-file-hasher-cli`**:
+
+
+### Hashing cadnano designs (because cadnano adds a time-stamp)::
+
+**`cadnano-json-vstrands-hashes`**:
+
+**`cadnano-get-json-name`**:
+
+**`cadnano-set-json-name`**:
+
+**`cadnano-reset-json-name`**:
+
+
+### Cadnano diff`ing and pretty-printing:
+
+**`cadnano-neatprinted-json`**:
+
+**`cadnano-diff-jsondata`**:
+
+
+### Cadnano, staple strand mapping, pooling:
+
+**`cadnano-maptransformer`**:
+
+**`cadnano-colorname-mapper`**:
+
+**`oligo-wellplate-mapper`**:
+
+
+### File management and renaming:
+
+**`regex-file-rename`**:
+
+
+### File indexing and duplication finder:
+
+**`duplicate-files-finder`**:
+
+
+### Label printing CLI:
+
+**`print-zpl-labels`**:
+
+(OBS: I have also written a ZPL-Label-Print plugin for Sublime Text, available as a separate 
+package https://github.com/scholer/sublime-zpl-label-print, and on https://packagecontrol.io.)
+
+
+### ELN: Print information about Pico/Markdown pages/files (based on the YAML header):
+
+(These have been moved to zepto-eln-core package.)
+
+
+### Git commands/scripts:
+
+**`git-add-and-commit-to-branch`**:
+
+**`git-add-and-commit-script`**:
+
+
+(OBS: There is a bug when setup.py contains two entry points with same name except one
+has -script postfix, which prevents the other entry point from being generated correctly.)
+
+### Other data-plotting CLIs:
+
+**`ohwmon-log-plotter`**:
+
+
+### Conda environments CLIs:
+
+**`export-all-conda-envs`**:
+
+
+### RsEnv help/docs/reference utils:
+
+**`rsenv-help`**:
+
+**`rsenv`**:
+
+
+
+
+
 

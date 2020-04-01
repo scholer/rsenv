@@ -61,6 +61,9 @@ Git commands/scripts:
     'git-add-and-commit-to-branch=rsenv.git.git_clis:git_add_and_commit_to_branch',
     'git-add-and-commit-to-branch-simple=rsenv.git.git_clis:git_add_and_commit_script',
 
+Regex-file-rename:
+    'regex-file-rename=rsenv.fileutils.regex_file_rename:regex_file_rename_cli'
+
 Clipboard CLIs:
     'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
 

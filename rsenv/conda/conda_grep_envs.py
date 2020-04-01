@@ -80,6 +80,7 @@ def get_conda_envs(json=False, name_only=False):
         return [tup[0] for tup in tups]
     return envs
 
+
 def get_conda_packages(env=None, regex=None, json=False, canonical=False, name_only=False):
     """
     Return a list of packages, for a particular environment <env> or for the currently active env.
@@ -140,6 +141,7 @@ def get_env_counts(packages, envs=None):
                  for env, env_pkgs in env_packages.items()}
     return env_count
 
+
 def get_available(packages, envs=None):
     """
     Return a dict with an entry for each environment showing which of
@@ -160,7 +162,12 @@ def get_available(packages, envs=None):
 
 
 def parse_args(argv=None):
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        prog="conda-grep-envs",
+        description="Find and compare which packages are installed in which conda environments.",
+        epilog=__doc__,
+        add_help=True,
+    )
     parser.add_argument('--verbose', '-v', action="count", help="Increase program verbosity.")
     parser.add_argument('--command', '-c', default="show-available",
                         help="The command to run. (count, show-available)")

@@ -20,14 +20,13 @@ Various tools/utilities and modules for work.
 
 """
 
-# To update entry points, just bump verison number and do `$ pip install -e .`
+# To update entry points, just bump version number and do `$ pip install -e .`
 
-# update 'version' and 'download_url', as well as qpaint_analysis.__init__.__version__
 setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    version='0.6.3dev',  # Update for each new version
+    version='2020.03.31',  # Also update version in rsenv/__init__.py
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     download_url='https://github.com/scholer/rsenv/archive/master.zip',
@@ -98,6 +97,8 @@ setup(
             'cadnano-colorname-mapper=rsenv.origami.staplepooling.cadnano_color_name_mapper:cadnano_color_name_mapper_cli',
             'oligo-wellplate-mapper=rsenv.origami.staplepooling.oligo_wellplate_mapper:oligo_sequence_wellplate_mapper_cli',
 
+            # File management and renaming:
+            'regex-file-rename=rsenv.fileutils.regex_file_rename:regex_file_rename_cli',
 
             # File indexing and duplication finder:
             'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
@@ -113,6 +114,12 @@ setup(
             'git-add-and-commit-script=rsenv.git.git_clis:git_add_and_commit_script',
             # OBS: There is a bug when setup.py contains two entry points with same name except one
             # has -script postfix, which prevents the other entry point from being generated correctly.
+
+            # Other data-plotting CLIs:
+            'ohwmon-log-plotter=rsenv.dataanalysis.openhardwaremonitor.ohwmon_log_plotter_cli:ohm_csv_plotter_cli',
+
+            # Conda environments CLIs:
+            'export-all-conda-envs=rsenv.conda.conda_export_all_envs:export_all_conda_envs_cli',
 
             # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',

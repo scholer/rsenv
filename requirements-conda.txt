@@ -1,3 +1,5 @@
+# conda install -c conda-forge pyyaml six numpy scipy biopython matplotlib seaborn xarray pandas click colorama gitpython
+# conda install --file requirements-conda.txt
 pyyaml
 six
 requests
@@ -14,3 +16,5 @@ pytz
 python-dateutil
 parsedatetime
 flask
+gitpython
+colorama
