@@ -425,21 +425,28 @@ def cadnano_json_vstrands_hashes(
         output_line_fmt.format(description=description, hexdigest=hexdigest)
         for description, hexdigest in hashes_output.items()
     )
-    output_header = f"""
+    output_header = f"""\
 # {date:%Y/%m/%d %H:%M:%S} > cadnano-json-vstrands-hashes --hash-name {hash_name} "{jsonpath.name}"
 # rsenv.__version__: {__version__}
 """
-    output = output_header + output_lines
+    output = output_header + output_lines + "\n"
 
     print(output)
 
     if save_hashes_to_file:
         hash_filename = Path(jsonfile).with_suffix(f".{hash_name}-vstrands-hashes.txt")
-        print("\nSaving hashes to file:", hash_filename, file=sys.stderr)
-        hash_filename.write_text(output)
+        print("Saving hashes to file:", hash_filename, file=sys.stderr)
+        try:
+            hash_filename.write_text(output)
+        except IOError as exc:
+            print(f" - ERROR, unable to write to file: {exc}", file=sys.stderr)
         if save_hash_specs_to_file and hash_vstrands_specs:
             hash_vstrands_specs_file = Path(jsonfile).with_suffix(f".{hash_name}-vstrands-hashes-specs.json")
-            hash_vstrands_specs_file.write_text(json.dumps(hash_vstrands_specs))
+            print("Saving hash_vstrands_specs to file:", hash_vstrands_specs_file, file=sys.stderr)
+            try:
+                hash_vstrands_specs_file.write_text(json.dumps(hash_vstrands_specs))
+            except IOError as exc:
+                print(f" - ERROR, unable to write to file: {exc}", file=sys.stderr)
 
     return hashes_output
 
