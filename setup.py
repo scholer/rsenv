@@ -120,6 +120,7 @@ setup(
             'cadnano-maptransformer=rsenv.origami.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
             'cadnano-colorname-mapper=rsenv.origami.staplepooling.cadnano_color_name_mapper:cadnano_color_name_mapper_cli',
             'oligo-wellplate-mapper=rsenv.origami.staplepooling.oligo_wellplate_mapper:oligo_sequence_wellplate_mapper_cli',
+            'extract-oligoset-from-cadnano-csv=rsenv.origami.cadnano.oligoset_from_cadnano_csv_cli:extract_oligoset_from_cadnano_csv',
 
             # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
             # These have been moved to zepto-eln-core package.
