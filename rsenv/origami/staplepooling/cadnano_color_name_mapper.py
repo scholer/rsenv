@@ -78,6 +78,9 @@ def cadnano_color_name_mapper_cli(
 ):
     """ CLI for mapping hex-colors to proper names (e.g. cadnano staple strand exports).
 
+    Uh, how is this different from `cadnano.cadnano_maptransform.cadnano_maptransformer_cli()` (created in 2018)?
+    I think I simply forgot about that one, when I re-created this in 2019-Nov.
+
     Args:
         colormap_file: File containing the name for each cadnano hex-color.
         seqpool_files: One or more cadnano exported csv files with staple strands (sequences and color).

@@ -57,6 +57,25 @@ import click
 # import inspect
 
 
+def str_hash_bytedigest(s: str, hash_name: str = "sha256"):
+    """ Reference funtion, showing how to use hashlib.new() to get a byte-digest of a string. """
+    return hashlib.new(name=hash_name, data=s.encode("utf8")).digest()
+    # m = hashlib.new(hash_name)
+    # m.update(s.encode("utf8"))
+    # return m.digest()
+
+
+def str_hash_intdigest(s: str, hash_name: str = "sha256"):
+    return int.from_bytes(hashlib.new(name=hash_name, data=s.encode("utf8")).digest(), byteorder="big")
+
+
+def str_hash_hexdigest(s: str, hash_name: str = "sha256"):
+    """ Hash a given string, encoding it to bytes as utf-8, and return hexdigest. Reference function. """
+    # int_digest = str_hash_intdigest(s=s, hash_name=hash_name)
+    # return f"{int_digest:0x}"
+    return hashlib.new(name=hash_name, data=s.encode("utf8")).hexdigest()
+
+
 def sha256_digest(s):
     """ Reference function, takes a string and returns the sha256 hash digest (bytes) of that string."""
     return hashlib.sha256(s.encode('utf-8')).digest()

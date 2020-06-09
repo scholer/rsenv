@@ -26,7 +26,7 @@ setup(
     name='RsEnv',
     description='Various tools/utilities and modules for work.',
     long_description=long_description,
-    version='2020.03.31',  # Also update version in rsenv/__init__.py
+    version='2020.06.09',  # Also update version in rsenv/__init__.py
     packages=['rsenv'],  # List all packages (directories) to include in the source dist.
     url='https://github.com/scholer/rsenv',
     download_url='https://github.com/scholer/rsenv/archive/master.zip',
@@ -47,15 +47,18 @@ setup(
     # When the package is installed with pip, a script is automatically created (.exe for Windows).
     # The entry points are stored in ./<dist-name>.egg-info/entry_points.txt, which is used by pkg_resources.
     entry_points={
+        # console_scripts should all be lower-case, else you may get an error when uninstalling:
         'console_scripts': [
-            # console_scripts should all be lower-case, else you may get an error when uninstalling:
-            # Remember to copy changes to `rsenv.rsenv_cli.py` to keep `rsenv-help` command up to date.
+            # OBS: Remember to also update `rsenv.rsenv_cli.py` to keep `rsenv help` CLI command up to date!
 
             # Instrument data analysis and conversion:
             'nanodrop-cli=rsenv.dataanalysis.nanodrop.nanodrop_cli:cli',
             'hplc-cli=rsenv.hplcutils.cli:hplc_cli',
             'hplc-cdf-to-csv=rsenv.hplcutils.cdf_csv:cdf_csv_cli',
             'hplc-rename-cdf-files=rsenv.hplcutils.rename_cdf_files:rename_cdf_files_cli',
+
+            # Other data-plotting CLIs:
+            'ohwmon-log-plotter=rsenv.dataanalysis.openhardwaremonitor.ohwmon_log_plotter_cli:ohm_csv_plotter_cli',
 
             # file converters and clipboard utils:
             'json-redump-fixer=rsenv.seq.cadnano.json_redump_fixer:main',
@@ -67,36 +70,6 @@ setup(
             # File and data comparison CLIs:
             'oil-diff=rsnev.diffutils.linesetdiff_cli:order_independent_line_diff_cli',
 
-            # `sha256sum` is used by UNIX sha256sum.exe distributed with e.g. Git
-            'sha256sumsum=rsenv.utils.hash_utils:file_sha256sumsum_cli',
-            'sha256setsum=rsenv.utils.hash_utils:file_sha256setsum_cli',
-            'sequencesethash=rsenv.utils.hash_utils:file_sequencesethash_cli',
-
-            # Text extraction and web batch downloader:
-            'generic-text-extractor=rsenv.web.generic_text_extraction:generic_text_extractor_cli',
-            'generic-batch-downloader=rsenv.web.generic_batch_download:generic_batch_downloader_cli',
-
-            # Oligo-management:
-            'convert-IDT-espec-to-platelibrary-file-cli=rsenv.origami.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
-
-            # Hashing and comparing oligo sets / pools of oligo sequences:
-            'oligoset-file-hasher-cli=rsenv.origami.oligoset_tools.oligoset_hashing_cli:hash_oligoset_file_cli',
-
-            # Hashing cadnano designs (because cadnano adds a time-stamp):
-            'cadnano-json-vstrands-hashes=rsenv.origami.cadnano.cadnano_json_hashing_cli:cadnano_json_vstrands_hashes_cli',
-            'cadnano-get-json-name=rsenv.origami.cadnano.cadnano_set_json_name:get_cadnano_json_name_cli',
-            'cadnano-set-json-name=rsenv.origami.cadnano.cadnano_set_json_name:set_cadnano_json_name_cli',
-            'cadnano-reset-json-name=rsenv.origami.cadnano.cadnano_set_json_name:reset_cadnano_json_name_cli',
-
-            # Cadnano diff'ing and pretty-printing:
-            'cadnano-neatprinted-json=rsenv.origami.cadnano.cadnano_prettyprint:cadnano_neatprinted_json_cli',
-            'cadnano-diff-jsondata=rsenv.origami.cadnano.cadnano_diff_cli:cadnano_diff_jsondata_cli',
-
-            # Cadnano, staple strand mapping, pooling:
-            'cadnano-maptransformer=rsenv.origami.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
-            'cadnano-colorname-mapper=rsenv.origami.staplepooling.cadnano_color_name_mapper:cadnano_color_name_mapper_cli',
-            'oligo-wellplate-mapper=rsenv.origami.staplepooling.oligo_wellplate_mapper:oligo_sequence_wellplate_mapper_cli',
-
             # File management and renaming:
             'regex-file-rename=rsenv.fileutils.regex_file_rename:regex_file_rename_cli',
 
@@ -106,8 +79,14 @@ setup(
             # Label printing CLI:
             'print-zpl-labels=rsenv.labelprint.labelprint_cli:print_zpl_labels_cli',
 
-            # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
-            # These have been moved to zepto-eln-core package.
+            # `sha256sum` is used by UNIX sha256sum.exe distributed with e.g. Git
+            'sha256sumsum=rsenv.utils.hash_utils:file_sha256sumsum_cli',
+            'sha256setsum=rsenv.utils.hash_utils:file_sha256setsum_cli',
+            'sequencesethash=rsenv.utils.hash_utils:file_sequencesethash_cli',
+
+            # Text extraction and web batch downloader:
+            'generic-text-extractor=rsenv.web.generic_text_extraction:generic_text_extractor_cli',
+            'generic-batch-downloader=rsenv.web.generic_batch_download:generic_batch_downloader_cli',
 
             # Git commands/scripts:
             'git-add-and-commit-to-branch=rsenv.git.git_clis:git_add_and_commit_to_branch',
@@ -115,11 +94,35 @@ setup(
             # OBS: There is a bug when setup.py contains two entry points with same name except one
             # has -script postfix, which prevents the other entry point from being generated correctly.
 
-            # Other data-plotting CLIs:
-            'ohwmon-log-plotter=rsenv.dataanalysis.openhardwaremonitor.ohwmon_log_plotter_cli:ohm_csv_plotter_cli',
-
             # Conda environments CLIs:
             'export-all-conda-envs=rsenv.conda.conda_export_all_envs:export_all_conda_envs_cli',
+
+            # Oligo-management:
+            'convert-IDT-espec-to-platelibrary-file-cli=rsenv.origami.oligomanagement.IDT_coa_to_platelibrary_file:convert_IDT_espec_to_platelibrary_file_cli',
+
+            # Hashing and comparing oligo sets / pools of oligo sequences:
+            'oligoset-file-hasher-cli=rsenv.origami.oligoset_tools.oligoset_hashing_cli:hash_oligoset_file_cli',
+
+            # Working with cadnano files:
+            # ---------------------------
+            # Hashing and probing cadnano designs (because cadnano adds a time-stamp):
+            'cadnano-json-vstrands-hashes=rsenv.origami.cadnano.cadnano_json_hashing_cli:cadnano_json_vstrands_hashes_cli',
+            'cadnano-get-json-name=rsenv.origami.cadnano.cadnano_set_json_name:get_cadnano_json_name_cli',
+            'cadnano-set-json-name=rsenv.origami.cadnano.cadnano_set_json_name:set_cadnano_json_name_cli',
+            'cadnano-reset-json-name=rsenv.origami.cadnano.cadnano_set_json_name:reset_cadnano_json_name_cli',
+            # Cadnano diff'ing and pretty-printing:
+            'cadnano-neatprinted-json=rsenv.origami.cadnano.cadnano_prettyprint:cadnano_neatprinted_json_cli',
+            'cadnano-diff-jsondata=rsenv.origami.cadnano.cadnano_diff:cadnano_diff_jsondata_cli',
+            # Finding and renaming cadnano files:
+            'cadnano-file-search=rsenv.origami.cadnano.cadnano_file_search:find_cadnano_files_cli',
+
+            # Working with Cadnano output: staple strands oligo sequences, staple strand mapping, pooling:
+            'cadnano-maptransformer=rsenv.origami.cadnano.cadnano_maptransform:cadnano_maptransformer_cli',
+            'cadnano-colorname-mapper=rsenv.origami.staplepooling.cadnano_color_name_mapper:cadnano_color_name_mapper_cli',
+            'oligo-wellplate-mapper=rsenv.origami.staplepooling.oligo_wellplate_mapper:oligo_sequence_wellplate_mapper_cli',
+
+            # ELN: Print information about Pico/Markdown pages/files (based on the YAML header)
+            # These have been moved to zepto-eln-core package.
 
             # RsEnv help/docs/reference utils:
             'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',

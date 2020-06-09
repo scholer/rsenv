@@ -51,6 +51,8 @@ def cadnano_diff_jsondata_cli(
 ):
     """ CLI for diff'ing Cadnano .json files (cadnano format version 1 and 2).
 
+    CLI entry-point: cadnano-diff-jsondata
+
     This is currently my best and most concise method for determining the difference
     between two cadnano .json files at the json data level,
     without actually loading it as a cadnano document.
@@ -78,3 +80,6 @@ def cadnano_diff_jsondata_cli(
                         print(f"    < {vs1[k]}")
                         print(f"    > {vs2[k]}")
 
+
+if __name__ == '__main__':
+    cadnano_diff_jsondata_cli()

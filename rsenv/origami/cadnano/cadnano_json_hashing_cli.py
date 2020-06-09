@@ -3,6 +3,11 @@
 
 Module to hash a cadnano file.
 
+See also:
+
+* cadnano_diff_jsondata_cli()
+
+
 Unfortunately, cadnano saves a timestamp with the current time whenever it saves a file.
 That makes it impossible to use traditional file hashes to determine if a cadnano design json file
 has actually changed.
@@ -140,177 +145,303 @@ from datetime import datetime
 from typing import Iterable, Mapping, List, Tuple
 import click
 import typer
+from copy import deepcopy
+import sys
+
+from rsenv.utils.hash_utils import str_hash_hexdigest
+from rsenv import __version__
 
 
-hashable_types = {
-    list,
-    set,
-    tuple,
-    str,
-    int,
-    float,
-    bytes,
+DEFAULT_VSTRANDS_HASH_SPECS = {
+    #         # 'row', 'loop', 'col', 'scafLoop', 'stap', 'scaf', 'num', 'stap_colors', 'skip', 'stapLoop'
+    "vstrands-all-attributes": {"exclude_keys": None, "order_independent": False},
+    "vstrands-legacy": {
+        "json_separators": None,  # Previously, we didn't use compact form.
+        "exclude_keys": None,
+        "order_independent": False,
+    },
+
+    "vstrands-order-independent": {"order_independent": True},
+    "vstrands-num": {"include_keys": ['num'], "order_independent": False},
+
+    "vstrands-without-colors": {
+        "exclude_keys": ['stap_colors', 'scaf_colors'],
+        "order_independent": False,
+        "allow_missing_exclude_keys": True,
+    },
+
+    # I think this is the best way to check if a design has functionally changed:
+    "vstrands-stap-scaf-loops-skips": {
+        "include_keys": ['stap', 'scaf', 'loop', 'stapLoop', 'skip'],
+        "order_independent": False
+    },
+    "vstrands-stap-scaf-loops-skips-oi": {
+        "include_keys": ['stap', 'scaf', 'loop', 'stapLoop', 'skip'],
+        "order_independent": True,
+    },
+
+    "vstrands-stap": {"include_keys": ['stap'], "order_independent": False},
+    "vstrands-scaf": {"include_keys": ['scaf'], "order_independent": False},
+
+    "vstrands-stap-colors": {"include_keys": ['stap_colors'], "order_independent": False},
+    "vstrands-scaf-colors": {"include_keys": ['scaf_colors'], "order_independent": False, "allow_missing_include_keys": True},
+
+    "vstrands-skip": {"include_keys": ['skip'], "order_independent": False},
+    "vstrands-loop": {"include_keys": ['loop'], "order_independent": False},
+    "vstrands-scafLoop": {"include_keys": ['scafLoop'], "order_independent": False},
+
 }
 
 
-def lists_and_dicts_to_tuples_recursively(obj):
-    """ Convert all lists to tuples and all dicts to tuples of (k, v) pairs.
-    OBS: This is a one-way conversion and indistinguishable from a nested-tuples
-    data-structure to begin with.
+def json_hash_hexdigets(obj, hash_name="sha256", json_separators=(",", ":")) -> str:
+    """ Use json to serialize obj, then hash the serialized string.
+
+    This is basically the simplest way I could think of to hash a json-serializable object.
+    Of course, this has a bunch of potential issues:
+    * Doesn't hash sets (order-invariant hashing).
+    * Might change if the json-serialization changes for some reason (e.g. different defaults).
+
+    Does json.dump sort the data (to make the order of sets and dicts order-independent)?
+    * json does not sort dicts, unless `sort_keys=True`
+    * json cannot serialize sets.
+    * json does not sort lists, for obvious reasons.
+
+    OBS:
+    * For Python 3.6+, the key-order of dicts is maintained.
+    * For Python 3.0-3.5, the order is random (since dict had no guaranteed order then).
+    * In Python 2, json.dumps would produce sorted dicts.
+
     """
-    if isinstance(obj, list):
-        return tuple(lists_and_dicts_to_tuples_recursively(v) for v in obj)
-    elif isinstance(obj, dict):
-        return tuple((k, lists_and_dicts_to_tuples_recursively(v)) for k, v in obj.items())
-    else:
-        return obj
+    json_str = json.dumps(obj, separators=json_separators)
+    return hashlib.new(name=hash_name, data=json_str.encode("utf8")).hexdigest()
 
 
-def recursive_hashing(m, obj):
+def order_dependent_json_hash_hexdigest(sequence, hash_name="sha256", json_separators=(",", ":")) -> str:
+    """ Hash a list/sequence of objects by serializing the objects with json. """
+    m = hashlib.new(name=hash_name)
+    for obj in sequence:
+        json_str = json.dumps(obj, separators=json_separators)
+        m.update(json_str.encode("utf-8"))
+    return m.hexdigest()
+
+
+def order_independent_json_hash_intdigest(sequence, hash_name="sha256", json_separators=(",", ":")) -> int:
+    total = 0
+    for obj in sequence:
+        json_str = json.dumps(obj, separators=json_separators)
+        m = hashlib.new(name=hash_name, data=json_str.encode("utf8"))
+        bytes_digest = m.digest()
+        int_digest = int.from_bytes(bytes_digest, byteorder="big")
+        # We use addition as the commutative operation to ensure order-independence:
+        total += int_digest
+        # Make sure integer is within the fixed-width size of the hashing algorithm:
+        # It would be nice to have wrap-around integer objects in python...
+        # Maybe use https://pypi.org/project/fixedint/
+        total = total % 2**(8*m.digest_size)
+    return total
+
+
+def order_independent_json_hash_hexdigest(sequence, hash_name="sha256", json_separators=(",", ":")) -> str:
+    """ Hash a set/sequence of objects in an order-independent way using json for object serialization.
+    Order-independence is achieved using addition as the commutative operator between independent object hashes.
     """
+    int_digest = order_independent_json_hash_intdigest(sequence, hash_name=hash_name, json_separators=json_separators)
+    return f"{int_digest:0x}"
+
+
+def vstrands_json_hash(
+        vstrands,
+        include_keys=None,
+        exclude_keys=None,
+        order_independent=False,
+        hash_name="sha256",
+        allow_missing_include_keys=False,
+        allow_missing_exclude_keys=False,
+        val_for_nonexisting_attributes=None,
+        json_separators=(",", ":"),
+        verbose=0,
+) -> str:
+    """ Calculate a single "vstrands" hash of a cadnano file, using the optionally-specified attributes.
 
     Args:
-        m:
-        obj:
+        vstrands: Cadnano vstrands list (from cadnano json file).
+            The cadnano.json vstrands is a list of dicts, each dict describing a "virtual helix"
+            with the following attributes:
+            'num', 'row', 'col', 'stap', 'scaf', 'loop', 'stapLoop', 'scafLoop', 'skip', 'stap_colors', 'scaf_colors'
+            ('scaf_colors' is only for cadnano 2.5 - earlier versions did not allow coloring the scaffold).
+        include_keys: Include only these vstrands attributes when calculating the hash.
+        exclude_keys: Exclude these vstrands attributes before calculating the hash.
+        order_independent: Whether the hash depends on the order of the vstrands list.
+            This can be used to determine if the only thing that has changed is the order of the strands.
+        hash_name: The hash algorithm to use (must be supported by hashlib).
+        allow_missing_include_keys: What to do if a key listed in `include_keys` is not present in a vh.
+            False = Raise KeyError.
+            True = ignore silently, replace with `val_for_nonexisting_attributes`.
+            None or "exclude" = ignore silently, do not include attribute in vh dict.
+        allow_missing_exclude_keys: What to do if a key listed in `exclude_keys` is not present in a vh.
+        val_for_nonexisting_attributes: The value to use for non-existing attribute.
+        json_separators: The separators to use when serializing vstrands as json (list and key:value).
+        verbose: Change verbosity during run. Useful for debugging.
 
     Returns:
 
-    Discussion: How to distinguish types?
-    * I guess I could just add that as a tuple, so:
-        1 --> ('int', 1)
-    * While if the input was `('int', 1)`, the output would be
-        ('int', 1)  -->  (('str', 'int'), ('int', 1)).
+        hash hexdigest (str)
+
     """
+    if include_keys or exclude_keys:
+        # We don't want to modify the original vstrands object, so make a copy:
+        vstrands = deepcopy(vstrands)
+    if verbose:
+        print("exclude_keys:", exclude_keys)
+        print("include_keys:", include_keys)
+        print("allow_missing_include_keys:", allow_missing_include_keys)
+        print("json_separators:", json_separators)
+    if include_keys:
+        if isinstance(include_keys, str):
+            include_keys = (include_keys,)
+        for vh in vstrands:
+            keys_to_delete = [k for k in vh.keys() if k not in include_keys]
+            for k in keys_to_delete:
+                del vh[k]
+        # Maybe it is better to just generate a new vstrands list?
+        if allow_missing_include_keys:
+            if allow_missing_include_keys in (None, "exclude"):
+                vstrands = [{k: vh[k] for k in include_keys if k in vh} for vh in vstrands]
+            else:
+                vstrands = [{k: vh.get(k, val_for_nonexisting_attributes) for k in include_keys} for vh in vstrands]
+        else:
+            vstrands = [{k: vh[k] for k in include_keys} for vh in vstrands]
+    if exclude_keys:
+        if isinstance(exclude_keys, str):
+            exclude_keys = (exclude_keys,)
+        for i, vh in enumerate(vstrands):
+            for k in exclude_keys:
+                if allow_missing_exclude_keys:
+                    vh.pop(k, None)  # Use pop, to prevent KeyError if key does not exist.
+                else:
+                    try:
+                        del vh[k]
+                    except KeyError as exc:
+                        # print(f"Key '{k}' not in vh {i}, it only has keys:", vh.keys())
+                        raise exc
 
-    hash_bits = m.digest_size * 8
-    hash_modulus = 2**hash_bits
-
-    if isinstance(obj, str):
-        m.update(obj.encode('utf8'))
-    elif isinstance(obj, (int, float)):
-        # Should 1 (int) hash to the same as '1' (str) ?
-        # Or should we use int.to_bytes(n_bytes, byteorder) to convert to bytes?
-        # You can use n_bytes = (int.bit_length() // 8) + 1 to get the number of bytes required.
-        # But what about float?
-        m.update(str(obj).encode('utf8'))
-    elif isinstance(obj, (list, tuple)):
-        for v in obj:
-            recursive_hashing(m, v)
-    elif isinstance(obj, set):
-        # Order-independent hashing:
-        # Or alternatively, just sort before hashing - is effectively order-independent.
-        # But what if we cannot sort the elements? Nah, we can always do that.
-        set_hash_int = 0
-        for elem in obj:
-            elem_hash_dig = recursive_hashing(hashlib.new(m.name), elem)
-            elem_hash_int = int.from_bytes(elem_hash_dig, byteorder='big')
-            set_hash_int = (set_hash_int + elem_hash_int) % hash_modulus
-        set_hash_dig = int.to_bytes(set_hash_int, m.digest_size, byteorder='big')
-        m.update(set_hash_dig)
-    elif isinstance(obj, dict):
-        # A dict is a set of (key, value) tuples:
-        recursive_hashing(set(obj.items()))
+    if order_independent:
+        hexdigest = order_independent_json_hash_hexdigest(
+            sequence=vstrands, hash_name=hash_name, json_separators=json_separators
+        )
     else:
-        raise TypeError(f"Unrecognized type {type(obj)} for object {obj!r}.")
+        hexdigest = order_dependent_json_hash_hexdigest(
+            vstrands, hash_name=hash_name, json_separators=json_separators
+        )
 
-    return m.digest()
-    # return int.from_bytes(m.digest(), byteorder='big')
-
-
-def str_hash_hexdigest(s, hash_name="sha256"):
-    """ Hash a given string, encoding it to bytes as utf-8, and return hexdigest. """
-    m = hashlib.new(hash_name)
-    m.update(s.encode("utf8"))
-    hexdigest = m.hexdigest()
     return hexdigest
-
-
-def json_hash_hexdigets(obj, hash_name="sha256"):
-    """ Use json to serialize obj, then hash the serialized string. """
-    # Does json.dump sort the data (to make the order of sets and dicts order-independent)?
-    json_str = json.dumps(obj)
-    return str_hash_hexdigest(json_str)
 
 
 def cadnano_json_vstrands_hashes(
         jsonfile,
         # design_variant_keys=('row', 'loop', 'col', 'scafLoop', 'stap', 'scaf', 'num', 'skip', 'stapLoop'),
         # coloring_keys=('row', 'loop', 'col', 'scafLoop', 'stap', 'scaf', 'num', 'stap_colors', 'skip', 'stapLoop'),
-        del_color_keys: List[str] = None,  # Use typing.List to support multi-arg input.
+        # del_color_keys: List[str] = None,  # Use typing.List to support multi-arg input.
+        hash_vstrands_specs=None,
+        hash_vstrands_specs_file: str = None,
         hash_name: str = "sha256",
         # hash_without_colors: bool = True,
         # hash_with_colors: bool = True,
         save_hashes_to_file: bool = True,
+        save_hash_specs_to_file: bool = None,
+        output_line_fmt: str = " * {hexdigest} {description}",   # " * {hexdigest} {description} hexdigest"
+        verbose: int = 0,
 ):
-    """
+    """ Calculate and output various hashes for a cadnano json file.
 
-    cadnano-json-vstrands-hashes
+    The purpose of this is to make it quick to determine what has changed between different cadnano designs.
+    This complements more detailed tools to display changes in cadnano files.
+
+    CLI entry-point: cadnano-json-vstrands-hashes
 
     Args:
         jsonfile: The cadnano json file to hash ("legacy" cadnano json file format).
-        del_color_keys: The keys to remove when creating the "hash without color".
         hash_name: The hashing algorithm to use when hashing.
         save_hashes_to_file: Automatically save the calculated hashes to a file next to the jsonfile.
+        hash_vstrands_specs: Dict specifying which vstrands hashes to calculate.
+            Each dict entry is <description>: <kwargs-to
+        hash_vstrands_specs_file: Load hash_vstrands_specs from a json file.
+        save_hash_specs_to_file: Save hash_vstrands_specs to file (useful if just using the defaults).
+        output_line_fmt: Change how each hexdigest hash output line is formatted.
+        verbose: Change verbosity during run. Useful for debugging.
 
     Removed args:
         hash_without_colors: Create hash without staple color info.
         hash_with_colors: Create hash with staple color info.
 
     Returns:
-        tuple with (hash_with_colors, hash_without_colors)
+        dict with the various hashes
+
+    CLI Example usage:
+
+        $ cadnano-json-vstrands-hashes "TR.ZZ-5nm-spaced-x60.json"
+
+    OBS: I generally calculate hashes for each cadnano file,
+    then check what changes have been made, if any, by diff'ing the "*.sha256-vstrands-hashes.txt" files:
+
+        $
+
+    I then use `cadnano-diff-jsondata` to see more detailed changes:
+
+        $ cadnano-diff-jsondata "TR.ZZ-5nm-spaced-x60.json" "TR.ZZ-5nm-spaced-x60 - Copy.json"
+
+    See also:
+    * cadnano_diff_jsondata_cli()
 
     """
     # defaults:
     if hash_name is None:
         hash_name = "sha256"
+    if save_hash_specs_to_file is None:
+        save_hash_specs_to_file = True
+
+    if hash_vstrands_specs is None:
+        if hash_vstrands_specs_file:
+            hash_vstrands_specs_file = Path(hash_vstrands_specs_file)
+            hash_vstrands_specs = json.load(open(hash_vstrands_specs_file))
+        else:
+            hash_vstrands_specs = DEFAULT_VSTRANDS_HASH_SPECS
+
+    date = datetime.now()
+    hashes_output = {}
 
     jsonstr = open(jsonfile).read()
-    hexdigest_full_file = str_hash_hexdigest(jsonstr)
+    hashes_output["full-file-contents"] = str_hash_hexdigest(jsonstr)
     jsondata = json.loads(jsonstr)
     vstrands = jsondata['vstrands']
     jsonpath = Path(jsonfile)
 
-    # # Does json.dump sort the data?
-    # json_str_with_colors = json.dumps(obj)
-    # m_with_colors = hashlib.new(hash_name)
-    # m_with_colors.update(json_str_with_colors.encode("utf8"))
-    # hexdigets_with_colors = m_with_colors.hexdigets()
+    for description, kwargs in hash_vstrands_specs.items():
+        if verbose:
+            print(f"\nCalculating '{description}' hash...", file=sys.stderr)
+        hashes_output[description] = vstrands_json_hash(vstrands, **kwargs)
 
-    hexdigets_with_colors = json_hash_hexdigets(vstrands, hash_name)
-
-    # pop 'stap_colors' from all vstrands and repeat:
-    for vh in vstrands:
-        if not del_color_keys:
-            del vh['stap_colors']
-            vh.pop('scaf_colors', None)  # cadnano2.5 supports coloring the scaffold.
-        else:
-            for k in del_color_keys:
-                del vh[k]
-
-    hexdigets_no_colors = json_hash_hexdigets(vstrands, hash_name)
-
-    date = datetime.now()
-
-    # The output that we save to file does not have to include the full path,
-    # since it is saved to a file next to the jsonfile:
-    output = f"""
-{date:%Y/%m/%d %H:%M:%S} > cadnano-json-vstrands-hashes --hash-name {hash_name} "{jsonpath.name}"
- * hexdigest vstrands without staple colors:    {hexdigets_no_colors}
- * hexdigest vstrands  with   staple colors:    {hexdigets_with_colors}
- * hexdigest full file contents:                {hexdigest_full_file}
+    output_lines = "\n".join(
+        output_line_fmt.format(description=description, hexdigest=hexdigest)
+        for description, hexdigest in hashes_output.items()
+    )
+    output_header = f"""
+# {date:%Y/%m/%d %H:%M:%S} > cadnano-json-vstrands-hashes --hash-name {hash_name} "{jsonpath.name}"
+# rsenv.__version__: {__version__}
 """
+    output = output_header + output_lines
 
     print(output)
-    # When printing, we should include the full path to jsonfile:
-    # print("\ncadnano-json-vstrands-hashes for file:", jsonfile)
-    # print(" * hexdigest without staple colors:   ", hexdigets_no_colors)
-    # print(" * hexdigest with staple colors:      ", hexdigets_with_colors)
 
     if save_hashes_to_file:
         hash_filename = Path(jsonfile).with_suffix(f".{hash_name}-vstrands-hashes.txt")
+        print("\nSaving hashes to file:", hash_filename, file=sys.stderr)
         hash_filename.write_text(output)
+        if save_hash_specs_to_file and hash_vstrands_specs:
+            hash_vstrands_specs_file = Path(jsonfile).with_suffix(f".{hash_name}-vstrands-hashes-specs.json")
+            hash_vstrands_specs_file.write_text(json.dumps(hash_vstrands_specs))
 
-    return hexdigets_with_colors, hexdigets_no_colors
+    return hashes_output
 
 
 # Create a traditional click CLI:
@@ -330,6 +461,7 @@ def cadnano_json_vstrands_hashes_click_cli(*args, **kwargs):
 
 
 # Create Typer click CLI:
+# The advantage of typer is that the CLI options is automatically updated when you update the function.
 def cadnano_json_vstrands_hashes_typer_cli():
     typer.run(cadnano_json_vstrands_hashes)
     # typer.run(function) is equivalent to:

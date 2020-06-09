@@ -64,11 +64,30 @@ Git commands/scripts:
 Regex-file-rename:
     'regex-file-rename=rsenv.fileutils.regex_file_rename:regex_file_rename_cli'
 
-Clipboard CLIs:
-    'clipboard-image-to-file=rsenv.utils.clipboard:clipboard_image_to_file_cli',
-
 Other file utilities:
     'duplicate-files-finder=rsenv.utils.duplicate_files_finder:find_duplicate_files_cli',
+
+Clipboard CLIs:
+    clipboard-image-to-file: Dump image from clipboard to file. Alternatively, use imagemagick:
+        `$ magick convert clipboard: file.png`
+
+Cadnano CLIs:
+    cadnano-json-vstrands-hashes: Calculate hash-digest based on "vstrands" in a cadnano .json file. 
+    cadnano-get-json-name: Get `.vstrands.name` attribute of a cadnano json object.
+    cadnano-set-json-name: Set `.vstrands.name` attribute of a cadnano json object.
+    cadnano-reset-json-name: Reset `.vstrands.name` attribute to match current filename.
+    cadnano-diff-jsondata: See exact differences between two cadnano files. Useful for identifying small changes.
+    cadnano-json-vstrands-hashes: Calculate a bunch hashes using cadnano vstrands attributes. 
+        Useful for identifying what kind of changes has been made between two cadnano json documents.
+    cadnano-file-search: Find cadnano files, first by filename, then by reading and validating json schema.
+
+CLIs for working with cadnano-exported staple strands and oligo sequences:
+
+    oligoset-file-hasher-cli: Generate a hash of a set of oligo sequences (order-independent hash).
+    cadnano-colorname-mapper: Map the "Color" output of a cadnano export to a proper name.
+    cadnano-maptransformer: Basically the same as cadnano-colorname-mapper (older implementation).
+    oligo-wellplate-mapper: For generating pipetting instructions. 
+        For each pool-name, for each oligo, find the proper well plate and position to aspirate that oligo from.
 
 RsEnv CLIs:
     'rsenv-help=rsenv.rsenv_cli:print_rsenv_help',

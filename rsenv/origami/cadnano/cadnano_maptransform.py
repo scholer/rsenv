@@ -85,6 +85,8 @@ def cadnano_maptransformer_cli(
 ):
     """ Cadnano CSV export file, map transformer CLI.
 
+    Uh, how is this different from `staplepooling.cadnano_color_name_mapper.cadnano_color_name_mapper_cli()` ?
+
     Example usage:
         First, make sure you have both colormap and sequence map files in the directory next to the csv export file:
         $ ls

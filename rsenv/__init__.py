@@ -45,4 +45,4 @@
 #readline.parse_and_bind('tab:complete')
 
 
-__version__ = '2020.03.31'  # Also update setup.py version number.
+__version__ = '2020.06.09'  # Also update setup.py version number.
