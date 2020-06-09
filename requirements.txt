@@ -9,3 +9,5 @@ xarray
 matplotlib
 seaborn
 click
+typer
+jsonschema

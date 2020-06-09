@@ -45,7 +45,7 @@ import typer
 
 
 def extract_oligoset_from_cadnano_csv(
-        csvfile: str,
+        csvfile,
         sort_sequences: bool = True,
         sort_by_poolname: bool = False,
         select_poolname: Optional[str] = None,
@@ -103,6 +103,10 @@ def extract_oligoset_from_cadnano_csv(
     As you can see, Miller can obviously do the same as extract-oligoset-from-cadnano-csv,
     but the general-purpose Miller is harder and more verbose to use compared to this specialized CLI.
     However, it might be good to use Miller as well, since Miller is more known and has a more stable API.
+
+    Running as a module:
+
+        $ python -m rsenv.origami.cadnano.oligoset_from_cadnano_csv_cli
 
     """
     staples_df = pd.read_csv(csvfile)
