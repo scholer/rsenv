@@ -46,6 +46,7 @@ def load_txt(input_file, line_comment_char='#', val_sep=None):
 @click.option('--overwrite/--no-overwrite', default=False)
 @click.option('--line-comment-char')
 @click.option('--value-separator')
+@click.option('--verbose', count=True)
 @click.argument('input-files', nargs=-1)
 def generic_batch_downloader_cli(
         input_files,
@@ -59,6 +60,7 @@ def generic_batch_downloader_cli(
         line_comment_char=None,
         value_separator=None,
         ignore_http_errors=False,
+        verbose=0
 ):
     """ Generic batch downloader CLI.
 
@@ -77,6 +79,7 @@ def generic_batch_downloader_cli(
         line_comment_char: Exclude lines in inputfiles starting with this character. Default: '#'.
         value_separator: If given, split each line from input files into multiple values.
         ignore_http_errors: Set to True to ignore http errors and continue to next file.
+        verbose: Increase verbosity to print more information during execution (printed to stderr).
 
     Returns:
         A list of outputfiles with the filenames of the downloaded files.
@@ -116,8 +119,9 @@ def generic_batch_downloader_cli(
 
     with open(settings_file) as fp:
         config = yaml.load(fp)
-    print("config:", file=sys.stderr)
-    pprint(config, stream=sys.stderr)
+    if verbose > 1:
+        print("config:", file=sys.stderr)
+        pprint(config, stream=sys.stderr)
     if download_url_format is None:
         download_url_format = config['download_url_format']
     if filename_format is None:
@@ -128,10 +132,21 @@ def generic_batch_downloader_cli(
         line_comment_char = config.get('line_comment_char', "#")
     if string_format_method is None:
         string_format_method = config.get('string_format_method', '{}')
-
+    if string_format_method == "{}" and ("{" not in download_url_format or "{" not in filename_format):
+        print(f"\nWARNING: string_format_method parameter is '{string_format_method}' (the default), "
+              f"but download_url_format or filename_format does not contain curly braces. "
+              f"Did you mean to use the old-style %s formatting instead?")
     if 'input_files' in config and config['input_files']:
         input_files = list(input_files)  # Input might be a tuple.
         input_files.extend(config['input_files'])
+
+    if verbose:
+        print(f"download_url_format: {download_url_format}", file=sys.stderr)
+        print(f"filename_format: {filename_format}", file=sys.stderr)
+        print(f"value_separator: {value_separator}", file=sys.stderr)
+        print(f"line_comment_char: {line_comment_char}", file=sys.stderr)
+        print(f"string_format_method: {string_format_method}", file=sys.stderr)
+        print(f"input_files: {input_files}", file=sys.stderr)
 
     session = requests.Session()
     if config.get('cookies'):
@@ -145,38 +160,43 @@ def generic_batch_downloader_cli(
         print(values, file=sys.stderr)
 
         for val_num, value in enumerate(values, 1):
-            print(f"\nProcessing value {val_num} of {n_values} from input file {input_file}...")
+            print(f"\nProcessing value {val_num} of {n_values} from input file {input_file}...", file=sys.stderr)
             if isinstance(value, str):
+                print(f"Value {value} is type {type(value)}", file=sys.stderr)
                 if string_format_method == '{}':
                     url = download_url_format.format(value)
                     filename = filename_format.format(value)
                 else:
                     url = download_url_format % (value,)
                     filename = filename_format % (value,)
-            elif isinstance(value, list):
+            elif isinstance(value, (list, tuple)):
                 if string_format_method == '{}':
                     url = download_url_format.format(*value)
                     filename = filename_format.format(*value)
                 else:
                     url = download_url_format % tuple(value)
                     filename = filename_format % tuple(value)
-            else:  # assume dict-like objects.
+            elif isinstance(value, dict):  # assume dict-like objects.
                 if string_format_method == '{}':
                     url = download_url_format.format(**value)
                     filename = filename_format.format(**value)
                 else:
                     url = download_url_format % value
                     filename = filename_format % value
+            else:
+                raise TypeError(f"Value has unrecognized type, {type(value)}.", value)
 
+            print(f"url: {url}", file=sys.stderr)
+            print(f"filename: {filename}", file=sys.stderr)
             if os.path.exists(filename) and not overwrite:
                 print(" - OBS: File '%s' already exists, and overwrite is False; skipping this file..." % (filename,))
                 continue
-            print(" - GET'ing URL:", url)
+            print(" - GET'ing URL:", url, file=sys.stderr)
             res = session.get(url)
-            print(" - Response:", res)
+            print(" - Response:", res, file=sys.stderr)
             if not ignore_http_errors:
                 res.raise_for_status()
-            print(" - Saving %s kb to file: %s" % (len(res.content)//1024+1, filename))
+            print(" - Saving %s kb to file: %s" % (len(res.content)//1024+1, filename), file=sys.stderr)
             with open(filename, 'wb') as fp:
                 fp.write(res.content)
             outputfiles.append(filename)
