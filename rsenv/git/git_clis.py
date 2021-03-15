@@ -141,6 +141,7 @@ import shlex
 import click
 from datetime import datetime
 import git
+import configparser
 
 
 def repo_has_uncommitted_staged_changes(path):
@@ -220,7 +221,15 @@ def git_add_and_commit_script(
     for repo_path in path:
         repo = git.Repo(repo_path)
         cfg = repo.config_reader()
-        core_worktree = cfg.get('core', 'worktree')
+        try:
+            core_worktree = cfg.get('core', 'worktree')
+        except configparser.NoSectionError:
+            # This can happen if the config file does not have a "core" section. But is also happens
+            # if there is no git-config file, e.g. if the given directory is not actually a git repository,
+            # or if there is a .git file, which specifies a `girdir:` that does not actually exists.
+            print(f"Warning: Repository {absdir} is either not a git repository, \
+                    or there is no .git/config file, or the config does not have a 'core' section.")
+            core_worktree = None
         if core_worktree:
             pass
         os.chdir(repo_path)
@@ -256,10 +265,10 @@ def git_add_and_commit_script(
                     print(f" - OK, will create branch '{branch}'.")
                     git_checkout_cmd = ['git', 'checkout', '-b', branch]
                 elif ans[0] == 's':
-                    print(" - OK, Skipping repository {absdir}.")
+                    print(f" - OK, Skipping repository {absdir}.")
                     continue
                 else:
-                    print("Answer not recognized; skipping.")
+                    print(f"Answer not recognized; skipping repository {absdir}.")
                     continue
             print(f"\nChecking out branch {branch!r} from repository '{absdir}'.", file=sys.stderr)
             try:
